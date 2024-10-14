@@ -120,12 +120,19 @@
 }
 .menu li, .bottom-menu li{
   height: 50px;
-  background-color: red;
+  background-color: #00AD71;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
+  transition: var(--trans-03);
+}
+.menu li:hover{
+  background-color: #16835D;
+}
+.bottom-menu li:hover{
+  background-color: #AD2100;
 }
 .menu li a,
 .bottom-menu li a{

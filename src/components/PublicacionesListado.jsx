@@ -26,12 +26,12 @@ export default function PublicacionesListado({
         <header className="burger-btn p-4 flex items-center">
           <button 
             onClick={handleOpenSidebar}
-          className="text-white mr-4">
+          className="text-black mr-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-white text-2xl font-bold">Listado de publicaciones</h1>
+          <h1 className="text-black text-2xl font-bold">Listado de publicaciones</h1>
         </header>
 
         <main className="bg-white m-4 p-6 rounded-lg shadow-md">
