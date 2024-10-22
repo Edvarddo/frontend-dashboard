@@ -270,7 +270,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                       <p className="text-sm text-green-700">Foto del sitio antes de la intervención</p>
                     </CardContent> */}
                     {
-                      loading  ? (
+                      true  ? (
                           // 3 skeleton cards
                           [1, 2, 3].map((item) => (
                             <Card key={item} className="w-full">
