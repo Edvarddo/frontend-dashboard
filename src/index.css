@@ -215,17 +215,46 @@
     flex-wrap: wrap;
     
   }
-  .filter-btn-cont{
+  /* .filter-btn-cont{
     width: 100%;
     margin-left: 0px;
   }
   .filter-btn{
     width: 100%;
-  }
+  } */
 }
 
 /* LISTADO PUBLICACIONES */
-.filter-btn-cont{
+/* .filter-btn-cont{
   display: flex;
   gap: 1rem;
+} */
+
+/* DETALLES PUBLICACIONES */
+
+.pub-detail-tab{
+  /* flex-grow: 1; */
+  /* width: 32%; */
+}
+
+/* DETALLES PUB MAPA */
+.leaflet-container {
+  height: 400px;
+  width: 100%;
+}
+.leaflet-control-attribution{
+  /* display: none; */
+}
+/* TABLE */
+.eye{
+  color: red;
+  z-index: 999;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.2rem;
+  /* align-items: center; */
 }

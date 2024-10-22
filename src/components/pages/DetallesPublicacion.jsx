@@ -1,15 +1,25 @@
 import React from 'react'
-
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeftIcon, MapPinIcon, ImageIcon, FileIcon } from "lucide-react"
+import { ArrowLeftIcon, MapPinIcon, ImageIcon, FileIcon, Info } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import ico2 from '@/assets/location.png'
 
 const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
+  const DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+  });
 
+  L.Marker.prototype.options.icon = DefaultIcon;
   const { id } = useParams();
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -21,7 +31,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     fetch(url)
       .then(response => response.json())
       .then(data => {
-        console.log(data)
+        console.log(data?.evidencias)
         setPublicacion(data)
         setLoading(false)
       })
@@ -37,46 +47,60 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     setIsOpened(!isOpened)
   }
   const [activeTab, setActiveTab] = useState('info')
+
   return (
     <div className="bg-[#00A86B] min-h-screen p-8">
       <Card className="w-full max-w-4xl mx-auto bg-white">
         <CardHeader className="border-b">
-          <div className="flex justify-between items-center mb-4">
-            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-              <Link className='w-[100%] flex justify-center'  to="/">
-                <ArrowLeftIcon className="mr-2 h-4 w-4" /> 
+          <div className="flex flex-wrap justify-between   mb-4 ">
+
+            <Button variant="outline" className=" mb-4 bg-white text-green-600 border-green-600 hover:bg-green-50 w-full lg:w-[unset]">
+              <Link className='w-[100%] flex justify-center' to="/">
+                <ArrowLeftIcon className="mr-2 h-4 w-4" />
                 <span>Volver al listado</span>
               </Link>
             </Button>
-            <div>
+
+            <div className='flex w-full lg:w-[unset]   justify-center'>
+              {/* INFORMACIÓN TAB */}
               <Button
                 variant={activeTab === 'info' ? 'default' : 'ghost'}
                 onClick={() => setActiveTab('info')}
-                className={`mr-2 ${activeTab === 'info' ? 'bg-green-600 text-white' : 'text-green-600'}`}
+                className={`pub-detail-tab w-[32%]  ${activeTab === 'info' ? 'bg-green-600 text-white' : 'text-green-600'}`}
               >
-                Información
+                {/* info icon */}
+                <Info className=" h-4 w-4 mr-2" />
+                {/* hide span on mobile sizes */}
+                <span className="hidden md:inline">Información</span>
+
               </Button>
+              {/* UBICACIÓN TAB */}
               <Button
                 variant={activeTab === 'ubicacion' ? 'default' : 'ghost'}
                 onClick={() => setActiveTab('ubicacion')}
-                className={`mr-2 ${activeTab === 'ubicacion' ? 'bg-green-600 text-white' : 'text-green-600'}`}
+                className={`pub-detail-tab w-[32%]  ${activeTab === 'ubicacion' ? 'bg-green-600 text-white' : 'text-green-600'}`}
               >
-                <MapPinIcon className="mr-2 h-4 w-4" />
-                Ubicación
+                <MapPinIcon className=" h-4 w-4 mr-2" />
+
+                <span className="hidden md:inline">
+                  Ubicación
+                </span>
               </Button>
+              {/* EVIDENCIAS TAB */}
               <Button
                 variant={activeTab === 'evidencias' ? 'default' : 'ghost'}
                 onClick={() => setActiveTab('evidencias')}
-                className={activeTab === 'evidencias' ? 'bg-green-600 text-white' : 'text-green-600'}
+                className={`pub-detail-tab w-[32%] ${activeTab === 'evidencias' ? 'bg-green-600 text-white  ' : 'text-green-600'}`}
               >
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Evidencias
+                <ImageIcon className=" h-4 w-4 mr-2" />
+                {/* span hidden on mobile sizes */}
+                <span className="hidden md:inline">Evidencias</span>
               </Button>
             </div>
           </div>
           <CardTitle className="text-2xl text-green-700">
             {
-              loading ? <Skeleton className="h-8 w-64" /> : publicacion?.titulo
+              loading ? <Skeleton className="h-8 w-full" /> : publicacion?.titulo
             }
           </CardTitle>
         </CardHeader>
@@ -84,7 +108,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
           {activeTab === 'info' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1  gap-6">
-                <Card className= "w-full mx-auto">
+                <Card className="w-full mx-auto">
                   <CardHeader>
                     <CardTitle className="text-green-700">Información general</CardTitle>
                   </CardHeader>
@@ -101,7 +125,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                       <div className="flex justify-between">
                         <dt className="font-medium text-green-600">Fecha de publicación:</dt>
                         <dd>
-                          
+
                           {
                             loading ? <Skeleton className="h-4 w-24" /> : new Date(publicacion.fecha_publicacion).toLocaleDateString('es-CL')
 
@@ -122,7 +146,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                           {
                             loading ? <Skeleton className="h-4 w-24" /> : (<Badge className="bg-green-100 text-green-800">
                               {publicacion?.situacion?.nombre}
-                              </Badge>)
+                            </Badge>)
                           }
                         </dd>
                       </div>
@@ -200,13 +224,34 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                 <CardTitle className="text-green-700">Ubicación de la publicación</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="aspect-video bg-green-100 rounded-md overflow-hidden flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPinIcon className="h-12 w-12 mx-auto mb-2 text-green-600" />
-                    <p className="font-medium text-green-700">Mapa no disponible</p>
-                    <p className="text-sm text-green-600">Coordenadas: -33.4569, -70.6483</p>
-                  </div>
+                <div className=" bg-green-100 rounded-md overflow-hidden flex items-center justify-center w-full h-full">
+                  {
+                    loading ? <Skeleton className="h-96 w-full" /> : (
+                      <MapContainer
+                        center={[publicacion?.latitud, publicacion?.longitud]}
+                        zoom={16}
+                        minZoom={13}
+                        maxZoom={18}
+                      
+
+                      >
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker
+                          position={[publicacion.latitud, publicacion.longitud]}
+                        >
+                          <Popup>
+                            {publicacion?.junta_vecinal?.nombre_calle}
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    )
+                  }
+                  {/* see big map */}
+                  
                 </div>
+
               </CardContent>
             </Card>
           )}
@@ -216,23 +261,50 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                 <CardTitle className="text-green-700">Evidencias de la publicación</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4  p-1">
+                  
+                    {/* <CardContent className="p-4">
                       <div className="w-full h-48 bg-green-100 rounded-md mb-2 flex items-center justify-center">
                         <ImageIcon className="h-12 w-12 text-green-600" />
                       </div>
                       <p className="text-sm text-green-700">Foto del sitio antes de la intervención</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="w-full h-48 bg-green-100 rounded-md mb-2 flex items-center justify-center">
-                        <FileIcon className="h-12 w-12 text-green-600" />
-                      </div>
-                      <p className="text-sm text-green-700">Documento de planificación del proyecto</p>
-                    </CardContent>
-                  </Card>
+                    </CardContent> */}
+                    {
+                      loading  ? (
+                          // 3 skeleton cards
+                          [1, 2, 3].map((item) => (
+                            <Card key={item} className="w-full">
+                              <CardContent className="p-4">
+                                <Skeleton className="h-48 w-full" />
+                                <Skeleton className="h-4 w-full mt-2" />
+                              </CardContent>
+                            </Card>
+                          ))
+                      ) : (
+                        publicacion?.evidencias?.map((evidencia) => (
+                          <Card key={evidencia.id} className="w-full">
+                            <CardContent className="p-4">
+                              <div className="w-full h-64 bg-green-100 rounded-md mb-2 flex items-center justify-center">
+                                <img src={"https://res.cloudinary.com/de06451wd/" + evidencia.archivo} alt="imagen" className="h-full w-full object-cover" />
+                              </div>
+                              <p className="text-sm text-green-700">{evidencia.descripcion}</p>
+                              {/* botón para descargar */}
+                              <Button
+                                variant="outline"
+                                className="mt-2 w-full"
+                                onClick={() => window.open("https://res.cloudinary.com/de06451wd/" + evidencia.archivo, "_blank")}
+                              >
+                                <FileIcon className="h-4 w-4 mr-2" />
+                                Descargar
+                              </Button>
+
+                            </CardContent>
+                          </Card>
+                        ))
+                      )
+                    }
+                  
+                  
                 </div>
               </CardContent>
             </Card>

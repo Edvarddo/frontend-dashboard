@@ -40,12 +40,12 @@ const DatePicker = ({selectedDate, setSelectedDate, setIsValid, isValid}) => {
   // const fechaVal = selectedDate ? format(selectedDate,"yyyy-MM-dd", {locale: es}).toString() : ""
 
   return (
-    <div className="flex">
+    <div className="flex  p-1 w-full">
       <input
       onChange={handleInputChange} 
       value={inputValue} 
       type="text" 
-      className="border rounded-l px-2 py-1 w-full" 
+      className="border rounded-l px-2 py-1 w-full md:w-1/2" 
       placeholder="Ej: 31-10-2024" 
       pattern="\d{2}-\d{2}-\d{4}"  
 
@@ -55,9 +55,9 @@ const DatePicker = ({selectedDate, setSelectedDate, setIsValid, isValid}) => {
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            // className={`   font-normal ${!selectedDate && "text-muted-foreground"}`}
+            className={`   font-normal ${!selectedDate && "text-muted-foreground"}`}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="mr-auto h-4 w-4" />
             {/* {selectedDate ? format(selectedDate, "PPP", { locale: es }) : ""} */}
           </Button>
         </PopoverTrigger>
@@ -67,6 +67,7 @@ const DatePicker = ({selectedDate, setSelectedDate, setIsValid, isValid}) => {
             selected={selectedDate}
             onSelect={handleDateSelect}
             initialFocus
+            locale = {es}
           />
         </PopoverContent>
       </Popover>

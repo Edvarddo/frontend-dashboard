@@ -30,11 +30,11 @@ const Sidebar = ({
       icon: "bx bx-map-alt",
       link: "/"
     },
-    {
-      title: "Descargar",
-      icon: "bx bx-download",
-      link: "/descargar"
-    },
+    // {
+    //   title: "Descargar",
+    //   icon: "bx bx-download",
+    //   link: "/descargar"
+    // },
   ]
   // section state
   const [selectedSection, setSelectedSection] = useState(sections[1].title)

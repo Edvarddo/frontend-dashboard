@@ -29,6 +29,7 @@ const TablaPublicaciones = ({
       .then(response => response.json())
       .then(data => {
         console.log(data.results)
+        console.log("fetch",url)
         setTotalPublicaciones(data.count)
         setPublicaciones(data.results ? data.results : [])
         // setNextPageUrl(data.next)
@@ -53,19 +54,20 @@ const TablaPublicaciones = ({
     }
   }
   const handleLimitPerPage = (value) => {
+    console.log(value)
     setPublicacionesPorPagina(value)
   }
   console.log(url)
   useEffect(() => {
     const pagesize = publicacionesPorPagina ? `pagesize=${publicacionesPorPagina}` : ""
     const baseUrl = "https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/publicaciones/"
-
+    console.log(url)
     if (currentPage === 1) {
-      fetchPublicaciones(`${url ? url : baseUrl}`)
+      fetchPublicaciones(`${url ? url : baseUrl}${publicacionesPorPagina != 5 ? `?${pagesize}` : ""}`)
     } else {
-      fetchPublicaciones(`${url ? url : baseUrl.concat("?")}page=${currentPage}`)
+      fetchPublicaciones(`${url ? url  : baseUrl.concat("?")}page=${currentPage}&${pagesize}`)
     }
-  }, [currentPage, url])
+  }, [currentPage, url, publicacionesPorPagina])
 
 
 
@@ -81,6 +83,8 @@ const TablaPublicaciones = ({
             <TableHead>Categoría</TableHead>
             <TableHead>Fecha de publicación</TableHead>
             <TableHead>Junta vecinal</TableHead>
+            {/* eye to detalles de publicacion */}
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -126,9 +130,10 @@ const TablaPublicaciones = ({
         <TableBody>
           {publicaciones.map((pub) => (
             <TableRow key={pub.id}>
-              <TableCell>
-                <Link to={`/publicacion/${pub.id}`}>
-                  {pub.titulo}
+              <TableCell className={"hover:bg-green-50 cursor-pointer  "}>
+                    
+                <Link className="" to={`/publicacion/${pub.id}`}>
+                {pub.titulo}
 
                 </Link>
               </TableCell>
@@ -147,7 +152,9 @@ const TablaPublicaciones = ({
       </Table>
 
       <div className="flex items-center justify-between mt-4">
-        <span>Página {currentPage}</span>
+        <span>Página {currentPage} de 
+          <span className=""> {Math.ceil(totalPublicaciones / publicacionesPorPagina)}</span>
+        </span>
 
         <div className="flex items-center space-x-2 ">
           <div className="limit-rows-per-page">
@@ -170,7 +177,8 @@ const TablaPublicaciones = ({
 
 
           </div>
-          <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={!prevPageUrl}>
+          {/* initial page */}
+          <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage > 1 ? false : true}>
             <ChevronsLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="icon" onClick={() => setCurrentPage(currentPage - 1)} disabled={
@@ -179,13 +187,17 @@ const TablaPublicaciones = ({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="icon" onClick={() => setCurrentPage(currentPage + 1)} disabled={
-            currentPage < Math.ceil(totalPublicaciones / 5) ? false : true
+            currentPage < Math.ceil(totalPublicaciones / publicacionesPorPagina) ? false : true
           }>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => setCurrentPage(currentPage + 1)} disabled={!nextPageUrl}>
+          {/* final page */}
+          <Button variant="outline" size="icon" onClick={() => setCurrentPage(Math.ceil(totalPublicaciones / publicacionesPorPagina))} disabled={
+            currentPage < Math.ceil(totalPublicaciones / publicacionesPorPagina) ? false : true
+          }>
             <ChevronsRight className="h-4 w-4" />
           </Button>
+          
         </div>
       </div>
     </>

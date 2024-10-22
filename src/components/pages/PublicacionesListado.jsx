@@ -16,6 +16,7 @@ export default function PublicacionesListado({
   // PARAMETROS URL
   const [currentPage, setCurrentPage] = useState(1)
   const [url, setUrl] = useState(null)
+  const [filtros, setFiltros] = useState(null)
   const [publicacionesPorPagina, setPublicacionesPorPagina] = useState("5")
 
   // OPCIONES SELECT
@@ -57,6 +58,16 @@ export default function PublicacionesListado({
     ])
 
   }, [])
+  useEffect(() => {
+    const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
+      junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
+      situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
+      iniDate = selectedIniDate ? "fecha_publicacion_after=" + format(selectedIniDate, "yyyy-MM-dd") + "&" : "",
+      endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
+      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
+    const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
+    setFiltros(filtros)
+  }, [selectedCategoria, selectedJunta, selectedSituacion, selectedIniDate, selectedEndDate, publicacionesPorPagina])
 
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
@@ -64,7 +75,7 @@ export default function PublicacionesListado({
   const handleDownload = () => {
     console.log('Descargando datos')
     // change the href to the correct url
-    window.location.href = "https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/export-to-excel/"
+    window.location.href = `https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/export-to-excel/${filtros ? "?" + filtros : ""}`
 
 
   }
@@ -76,9 +87,11 @@ export default function PublicacionesListado({
       iniDate = selectedIniDate ? "fecha_publicacion_after=" + format(selectedIniDate, "yyyy-MM-dd") + "&" : "",
       endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
+    const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
     let url = `https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
-    console.log("pl-pba",url)
+    console.log(url)
     setUrl(url)
+    setFiltros(filtros)
     setCurrentPage(1)
   }
   const limpiarFiltros = () => {
@@ -105,8 +118,8 @@ export default function PublicacionesListado({
         <h1 className="text-white text-3xl font-bold">Listado de publicaciones</h1>
       </header>
 
-      <main className=" m-4 rounded-lg shadow-md">
-        <div className="bg-white m-4 p-6 rounded-lg">
+      <main className=" m-4 rounded-lg ">
+        <div className="bg-white m-4 p-6 rounded-lg shadow-md">
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
@@ -198,8 +211,8 @@ export default function PublicacionesListado({
             </div>
           </div>
 
-          <div className="flex justify-between  mb-6 btn-section">
-            <Button variant="outline" onClick={handleDownload} className="bg-blue-500 hover:bg-blue-600 filter-btn  ">
+          <div className="flex justify-between flex-wrap  mb-6 btn-section  p-1">
+            <Button variant="outline" onClick={handleDownload} className="mb-3 bg-blue-500 hover:bg-blue-600 filter-btn w-full md:w-[unset]  ">
 
               <span className="text-white flex justify-items-center justify-center">
                 <Download className="mr-2 h-4 w-4" />
@@ -208,14 +221,14 @@ export default function PublicacionesListado({
 
 
             </Button>
-            <div className="filter-btn-cont">
-              <Button onClick={limpiarFiltros} className="filter-btn" variant="outline">Limpiar filtros</Button>
-              <Button disabled={isValid} onClick={aplicarFiltros}  className="bg-green-500 hover:bg-green-600 text-white filter-btn">Aplicar filtros</Button>
+            <div className="filter-btn-cont w-full md:w-[unset] ">
+              <Button onClick={limpiarFiltros} className="w-full mb-2 mr-2 md:w-[unset] filter-btn" variant="outline">Limpiar filtros</Button>
+              <Button disabled={isValid } onClick={aplicarFiltros}  className="w-full md:w-[unset] bg-green-500 hover:bg-green-600 text-white filter-btn">Aplicar filtros</Button>
 
             </div>
           </div>
         </div>
-        <div className="bg-white m-4  p-6 rounded-lg">
+        <div className="bg-white m-4  p-6 rounded-lg shadow-md">
           <TablaPublicaciones
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
