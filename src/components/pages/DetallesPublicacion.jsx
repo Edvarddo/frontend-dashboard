@@ -7,11 +7,12 @@ import { ArrowLeftIcon, MapPinIcon, ImageIcon, FileIcon, Info } from "lucide-rea
 import { Skeleton } from "@/components/ui/skeleton"
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import ico2 from '@/assets/location.png'
+
 
 const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const DefaultIcon = L.icon({
@@ -24,14 +25,22 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [publicacion, setPublicacion] = useState({})
+  
   const url_local = import.meta.env.VITE_URL_PROD
-  const url = `${"https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/publicaciones/"}${id}/`
+  console.log("id",url_local)
+  const url = `${"http://3.217.85.102/api/v1/publicaciones/"}${id}/`
   const fetchPublicacion = (url) => {
     setLoading(true)
-    fetch(url)
+    fetch(url,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
+        }
+      }
+    )
       .then(response => response.json())
       .then(data => {
-        console.log(data?.evidencias)
         setPublicacion(data)
         setLoading(false)
       })

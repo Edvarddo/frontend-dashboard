@@ -22,18 +22,27 @@ const TablaPublicaciones = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const url_local = import.meta.env.VITE_URL_PROD
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5ODA2NjA5LCJpYXQiOjE3Mjk3MjAyMDksImp0aSI6IjFiZDkzYTViMjFiZDRhOTg5MGJkYWFhN2ExMGEzYjUxIiwicnV0IjoiMjAxMjM5MzAtNSJ9.sH0dfyjidcK4-0mqcK61WP1DQZHVvyMrmM0OP1T7AIA"
   const fetchPublicaciones = (url) => {
     console.log("pba", url)
     setLoading(true)
-    fetch(url)
+    // add authorization token bearer
+
+    fetch(url,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
+        }
+      }
+    )
       .then(response => response.json())
       .then(data => {
         console.log(data.results)
         console.log("fetch",url)
         setTotalPublicaciones(data.count)
         setPublicaciones(data.results ? data.results : [])
-        // setNextPageUrl(data.next)
-        // setPrevPageUrl(data.previous)
+
         setLoading(false)
       })
       .catch(error => {
@@ -60,9 +69,10 @@ const TablaPublicaciones = ({
   console.log(url)
   useEffect(() => {
     const pagesize = publicacionesPorPagina ? `pagesize=${publicacionesPorPagina}` : ""
-    const baseUrl = "https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/publicaciones/"
+    const baseUrl = "http://3.217.85.102/api/v1/publicaciones/"
     console.log(url)
     if (currentPage === 1) {
+      console.log("fetch")
       fetchPublicaciones(`${url ? url : baseUrl}${publicacionesPorPagina != 5 ? `?${pagesize}` : ""}`)
     } else {
       fetchPublicaciones(`${url ? url  : baseUrl.concat("?")}page=${currentPage}&${pagesize}`)
