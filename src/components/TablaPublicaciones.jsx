@@ -67,6 +67,10 @@ const TablaPublicaciones = ({
     setPublicacionesPorPagina(value)
   }
   console.log(url)
+  console.log(
+    "env-pba",
+    import.meta.env.VITE_URL_PROD
+  )
   useEffect(() => {
     const pagesize = publicacionesPorPagina ? `pagesize=${publicacionesPorPagina}` : ""
     const baseUrl = "http://3.217.85.102/api/v1/publicaciones/"
