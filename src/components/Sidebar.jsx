@@ -1,33 +1,42 @@
 import {useState} from 'react'
 import logo from '../assets/logotipo-muni.png'
 import { Link } from 'react-router-dom'
+import {
+  ChartPie,
+  FileText,
+  Megaphone,
+  ChartNoAxesColumn,
+  Map,
+  LogOutIcon
+
+} from 'lucide-react'
 const Sidebar = ({
   isOpened
 }) => {
   const sections = [
     {
       title: "Dashboard",
-      icon: "bx bx-pie-chart",
+      icon: <ChartPie className='icon' />,
       link: "/dashboard"
     },
     {
       title: "Publicaciones",
-      icon: "bx bx-file",
+      icon: <FileText className='icon' />,
       link: "/"
     },
     {
       title: "Anuncios",
-      icon: "bx bx-file",
+      icon: <Megaphone className='icon' />,
       link: "/"
     },
     {
       title: "Reportes",
-      icon: "bx bx-bar-chart-alt-2",
+      icon: <ChartNoAxesColumn className='icon' />,
       link: "/"
     },
     {
       title: "Mapa",
-      icon: "bx bx-map-alt",
+      icon: <Map className='icon' />,
       link: "/"
     },
     // {
@@ -53,7 +62,8 @@ const Sidebar = ({
               
               <li key={index} className={`nav-link  ${selectedSection === section.title ? "active" : ""}`}>
                 <Link to={section.link} onClick={() => setSelectedSection(section.title)}>
-                  <i className={`${section.icon} icon`}></i>
+                  {/* <i className={` icon`} data-lucide={`${section.icon}`}></i> */}
+                  {section.icon}
                   <span className="text nav-text">
                     {section.title}
                   </span>
@@ -69,7 +79,7 @@ const Sidebar = ({
         <div className="bottom-menu">
           <li class="nav-link">
             <a href="#">
-              <i class="bx bx-log-out icon"></i>
+              <LogOutIcon className='icon' />
               <span class="text nav-text">
                 Cerrar sesión
               </span>
