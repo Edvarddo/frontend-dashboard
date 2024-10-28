@@ -46,7 +46,7 @@ const Sidebar = ({
     // },
   ]
   // section state
-  const [selectedSection, setSelectedSection] = useState(sections[1].title)
+  const [selectedSection, setSelectedSection] = useState(sections[0].title)
   return (
     <nav className={`sidebar ${!isOpened ? "closed" : ""}`}>
       <header className="sidebar-header">
