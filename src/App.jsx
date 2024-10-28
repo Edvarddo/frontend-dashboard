@@ -26,7 +26,7 @@ function App() {
     )
       .then(response => response.json())
       .then(data => console.log(data))
-      .catch(error => {error})
+      .catch(error => {console.log(error)})
     axios.get(url,
       {
         headers: {
@@ -35,7 +35,7 @@ function App() {
       }
     )
       .then(response => console.log(response))
-      .catch(error => {error})
+      .catch(error => {console.log(error)})
 
   }
     
