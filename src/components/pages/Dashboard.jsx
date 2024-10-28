@@ -2,7 +2,9 @@ import { set } from 'date-fns'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart,Cell, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Cell, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { Skeleton } from '../ui/skeleton'
 const Dashboard = ({ isOpened, setIsOpened }) => {
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
@@ -51,6 +53,19 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   ]
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+  const filters = {
+    category: "infraestructura",
+    council: "junta1",
+    status: "recibido",
+    startDate: "2022-01-01",
+    endDate: "2022-12-31",
+  }
+  const clearFilters = () => {
+    console.log("clear filters")
+  }
+  const applyFilters = () => {
+    console.log("apply filters")
+  }
   return (
     <div className="bg-[#00A86B] min-h-screen min-w-[400px]">
       <header className="burger-btn p-4 flex items-center">
@@ -92,7 +107,82 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
               </CardContent>
             </Card>
           </div>
-
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Filtros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                  <Select onValueChange={(value) => handleFilterChange('category', value)} value={filters.category}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="infraestructura">Infraestructura</SelectItem>
+                      <SelectItem value="seguridad">Seguridad</SelectItem>
+                      <SelectItem value="medio_ambiente">Medio Ambiente</SelectItem>
+                      <SelectItem value="cultura">Cultura</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Junta Vecinal</label>
+                  <Select onValueChange={(value) => handleFilterChange('council', value)} value={filters.council}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar junta vecinal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="junta1">Junta Vecinal 1</SelectItem>
+                      <SelectItem value="junta2">Junta Vecinal 2</SelectItem>
+                      <SelectItem value="junta3">Junta Vecinal 3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Situación</label>
+                  <Select onValueChange={(value) => handleFilterChange('status', value)} value={filters.status}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar situación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recibido">Recibido</SelectItem>
+                      <SelectItem value="en_curso">En Curso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Inicio</label>
+                  {/* skeleton fake datepicker */}
+                  <Skeleton width="full" height="h-10">
+                    <input type="text" className="border rounded-l px-2 py-1 w-full md:w-1/2" placeholder="Ej: 31-10-2024" />
+                  </Skeleton>
+                  {/* <DatePicker
+                    selectedDate={filters.startDate}
+                    onDateSelect={(date) => handleFilterChange('startDate', date)}
+                  /> */}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Fin</label>
+                  {/* skeleton fake datepicker */}
+                  <Skeleton width="full" height="h-10">
+                    <input type="text" className="border rounded-l px-2 py-1 w-full md:w-1/2" placeholder="Ej: 31-10-2024" />
+                  </Skeleton>
+                  {/* <DatePicker
+                    selectedDate={filters.endDate}
+                    onDateSelect={(date) => handleFilterChange('endDate', date)}
+                  /> */}
+                </div>
+              </div>
+              <div className="flex justify-end space-x-4">
+                <Button variant="outline" onClick={clearFilters}>Limpiar Filtros</Button>
+                <Button onClick={applyFilters}>Aplicar Filtros</Button>
+              </div>
+            </CardContent>
+          </Card>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <Card>
               <CardHeader>

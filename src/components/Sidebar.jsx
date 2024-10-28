@@ -22,7 +22,7 @@ const Sidebar = ({
     {
       title: "Publicaciones",
       icon: <FileText className='icon' />,
-      link: "/"
+      link: "/listado-publicaciones"
     },
     {
       title: "Anuncios",
