@@ -40,7 +40,6 @@ export default function PublicacionesListado({
   const [filterError, setFilterError] = useState(null)
 
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
-
   const fetchURLS = async (urls) => {
     try {
       const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url).then(res => res.json())))
@@ -52,7 +51,6 @@ export default function PublicacionesListado({
     }
   }
   useEffect(() => {
-    console.log("fetching urls",import.meta.env.VITE_URL_PROD_VERCEL)
     fetchURLS([
       `${api_url}categorias/`,
       `${api_url}juntas-vecinales/`
@@ -88,7 +86,7 @@ export default function PublicacionesListado({
       endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
     const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
-    let url = `${api_url}/publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
+    let url = `${api_url}publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
     setUrl(url)
     setFiltros(filtros)
     setCurrentPage(1)
