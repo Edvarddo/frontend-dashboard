@@ -37,8 +37,9 @@ export default function PublicacionesListado({
 
   // VALIDACIÓN
   const [isValid, setIsValid] = useState(false)
+  const [filterError, setFilterError] = useState(null)
 
-
+  const api_url = import.meta.env.VITE_URL_PROD_VERCEL
 
   const fetchURLS = async (urls) => {
     try {
@@ -47,14 +48,14 @@ export default function PublicacionesListado({
       setJuntasVecinales(juntasVecinales)
 
     } catch (e) {
-      console.error(e)
+      setFilterError(e)
     }
   }
   useEffect(() => {
-
+    console.log("fetching urls",import.meta.env.VITE_URL_PROD_VERCEL)
     fetchURLS([
-      "https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/categorias/",
-      "https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/juntas-vecinales/"
+      `${api_url}categorias/`,
+      `${api_url}juntas-vecinales/`
     ])
 
   }, [])
@@ -73,7 +74,6 @@ export default function PublicacionesListado({
     setIsOpened(!isOpened)
   }
   const handleDownload = () => {
-    console.log('Descargando datos')
     // change the href to the correct url
     window.location.href = `https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/export-to-excel/${filtros ? "?" + filtros : ""}`
 
@@ -88,8 +88,7 @@ export default function PublicacionesListado({
       endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
     const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
-    let url = `https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/v1/publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
-    console.log(url)
+    let url = `${api_url}/publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
     setUrl(url)
     setFiltros(filtros)
     setCurrentPage(1)
@@ -134,8 +133,8 @@ export default function PublicacionesListado({
                 <SelectContent>
                   <SelectItem value={null}>Todas las categorías</SelectItem>
                   {
-                    categorias.map(categoria => (
-                      <SelectItem key={categoria.id} value={categoria.nombre.toString()}>{categoria.nombre}</SelectItem>
+                    categorias?.map(categoria => (
+                      <SelectItem key={categoria?.id} value={categoria?.nombre.toString()}>{categoria?.nombre}</SelectItem>
                     ))
                   }
                 </SelectContent>

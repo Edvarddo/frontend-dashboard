@@ -10,7 +10,6 @@ const DatePicker = ({selectedDate, setSelectedDate, setIsValid, isValid}) => {
   // i want this format "dd-MM-yyyy"
   const [inputValue, setInputValue] = useState("");
   const handleDateSelect = (date) => {
-    console.log(date)
     setSelectedDate(date)
     setInputValue(format(date, "yyyy-MM-dd", { locale: es }))
   }
@@ -21,7 +20,6 @@ const DatePicker = ({selectedDate, setSelectedDate, setIsValid, isValid}) => {
     // validate input with regex
     const regex = /^\d{2}-\d{2}-\d{4}$/;
     const valid = val === "" ? true :  regex.test(val);
-    console.log(valid)
     setIsValid(!valid);
     
 

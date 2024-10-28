@@ -26,18 +26,17 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const [error, setError] = useState(null)
   const [publicacion, setPublicacion] = useState({})
   
-  const url_local = import.meta.env.VITE_URL_PROD
-  console.log("id",url_local)
-  const url = `${"http://3.217.85.102/api/v1/publicaciones/"}${id}/`
+  const url_local = import.meta.env.VITE_URL_PROD_VERCEL
+  const url = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/${id}/`
   const fetchPublicacion = (url) => {
     setLoading(true)
     fetch(url,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
-        }
-      }
+      // {
+      //   method: 'GET',
+      //   headers: {
+      //     'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
+      //   }
+      // }
     )
       .then(response => response.json())
       .then(data => {
