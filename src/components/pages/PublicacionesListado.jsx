@@ -51,6 +51,7 @@ export default function PublicacionesListado({
     }
   }
   useEffect(() => {
+    console.log("fetching urls", api_url)
     fetchURLS([
       `${api_url}categorias/`,
       `${api_url}juntas-vecinales/`
@@ -85,8 +86,10 @@ export default function PublicacionesListado({
       iniDate = selectedIniDate ? "fecha_publicacion_after=" + format(selectedIniDate, "yyyy-MM-dd") + "&" : "",
       endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
+    
     const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
     let url = `${api_url}publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
+    console.log("aplicando filtros", filtros)
     setUrl(url)
     setFiltros(filtros)
     setCurrentPage(1)

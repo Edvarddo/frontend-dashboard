@@ -6,7 +6,8 @@ import { format } from 'date-fns'
 import { Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-
+import axios from 'axios'
+import { da } from "date-fns/locale"
 const TablaPublicaciones = ({
   currentPage,
   publicacionesPorPagina,
@@ -22,23 +23,20 @@ const TablaPublicaciones = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const url_local = import.meta.env.VITE_URL_PROD_VERCEL
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5ODA2NjA5LCJpYXQiOjE3Mjk3MjAyMDksImp0aSI6IjFiZDkzYTViMjFiZDRhOTg5MGJkYWFhN2ExMGEzYjUxIiwicnV0IjoiMjAxMjM5MzAtNSJ9.sH0dfyjidcK4-0mqcK61WP1DQZHVvyMrmM0OP1T7AIA"
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzMwMTgxMjU4LCJpYXQiOjE3MzAwOTQ4NTgsImp0aSI6ImFkYTUzODQzMzY2NTQxYzM5ZDFiYmRiNDE1OTVjNGVjIiwicnV0IjoiMjAxMjM5MzAtNSJ9.IvyGeMNF0elq-E4xl_ZoFtTQif9Q96MGFwSqj_giwvA"
   const fetchPublicaciones = (url) => {
+    // fetch with axios
     setLoading(true)
     // add authorization token bearer
-
-    fetch(url,
-      // {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
-      //   }
+    axios.get(url, {
+      // headers: {
+      //   'Authorization': `Bearer ${token}`
       // }
-    )
-      .then(response => response.json())
-      .then(data => {
-        setTotalPublicaciones(data.count)
-        setPublicaciones(data.results ? data.results : [])
+    })
+      .then(response => {
+        console.log(response)
+        setTotalPublicaciones(response.data.count)
+        setPublicaciones(response.data.results ? response.data.results : [])
 
         setLoading(false)
       })
@@ -46,6 +44,30 @@ const TablaPublicaciones = ({
         setError(error)
         setLoading(false)
       })
+
+    // fetch("http://localhost:3000/api-proxy/",
+    //   // {
+    //   //   method: 'GET',
+    //   //   headers: {
+    //   //     'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
+    //   //   }
+    //   // }
+    // )
+    //   .then(response => {
+    //     console.log(response)
+    //     response.json()
+    //   })
+    //   .then(data => {
+    //     console.log(data)
+    //     setTotalPublicaciones(data.count)
+    //     setPublicaciones(data.results ? data.results : [])
+
+    //     setLoading(false)
+    //   })
+    //   .catch(error => {
+    //     setError(error)
+    //     setLoading(false)
+    //   })
   }
   const handleNextPage = () => {
 
