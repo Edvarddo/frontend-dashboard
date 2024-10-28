@@ -11,17 +11,31 @@ import { useEffect, useState } from 'react'
 function App() {
   // TEMPORAL
   const [isOpened, setIsOpened] = useState(true)
-  const url= "http://3.217.85.102/api/v1/publicaciones"
+  const url= "http://3.217.85.102/api/v1/publicaciones/"
+  const bearer_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzMwMTgxMjU4LCJpYXQiOjE3MzAwOTQ4NTgsImp0aSI6ImFkYTUzODQzMzY2NTQxYzM5ZDFiYmRiNDE1OTVjNGVjIiwicnV0IjoiMjAxMjM5MzAtNSJ9.IvyGeMNF0elq-E4xl_ZoFtTQif9Q96MGFwSqj_giwvA"
   useEffect(() => {
     // now with fetch only
     console.log("fetching data with fetch")
-    fetch(url)
+    fetch(url,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${bearer_token}`
+        }
+      }
+    )
       .then(response => response.json())
       .then(data => console.log(data))
-      .catch(error => {})
-    axios.get(url)
+      .catch(error => {error})
+    axios.get(url,
+      {
+        headers: {
+          'Authorization': `Bearer ${bearer_token}`
+        }
+      }
+    )
       .then(response => console.log(response))
-      .catch(error => {})
+      .catch(error => {error})
 
   }
     
