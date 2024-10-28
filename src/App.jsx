@@ -11,15 +11,20 @@ import { useEffect, useState } from 'react'
 function App() {
   // TEMPORAL
   const [isOpened, setIsOpened] = useState(true)
-  const url= "http://192.168.0.17:8080/api-proxy/publicaciones"
+  const url= "http://3.217.85.102/api/v1/publicaciones"
   useEffect(() => {
     // now with fetch only
     console.log("fetching data with fetch")
     fetch(url)
       .then(response => response.json())
       .then(data => console.log(data))
-      .catch(error => console.error(error))
+      .catch(error => {})
+    axios.get(url)
+      .then(response => console.log(response))
+      .catch(error => {})
+
   }
+    
   , [])
   return (
     <>
