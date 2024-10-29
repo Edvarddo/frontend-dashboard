@@ -43,14 +43,14 @@ export default function PublicacionesListado({
   const fetchURLS = async (urls) => {
     try {
       // add loading state
-      setLoading(true)
+      
       const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url).then(res => res.json())))
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)
-      setLoading(false)
+      
     } catch (e) {
       setFilterError(e)
-      setLoading(false)
+      
     }
   }
   useEffect(() => {
