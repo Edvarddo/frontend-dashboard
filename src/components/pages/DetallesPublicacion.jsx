@@ -41,6 +41,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
       .then(response => response.json())
       .then(data => {
         setPublicacion(data)
+        console.log(data)
         setLoading(false)
       })
       .catch(error => {
@@ -55,7 +56,21 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     setIsOpened(!isOpened)
   }
   const [activeTab, setActiveTab] = useState('info')
+  const handleDownload = (id, archivo) => {
+    console.log("downloading file with id: ", id)
+    // automatically download file with link. open explorer dialog. create element a
+    // format to download https://res.cloudinary.com/demo/image/upload/fl_attachment/sample.jpg
+    // const imageUrl = "https://res.cloudinary.com/de06451wd/fl_attachment/" + archivo
+    
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.setAttribute('download', 'download');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
+    
+  }
   return (
     <div className="bg-[#00A86B] min-h-screen p-8">
       <Card className="w-full max-w-4xl mx-auto bg-white">
@@ -269,7 +284,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                 <CardTitle className="text-green-700">Evidencias de la publicación</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4  p-1">
+                <div className={`grid grid-cols-1 md:grid-cols-2  gap-4  p-1`}>
                   
                     {/* <CardContent className="p-4">
                       <div className="w-full h-48 bg-green-100 rounded-md mb-2 flex items-center justify-center">
@@ -277,8 +292,9 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                       </div>
                       <p className="text-sm text-green-700">Foto del sitio antes de la intervención</p>
                     </CardContent> */}
+                    
                     {
-                      true  ? (
+                      loading  ? (
                           // 3 skeleton cards
                           [1, 2, 3].map((item) => (
                             <Card key={item} className="w-full">
@@ -293,14 +309,16 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                           <Card key={evidencia.id} className="w-full">
                             <CardContent className="p-4">
                               <div className="w-full h-64 bg-green-100 rounded-md mb-2 flex items-center justify-center">
-                                <img src={"https://res.cloudinary.com/de06451wd/" + evidencia.archivo} alt="imagen" className="h-full w-full object-cover" />
+                                <img 
+                                  lazyload="lazy"
+                                src={"https://res.cloudinary.com/de06451wd/" + evidencia.archivo} alt={publicacion} className="h-full w-full object-cover" />
                               </div>
                               <p className="text-sm text-green-700">{evidencia.descripcion}</p>
                               {/* botón para descargar */}
                               <Button
                                 variant="outline"
                                 className="mt-2 w-full"
-                                onClick={() => window.open("https://res.cloudinary.com/de06451wd/" + evidencia.archivo, "_blank")}
+                                onClick={()=>handleDownload(evidencia.id, evidencia.archivo)}
                               >
                                 <FileIcon className="h-4 w-4 mr-2" />
                                 Descargar

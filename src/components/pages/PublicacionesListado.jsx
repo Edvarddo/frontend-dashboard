@@ -118,7 +118,7 @@ export default function PublicacionesListado({
         <h1 className="text-white text-3xl font-bold">Listado de publicaciones</h1>
       </header>
 
-      <main className=" m-4 rounded-lg ">
+      <main className=" p-4  bg-gray-100 ">
         <div className="bg-white m-4 p-6 rounded-lg shadow-md">
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

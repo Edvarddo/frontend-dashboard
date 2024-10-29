@@ -48,9 +48,9 @@ function App() {
         />
         <div className="content ">
           <Routes>
-            <Route index path="/"  element={<Dashboard isOpened={isOpened} setIsOpened={setIsOpened} />}  />
+            <Route index path="/"  element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />}  />
 
-            <Route index path="/dashboard"  element={<Dashboard isOpened={isOpened} setIsOpened={setIsOpened} />}  />
+            <Route path="/dashboard"  element={<Dashboard isOpened={isOpened} setIsOpened={setIsOpened} />}  />
             <Route path="/listado-publicaciones" element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />} />
             <Route path="/publicacion/:id" element={<DetallesPublicacion isOpened={isOpened} setIsOpened={setIsOpened} />} />
             <Route path="/descargar" element={<Descargar isOpened={isOpened} setIsOpened={setIsOpened} />} />
