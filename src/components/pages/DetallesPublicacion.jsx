@@ -72,7 +72,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     
   }
   return (
-    <div className="bg-[#00A86B] min-h-screen p-8">
+    <div className="bg-gray-100 min-h-screen p-8">
       <Card className="w-full max-w-4xl mx-auto bg-white">
         <CardHeader className="border-b">
           <div className="flex flex-wrap justify-between   mb-4 ">
