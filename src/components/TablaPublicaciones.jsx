@@ -13,14 +13,16 @@ const TablaPublicaciones = ({
   publicacionesPorPagina,
   setPublicacionesPorPagina,
   setCurrentPage,
-  url
+  url,
+  setLoading,
+  loading
 }) => {
   const [publicaciones, setPublicaciones] = useState([])
   const [nextPageUrl, setNextPageUrl] = useState(null)
   const [prevPageUrl, setPrevPageUrl] = useState(null)
   const [totalPublicaciones, setTotalPublicaciones] = useState(0)
 
-  const [loading, setLoading] = useState(true)
+  // const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const url_local = import.meta.env.VITE_URL_PROD_VERCEL
   const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzMwMTgxMjU4LCJpYXQiOjE3MzAwOTQ4NTgsImp0aSI6ImFkYTUzODQzMzY2NTQxYzM5ZDFiYmRiNDE1OTVjNGVjIiwicnV0IjoiMjAxMjM5MzAtNSJ9.IvyGeMNF0elq-E4xl_ZoFtTQif9Q96MGFwSqj_giwvA"

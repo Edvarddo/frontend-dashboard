@@ -34,7 +34,7 @@ export default function PublicacionesListado({
   const [selectedJunta, setSelectedJunta] = useState(null)
   const [selectedIniDate, setSelectedIniDate] = useState(null)
   const [selectedEndDate, setSelectedEndDate] = useState(null)
-
+  const [loading, setLoading] = useState(false)
   // VALIDACIÓN
   const [isValid, setIsValid] = useState(false)
   const [filterError, setFilterError] = useState(null)
@@ -42,12 +42,15 @@ export default function PublicacionesListado({
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
   const fetchURLS = async (urls) => {
     try {
+      // add loading state
+      setLoading(true)
       const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url).then(res => res.json())))
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)
-
+      setLoading(false)
     } catch (e) {
       setFilterError(e)
+      setLoading(false)
     }
   }
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function PublicacionesListado({
   }
   const handleDownload = () => {
     // change the href to the correct url
-    window.location.href = `https://proyecto-municipal-vercel-a4o9opiq6-scarrizozs-projects.vercel.app/api/export-to-excel/${filtros ? "?" + filtros : ""}`
+    window.location.href = `https://proyecto-municipal-vercel.vercel.app/api/export-to-excel/${filtros ? "?" + filtros : ""}`
 
 
   }
@@ -212,7 +215,7 @@ export default function PublicacionesListado({
           </div>
 
           <div className="flex justify-between flex-wrap  mb-6 btn-section  p-1">
-            <Button variant="outline" onClick={handleDownload} className="mb-3 bg-blue-500 hover:bg-blue-600 filter-btn w-full md:w-[unset]  ">
+            <Button disabled={loading} variant="outline" onClick={handleDownload} className="mb-3 bg-blue-500 hover:bg-blue-600 filter-btn w-full md:w-[unset]  ">
 
               <span className="text-white flex justify-items-center justify-center">
                 <Download className="mr-2 h-4 w-4" />
@@ -234,6 +237,8 @@ export default function PublicacionesListado({
             setCurrentPage={setCurrentPage}
             publicacionesPorPagina={publicacionesPorPagina}
             setPublicacionesPorPagina={setPublicacionesPorPagina}
+            loading={loading}
+            setLoading={setLoading}
             url={url}
           />
 
