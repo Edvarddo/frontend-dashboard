@@ -106,8 +106,8 @@ export default function PublicacionesListado({
   return (
 
 
-    <div className="bg-[#00A86B] min-h-screen min-w-[400px]">
-      <header className="burger-btn p-4 flex items-center">
+    <div className="bg-gray-100 min-h-screen min-w-[400px]">
+      <header className="burger-btn p-4 flex items-center bg-[#00A86B]">
         <button
           onClick={handleOpenSidebar}
           className="text-white mr-4">
