@@ -3,16 +3,29 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeftIcon, MapPinIcon, ImageIcon, FileIcon, Info } from "lucide-react"
+import { ArrowLeftIcon, MapPinIcon, ImageIcon, FileIcon, Info, Pencil, CheckCircle2, Clock, MailQuestion } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
+import axios from 'axios';
+import { set } from 'date-fns';
 
 const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const DefaultIcon = L.icon({
@@ -23,9 +36,20 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   L.Marker.prototype.options.icon = DefaultIcon;
   const { id } = useParams();
   const [loading, setLoading] = useState(true)
+  const [situationLoading, setSituationLoading] = useState(false)
   const [error, setError] = useState(null)
   const [publicacion, setPublicacion] = useState({})
-  
+  const statusConfig = {
+    received: { label: 'Recibido', icon: <MailQuestion className="h-4 w-4" />, color: 'bg-yellow-500' },
+    inProcess: { label: 'En proceso', icon: <Clock className="h-4 w-4" />, color: 'bg-blue-500' },
+    resolved: { label: 'Resuelto', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-500' },
+  }
+
+  const [status, setStatus] = useState('received')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false)
+  const [tempStatus, setTempStatus] = useState(status)
+
   const url_local = import.meta.env.VITE_URL_PROD_VERCEL
   const url = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/${id}/`
   const fetchPublicacion = (url) => {
@@ -55,13 +79,60 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
+  const handleStatusChange = (newStatus) => {
+    setTempStatus(newStatus)
+    setStatus(newStatus)
+  }
+
+  const openDialog = () => {
+    setTempStatus(status)
+    setIsDialogOpen(true)
+  }
+
+  const closeDialog = () => {
+    setIsDialogOpen(false)
+    setTempStatus(status)
+  }
+
+  const openAlertDialog = () => {
+    setIsAlertDialogOpen(true)
+  }
+
+  const closeAlertDialog = () => {
+    setIsAlertDialogOpen(false)
+  }
+
+  const confirmStatusChange = () => {
+    setStatus(tempStatus)
+
+    const url = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/${id}/`
+    axios.patch(url, { situacion: tempStatus === 'received' ? 1 : tempStatus === 'inProcess' ? 2 : 3 })
+      .then(response => {
+
+        console.log(response)
+        // change situacion/estado in publicacion
+        setPublicacion({ ...publicacion, situacion: { nombre: tempStatus === 'received' ? 'Recibido' : tempStatus === 'inProcess' ? 'En curso' : 'Resuelto' } })
+        console.log(response.data)
+      })
+      .catch(error => {
+        console.log(error)
+      })
+    setIsDialogOpen(false)
+    setIsAlertDialogOpen(false)
+
+  }
+
+  const cancelStatusChange = () => {
+    setTempStatus(status)
+    setIsAlertDialogOpen(false)
+  }
   const [activeTab, setActiveTab] = useState('info')
   const handleDownload = (id, archivo) => {
     console.log("downloading file with id: ", id)
     // automatically download file with link. open explorer dialog. create element a
     // format to download https://res.cloudinary.com/demo/image/upload/fl_attachment/sample.jpg
     // const imageUrl = "https://res.cloudinary.com/de06451wd/fl_attachment/" + archivo
-    
+
     const link = document.createElement('a');
     link.href = imageUrl;
     link.setAttribute('download', 'download');
@@ -69,7 +140,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     link.click();
     document.body.removeChild(link);
 
-    
+
   }
   return (
     <div className="bg-gray-100 min-h-screen p-8">
@@ -131,14 +202,117 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
           {activeTab === 'info' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1  gap-6">
+
                 <Card className="w-full mx-auto">
                   <CardHeader>
                     <CardTitle className="text-green-700">Información general</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <dl className="grid grid-cols-1 gap-2 text-sm">
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-600">Categoría:</p>
+                          <p>
+                            {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.categoria?.nombre}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-600">Fecha de publicación:</p>
+                          <p>
+                            {loading ? <Skeleton className="h-[1.5rem] w-full" /> : new Date(publicacion.fecha_publicacion).toLocaleDateString('es-CL')}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-600">Junta Vecinal:</p>
+                          <p>
+                            {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_calle}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-600">Estado:</p>
+                          <div className="flex items-center space-x-2">
+                            <p className="flex-grow">
+                              {/* {status === 'received' ? 'Recibido' : status === 'inProcess' ? 'En curso' : 'Resuelto'} */}
+                              {loading || situationLoading ? <Skeleton className="h-[1.5rem] w-full" /> : (
+                                <Badge className="bg-green-100 text-green-800 hover:text-white">
+                                  {publicacion?.situacion?.nombre}
+                                </Badge>
+                              )}
+                            </p>
+                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button className={"h-[1.5rem] w-[1.5rem]"} variant="outline" size="icon" onClick={openDialog} disabled={loading}>
+                                  <Pencil className="" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                  <DialogTitle>Editar Estado de la Publicación</DialogTitle>
+                                </DialogHeader>
+                                <p>Actualiza el estado de la publicación</p>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <div className={`p-2 rounded-full ${statusConfig[status].color}`}>
+                                      {statusConfig[status].icon}
+                                    </div>
+                                    <span className="font-medium">{statusConfig[status].label}</span>
+                                  </div>
+                                  <Badge variant="outline">ID: {
+                                      publicacion?.id 
+                                      
+                                    } {publicacion?.situacion?.nombre}</Badge>
+                                </div>
+                                <Select onValueChange={handleStatusChange} value={tempStatus}>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Seleccionar estado" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="received">Recibido</SelectItem>
+                                    <SelectItem value="inProcess">En curso</SelectItem>
+                                    <SelectItem value="resolved">Resuelto</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
+                                  <AlertDialogTrigger asChild>
+                                    <Button className="w-full mt-4" onClick={openAlertDialog}>Guardar cambios</Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción cambiará el estado de la publicación. ¿Deseas continuar?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel onClick={cancelStatusChange}>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={confirmStatusChange}>Continuar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-600">Responsable:</p>
+                          <p>
+                            {loading ? <Skeleton className="h-[1.5rem] w-full" /> : 'Administrador Municipal'}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-600">Departamento:</p>
+                          <p>
+                            {
+                              loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.departamento?.nombre
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {/* <dl className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex justify-between">
-                        <dt className="font-medium text-green-600">Categoría: </dt>
+
+                        <dt className="font-medium text-green-600">Categoría:</dt>
                         <dd>
                           {
                             loading ? <Skeleton className="h-4 w-24" /> : publicacion?.categoria?.nombre
@@ -171,6 +345,28 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                               {publicacion?.situacion?.nombre}
                             </Badge>)
                           }
+                          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="icon">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>Editar Estado</DialogTitle>
+                              </DialogHeader>
+                              <Select onValueChange={handleStatusChange} defaultValue={status}>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Seleccionar estado" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="received">Recibido</SelectItem>
+                                  <SelectItem value="inProcess">En curso</SelectItem>
+                                  <SelectItem value="resolved">Resuelto</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </DialogContent>
+                          </Dialog>
                         </dd>
                       </div>
                       <div className="flex justify-between">
@@ -189,7 +385,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                           }
                         </dd>
                       </div>
-                    </dl>
+                    </dl> */}
                   </CardContent>
                 </Card>
                 {/* <Card>
@@ -255,7 +451,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                         zoom={16}
                         minZoom={13}
                         maxZoom={18}
-                      
+
 
                       >
                         <TileLayer
@@ -272,7 +468,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                     )
                   }
                   {/* see big map */}
-                  
+
                 </div>
 
               </CardContent>
@@ -284,53 +480,50 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                 <CardTitle className="text-green-700">Evidencias de la publicación</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`grid grid-cols-1 md:grid-cols-2  gap-4  p-1`}>
+                <div className={`  p-1 ${publicacion?.evidencias.length === 0 ? "": "grid grid-cols-1 md:grid-cols-2  gap-4"}`}>
                   
-                    {/* <CardContent className="p-4">
-                      <div className="w-full h-48 bg-green-100 rounded-md mb-2 flex items-center justify-center">
-                        <ImageIcon className="h-12 w-12 text-green-600" />
-                      </div>
-                      <p className="text-sm text-green-700">Foto del sitio antes de la intervención</p>
-                    </CardContent> */}
-                    
-                    {
-                      loading  ? (
-                          // 3 skeleton cards
-                          [1, 2, 3].map((item) => (
-                            <Card key={item} className="w-full">
+                  {
+                    loading ? (
+                      // 3 skeleton cards
+                      [1, 2, 3].map((item) => (
+                        <Card key={item} className="w-full">
+                          <CardContent className="p-4">
+                            <Skeleton className="h-48 w-full" />
+                            <Skeleton className="h-4 w-full mt-2" />
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      
+                        publicacion?.evidencias.length != 0 ? (
+                          publicacion?.evidencias.map((evidencia) => (
+                            <Card key={evidencia.id} className="w-full">
                               <CardContent className="p-4">
-                                <Skeleton className="h-48 w-full" />
-                                <Skeleton className="h-4 w-full mt-2" />
+                                <img src={evidencia.archivo} alt={evidencia.nombre} className="w-full h-48 object-cover" />
+                                <div className="flex justify-between items-center mt-2">
+                                  <p>{evidencia.nombre}</p>
+                                  <Button variant="outline" className="text-green-600" onClick={() => handleDownload(evidencia.id, evidencia.archivo)}>
+                                    <FileIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </CardContent>
                             </Card>
                           ))
-                      ) : (
-                        publicacion?.evidencias?.map((evidencia) => (
-                          <Card key={evidencia.id} className="w-full">
-                            <CardContent className="p-4">
-                              <div className="w-full h-64 bg-green-100 rounded-md mb-2 flex items-center justify-center">
-                                <img 
-                                  lazyload="lazy"
-                                src={"https://res.cloudinary.com/de06451wd/" + evidencia.archivo} alt={publicacion} className="h-full w-full object-cover" />
-                              </div>
-                              <p className="text-sm text-green-700">{evidencia.descripcion}</p>
-                              {/* botón para descargar */}
-                              <Button
-                                variant="outline"
-                                className="mt-2 w-full"
-                                onClick={()=>handleDownload(evidencia.id, evidencia.archivo)}
-                              >
-                                <FileIcon className="h-4 w-4 mr-2" />
-                                Descargar
-                              </Button>
+                        ) : (
+                            <div className="w-full flex justify-center">
+                              <p className="">No hay evidencias disponibles</p>
 
-                            </CardContent>
-                          </Card>
-                        ))
-                      )
-                    }
-                  
-                  
+
+                              
+                            </div>
+                            
+                        )
+                        
+                      
+                    )
+                  }
+
+
                 </div>
               </CardContent>
             </Card>

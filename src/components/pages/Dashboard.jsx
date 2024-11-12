@@ -1,11 +1,63 @@
 import { set } from 'date-fns'
-
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Cell, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Skeleton } from '../ui/skeleton'
+import { Car } from 'lucide-react'
 const Dashboard = ({ isOpened, setIsOpened }) => {
+  // http://3.217.85.102/api/v1/publicaciones-por-categoria/ PIE CHART
+  // http://3.217.85.102/api/v1/publicaciones-por-mes-y-categoria/ bar chart
+  // http://3.217.85.102/api/v1/resumen-estadisticas/ cards
+
+  const [barData, setBarData] = useState([])
+  const [pieData, setPieData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [cardsData, setCardsData] = useState({})
+  const [barKeys, setBarKeys] = useState([])
+  // fetch all
+  const fetchData = async (urls) => {
+    setLoading(true)
+    console.log(urls)
+    const requests = urls.map(url => fetch(url))
+    // console.log(requests)
+    const responses = await Promise.all(requests)
+    const data = await Promise.all(responses.map(response => {
+      console.log(response.data);
+      return response.json()
+    }))
+    console.log(data[0])
+    console.log(data[1])
+    let distinctValues = []
+    data[0].map((monthData, i) => {
+      console.log(Object.keys(monthData))
+      Object.keys(monthData).forEach((key, index) => {
+        if (!distinctValues.includes(key) && key !== 'name') {
+          distinctValues.push(key)
+        }
+      })
+    })
+    console.log(data[2])
+    console.log(distinctValues)
+    setCardsData(data[2])
+    setBarKeys(distinctValues)
+    setBarData(data[0])
+    setPieData(data[1])
+    setLoading(false)
+  }
+
+
+
+
+  useEffect(() => {
+    fetchData([
+      `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-mes-y-categoria/`,
+      `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-categoria`,
+      `${import.meta.env.VITE_URL_PROD_VERCEL}resumen-estadisticas/`
+    ])
+  }, [])
+
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
@@ -81,30 +133,58 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
           <h1 className="text-3xl font-bold mb-6">Dashboard Municipal</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Total de Publicaciones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-bold">1,234</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Publicaciones Activas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-bold">789</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Juntas Vecinales Activas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-bold">15</p>
-              </CardContent>
-            </Card>
+            {
+              loading ? (
+                <>
+                    <Skeleton width="full" height="h-32" >
+                      <Card className="h-32 bg-inherit">
+                      </Card>
+                    </Skeleton>
+                    <Skeleton width="full" height="h-32" >
+                      <Card className="h-32 bg-inherit">
+                      </Card>
+                    </Skeleton>
+                    <Skeleton width="full" height="h-32" >
+                      <Card className="h-32 bg-inherit">
+                      </Card>
+                    </Skeleton>
+
+                  
+                </>
+                
+                
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Publicaciones Recibidas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold">{cardsData?.publicaciones}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Usuarios activos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold">{cardsData?.usuarios}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Publicaciones Resueltas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold">{cardsData?.problemas_resueltos}</p>
+                    </CardContent>
+                  </Card>
+
+                </>
+              )
+            }
+            
+
           </div>
           <Card className="mb-8">
             <CardHeader>
@@ -183,52 +263,71 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Publicaciones por Categoría y Mes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={barChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="Infraestructura" fill="#8884d8" />
-                    <Bar dataKey="Seguridad" fill="#82ca9d" />
-                    <Bar dataKey="Medio_Ambiente" fill="#ffc658" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {
+              loading ? (
+                <>
+                  <Skeleton width="full" height="h-96">
+                    <Card className="h-96 bg-inherit">
+                    </Card>
+                  </Skeleton>
+                  <Skeleton width="full" height="h-96">
+                    <Card className="h-96 bg-inherit">
+                    </Card>
+                  </Skeleton>
+                </>
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Publicaciones por Mes y Categoría</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={barData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          {barKeys.map((key, index) => (
+                            <Bar key={index} dataKey={key} stackId="a" fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Distribución de Publicaciones por Categoría</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {pieData?.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </>
+              )
+              
+            }
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribución de Publicaciones por Categoría</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+       
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

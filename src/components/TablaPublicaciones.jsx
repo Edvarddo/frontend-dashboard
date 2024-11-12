@@ -30,11 +30,7 @@ const TablaPublicaciones = ({
     // fetch with axios
     setLoading(true)
     // add authorization token bearer
-    axios.get(url, {
-      // headers: {
-      //   'Authorization': `Bearer ${token}`
-      // }
-    })
+    axios.get(url)
       .then(response => {
         console.log(response)
         setTotalPublicaciones(response.data.count)
@@ -158,32 +154,42 @@ const TablaPublicaciones = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {publicaciones.map((pub) => (
-            <TableRow key={pub.id}>
-              <TableCell className={"hover:bg-green-50 cursor-pointer  "}>
-                    
-                <Link className="" to={`/publicacion/${pub.id}`}>
-                {pub.titulo}
+          { publicaciones.length != 0 ? (
+            publicaciones.map((pub) => (
+              <TableRow key={pub.id}>
+                <TableCell className={"hover:bg-green-50 cursor-pointer  "}>
+                      
+                  <Link className="" to={`/publicacion/${pub.id}`}>
+                  {pub.titulo}
 
-                </Link>
-              </TableCell>
-              <TableCell>{pub.descripcion}</TableCell>
-              <TableCell>{pub.situacion.nombre}</TableCell>
-              <TableCell>{pub.categoria.nombre}</TableCell>
-              <TableCell>{
-                // i need this format "dd-MM-yyyy"
-                format(new Date(pub.fecha_publicacion), "yyyy-MM-dd")
-                // new Date(pub.fecha_publicacion).toLocaleDateString()
-              }</TableCell>
-              <TableCell>{pub.junta_vecinal.nombre_calle} {pub.junta_vecinal.numero_calle}</TableCell>
-            </TableRow>
-          ))}
+                  </Link>
+                </TableCell>
+                <TableCell>{pub.descripcion}</TableCell>
+                <TableCell>{pub.situacion.nombre}</TableCell>
+                <TableCell>{pub.categoria.nombre}</TableCell>
+                <TableCell>{
+                  // i need this format "dd-MM-yyyy"
+                  format(new Date(pub.fecha_publicacion), "yyyy-MM-dd")
+                  // new Date(pub.fecha_publicacion).toLocaleDateString()
+                }</TableCell>
+                <TableCell>{pub.junta_vecinal.nombre_calle} {pub.junta_vecinal.numero_calle}</TableCell>
+              </TableRow>
+            )))
+            :
+            (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  No hay resultados
+                </TableCell>
+              </TableRow>
+            )
+          }
         </TableBody>
       </Table>
 
       <div className="flex items-center justify-between mt-4">
         <span>Página {currentPage} de 
-          <span className=""> {Math.ceil(totalPublicaciones / publicacionesPorPagina)}</span>
+          <span className=""> {publicaciones.length!=0?Math.ceil(totalPublicaciones / publicacionesPorPagina) :"1"}</span>
         </span>
 
         <div className="flex items-center space-x-2 ">

@@ -9,6 +9,8 @@ import { format } from "date-fns"
 import { set } from "date-fns"
 import { CalendarIcon, ArrowLeftIcon, FilterIcon, DownloadIcon, HomeIcon, FileTextIcon, BellIcon, BarChartIcon } from "lucide-react"
 import DatePicker from "../DatePicker"
+import MultiSelect from "../MultiSelect"
+import axios from "axios"
 export default function PublicacionesListado({
   isOpened,
   setIsOpened
@@ -22,10 +24,15 @@ export default function PublicacionesListado({
   // OPCIONES SELECT
   const [categorias, setCategorias] = useState([])
   const [juntasVecinales, setJuntasVecinales] = useState([])
+  // const situaciones = [
+  //   "Recibido",
+  //   "En curso",
+  //   "Resuelto"
+  // ]
   const situaciones = [
-    "Recibido",
-    "En curso",
-    "Resuelto"
+    {nombre: "Recibido", value: "recibido"},
+    {nombre: "En curso", value: "en_curso"},
+    {nombre: "Resuelto", value: "resuelto"}
   ]
 
   // VALORES SELECCIONADOS FILTROS
@@ -34,6 +41,15 @@ export default function PublicacionesListado({
   const [selectedJunta, setSelectedJunta] = useState(null)
   const [selectedIniDate, setSelectedIniDate] = useState(null)
   const [selectedEndDate, setSelectedEndDate] = useState(null)
+  const [clearValues , setClearValues] = useState(false)
+  // object filtros
+  const [filtrosObj, setFiltrosObj] = useState({
+    categoria: [],
+    junta: [],
+    situacion: [],
+    iniDate: null,
+    endDate: null
+  })
   const [loading, setLoading] = useState(false)
   // VALIDACIÓN
   const [isValid, setIsValid] = useState(false)
@@ -45,6 +61,14 @@ export default function PublicacionesListado({
       // add loading state
       
       const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url).then(res => res.json())))
+      // change nombre_calle to nombre on juntasVecinales
+      console.log("juntasVecinales", juntasVecinales)
+      juntasVecinales.map(junta => {
+        junta.nombre = junta.nombre_calle
+        return junta
+      })
+      console.log("juntasVecinales", juntasVecinales)
+
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)
       
@@ -72,6 +96,9 @@ export default function PublicacionesListado({
     setFiltros(filtros)
   }, [selectedCategoria, selectedJunta, selectedSituacion, selectedIniDate, selectedEndDate, publicacionesPorPagina])
 
+  useEffect(() => {
+    console.log(filtrosObj)
+  }, [filtrosObj])
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
@@ -82,10 +109,18 @@ export default function PublicacionesListado({
 
   }
   const aplicarFiltros = () => {
+    // create url with filters object
+    const categoriesParams = filtrosObj.categoria.join(",")
+    const juntasParams = filtrosObj.junta.join(",")
+    const situacionesParams = filtrosObj.situacion.join(",")
+    console.log("categoriesParams", categoriesParams)
+    console.log("juntasParams", juntasParams)
+    console.log("situacionesParams", situacionesParams)
 
-    const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
-      junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
-      situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
+
+    const category = filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : "",
+      junta = filtrosObj.junta.length >0 ? "junta_vecinal=" + juntasParams + "&" : "",
+      situation = filtrosObj.situacion.length >0 ? "situacion=" + situacionesParams + "&" : "",
       iniDate = selectedIniDate ? "fecha_publicacion_after=" + format(selectedIniDate, "yyyy-MM-dd") + "&" : "",
       endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
@@ -104,6 +139,16 @@ export default function PublicacionesListado({
     setSelectedIniDate(null)
     setSelectedEndDate(null)
     setUrl(null)
+    // void filtersObj
+    setFiltrosObj({
+      categoria: [],
+      junta: [],
+      situacion: [],
+      iniDate: null,
+      endDate: null
+    })
+    setClearValues(!clearValues)
+    
   }
 
   return (
@@ -124,66 +169,32 @@ export default function PublicacionesListado({
       <main className=" p-4  bg-gray-100 ">
         <div className="bg-white m-4 p-6 rounded-lg shadow-md">
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div>
               <h2 className="mb-2 font-semibold">Categoría</h2>
-              <Select
-                value={selectedCategoria ? selectedCategoria : ""}
-                onValueChange={(val) => { setSelectedCategoria(val) }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas las categorías" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Todas las categorías</SelectItem>
-                  {
-                    categorias?.map(categoria => (
-                      <SelectItem key={categoria?.id} value={categoria?.nombre.toString()}>{categoria?.nombre}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
+              <div>
+              <MultiSelect clearValues = {clearValues} options={categorias} onValueChange={(val)=>{
+                setFiltrosObj({ ...filtrosObj, categoria: val })
+              }} />
+            </div>
             </div>
             <div>
               <h2 className="mb-2 font-semibold">Estado de la publicación</h2>
-              <Select
-                value={selectedSituacion ? selectedSituacion : ""}
-                onValueChange={(val) => { setSelectedSituacion(val) }}
-              >
-                <SelectTrigger>
-
-                  <SelectValue
-                    placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Todas las categorías</SelectItem>
-                  {
-                    situaciones.map(situacion => (
-                      <SelectItem key={situacion} value={situacion}>{situacion}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
+              <div>
+              <MultiSelect clearValues = {clearValues} options={situaciones} onValueChange={(val)=>{
+                setFiltrosObj({ ...filtrosObj, situacion: val })
+              }} />
+            </div>
             </div>
             <div>
               <h2 className="mb-2 font-semibold">Junta vecinal</h2>
-              <Select
-                value={selectedJunta ? selectedJunta : ""}
-                onValueChange={(val) => { setSelectedJunta(val) }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas las juntas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Todas las juntas</SelectItem>
-                  {
-                    juntasVecinales.map(junta => (
-                      <SelectItem key={junta.id} value={junta.nombre_calle.toString()}>{junta.nombre_calle} {junta.numero_calle}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
+              <div>
+              <MultiSelect clearValues = {clearValues} options={juntasVecinales} onValueChange={(val)=>{
+                setFiltrosObj({ ...filtrosObj, junta: val })
+              }} />
             </div>
+            </div>
+            
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

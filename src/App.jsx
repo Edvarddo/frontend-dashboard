@@ -46,7 +46,7 @@ function App() {
         <Sidebar
           isOpened={isOpened}
         />
-        <div className="content ">
+        <div className={`content ${!isOpened ? "overflow-hidden": ""}`}>
           <Routes>
             <Route index path="/"  element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />}  />
 
