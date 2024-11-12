@@ -131,7 +131,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     console.log("downloading file with id: ", id)
     // automatically download file with link. open explorer dialog. create element a
     // format to download https://res.cloudinary.com/demo/image/upload/fl_attachment/sample.jpg
-    // const imageUrl = "https://res.cloudinary.com/de06451wd/fl_attachment/" + archivo
+    const imageUrl = "https://res.cloudinary.com/de06451wd/" + archivo
 
     const link = document.createElement('a');
     link.href = imageUrl;
@@ -480,7 +480,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                 <CardTitle className="text-green-700">Evidencias de la publicación</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`  p-1 ${publicacion?.evidencias.length === 0 ? "": "grid grid-cols-1 md:grid-cols-2  gap-4"}`}>
+                <div className={`  p-1 ${publicacion?.evidencias?.length === 0 ? "": "grid grid-cols-1 md:grid-cols-2  gap-4"}`}>
                   
                   {
                     loading ? (
@@ -495,11 +495,11 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                       ))
                     ) : (
                       
-                        publicacion?.evidencias.length != 0 ? (
-                          publicacion?.evidencias.map((evidencia) => (
+                        publicacion?.evidencias?.length != 0 ? (
+                          publicacion?.evidencias?.map((evidencia) => (
                             <Card key={evidencia.id} className="w-full">
                               <CardContent className="p-4">
-                                <img src={evidencia.archivo} alt={evidencia.nombre} className="w-full h-48 object-cover" />
+                                <img src={ "https://res.cloudinary.com/de06451wd/"+ evidencia.archivo} alt={evidencia.nombre} className="w-full h-48 object-cover" />
                                 <div className="flex justify-between items-center mt-2">
                                   <p>{evidencia.nombre}</p>
                                   <Button variant="outline" className="text-green-600" onClick={() => handleDownload(evidencia.id, evidencia.archivo)}>
