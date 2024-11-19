@@ -17,9 +17,9 @@ export default function Login() {
   const [validCredentials, setValidCredentials] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
-  const useAuth = useContext(AuthContext)  
+  const useAuth = useContext(AuthContext)
   const { setAuthToken, authToken } = useAuth;
-  
+
 
   // Formato de RUT mientras el usuario escribe (XX.XXX.XXX-X)
   const formatRut = (value) => {
@@ -48,11 +48,11 @@ export default function Login() {
     axios.post(import.meta.env.VITE_URL_PROD_VERCEL + 'token',
       {
         rut: rut.replace(/\./g, ''),
-        password:password
+        password: password
       }
     )
       .then((response) => {
-        
+
         console.log(response);
         localStorage.setItem('authToken', response.data.access);
         setAuthToken(response.data.access);
@@ -63,20 +63,29 @@ export default function Login() {
         setValidCredentials(false);
         setLoginLoading(false);
       });
-      
-        
+
+
   }
 
 
 
 
   useEffect(() => {
-    if(authToken){
+    const verifyTokenFormat = (token) => {
+      const tokenArray = token?.split('.');
+      console.log(tokenArray)
+      if (tokenArray?.length !== 3) {
+        return false;
+      }
+      return true;
+    }
+    const isTokenValid = verifyTokenFormat(authToken);
+    if (authToken && isTokenValid) {
       navigate('/listado-publicaciones')
-    }else{
+    } else {
       navigate('/')
     }
-  },[authToken])
+  }, [authToken])
 
 
   return (
@@ -146,29 +155,29 @@ export default function Login() {
                 <div className="text-red-500 text-sm">* Rut o contraseña incorrecta</div>
               )
             }
-            
+
             <Button
               onClick={handleLogin}
               disabled={
                 !password ||
-                !(rut && rut.length === 12) 
+                !(rut && rut.length === 12)
               }
               type="submit" className={`w-full  `}
 
             >
-              
-              
+
+
               {
-                loginLoading ? 
-                (
-                  <>
-                  Cargando
-                  <Spinner size="small" className={``} />
-                  </>
-                ) :
-                (<span>Iniciar Sesión</span>)
+                loginLoading ?
+                  (
+                    <>
+                      Cargando
+                      <Spinner size="small" className={``} />
+                    </>
+                  ) :
+                  (<span>Iniciar Sesión</span>)
               }
-              
+
             </Button>
           </form>
           <div className="mt-4 text-center">
