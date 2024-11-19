@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import AuthContext from '../../contexts/AuthContext';
 import axios from 'axios';
 // use history
 
@@ -16,6 +17,9 @@ export default function Login() {
   const [validCredentials, setValidCredentials] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
+  const useAuth = useContext(AuthContext)  
+  const { setAuthToken, authToken } = useAuth;
+  
 
   // Formato de RUT mientras el usuario escribe (XX.XXX.XXX-X)
   const formatRut = (value) => {
@@ -51,7 +55,7 @@ export default function Login() {
         
         console.log(response);
         localStorage.setItem('authToken', response.data.access);
-        navigate('/listado-publicaciones');
+        setAuthToken(response.data.access);
         setLoginLoading(false);
       })
       .catch((error) => {
@@ -59,13 +63,20 @@ export default function Login() {
         setValidCredentials(false);
         setLoginLoading(false);
       });
-    
+      
+        
   }
 
 
 
 
-
+  useEffect(() => {
+    if(authToken){
+      navigate('/listado-publicaciones')
+    }else{
+      navigate('/')
+    }
+  },[authToken])
 
 
   return (
