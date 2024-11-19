@@ -264,3 +264,15 @@
   margin-right: 0.2rem;
   /* align-items: center; */
 }
+
+.pba{
+  cursor: not-allowed;
+}
+
+/* LOGIN */
+.login-btn:disabled{
+  cursor: not-allowed;
+  background-color: #ccc;
+  color: #000;
+
+}

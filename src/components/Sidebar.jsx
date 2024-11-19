@@ -1,6 +1,7 @@
 import {useState} from 'react'
-import logo from '../assets/logotipo-muni.png'
+import logo from '../assets/logo_muni.png'
 import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 import {
   ChartPie,
   FileText,
@@ -10,6 +11,8 @@ import {
   LogOutIcon
 
 } from 'lucide-react'
+import { Button } from './ui/button'
+import { set } from 'date-fns';
 const Sidebar = ({
   isOpened
 }) => {
@@ -45,6 +48,16 @@ const Sidebar = ({
     //   link: "/descargar"
     // },
   ]
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    console.log('Cerrar Sesión')
+    // navigate to login
+    setTimeout(() => {
+      localStorage.removeItem('authToken');
+      navigate('/');
+    }, 1000);
+    // navigate('/');
+  }
   // section state
   const [selectedSection, setSelectedSection] = useState(sections[1].title)
   return (
@@ -74,16 +87,20 @@ const Sidebar = ({
 
 
         </ul>
-
-
         <div className="bottom-menu">
           <li class="nav-link">
-            <a href="#">
-              <LogOutIcon className='icon' />
-              <span class="text nav-text">
-                Cerrar sesión
-              </span>
-            </a>
+            {/* button */}
+            
+
+              <a
+               onClick={handleLogout}
+               href="#">
+                <LogOutIcon className='icon' />
+                <span class="text nav-text">
+                  Cerrar sesión
+                </span>
+              </a>
+           
           </li>
         </div>
       </div>
