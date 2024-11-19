@@ -80,11 +80,16 @@ export default function Login() {
       return true;
     }
     const isTokenValid = verifyTokenFormat(authToken);
+    console.log(isTokenValid)
+    console.log(authToken)
     if (authToken && isTokenValid) {
       navigate('/listado-publicaciones')
+      console.log("aaaaaaaaaaaaaaa2")
     } else {
       navigate('/')
+      console.log("aaaaaaaaaaaaaaa")
     }
+    
   }, [authToken])
 
 

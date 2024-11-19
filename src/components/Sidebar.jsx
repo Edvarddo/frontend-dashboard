@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useState, useContext} from 'react'
 import logo from '../assets/logo_muni.png'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { set } from 'date-fns';
+import AuthContext from '../contexts/AuthContext';
+
 const Sidebar = ({
   isOpened
 }) => {
@@ -49,15 +51,21 @@ const Sidebar = ({
     // },
   ]
   const navigate = useNavigate();
+  const useAuth = useContext(AuthContext)
+  const { authToken, setAuthToken } = useAuth;
   const handleLogout = () => {
     console.log('Cerrar Sesión')
     // navigate to login
+    
     setTimeout(() => {
+      setAuthToken(null);
       localStorage.removeItem('authToken');
       navigate('/');
     }, 1000);
+    
     // navigate('/');
   }
+  
   // section state
   const [selectedSection, setSelectedSection] = useState(sections[1].title)
   return (
