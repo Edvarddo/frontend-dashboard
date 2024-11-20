@@ -40,7 +40,7 @@ export const SidebarSectionProvider = ({ children }) => {
     // },
   ]
   
-  const [selectedSection, setSelectedSection] = useState(sections[0].title);
+  const [selectedSection, setSelectedSection] = useState("");
   
   return (
     <SidebarSectionContext.Provider value={
