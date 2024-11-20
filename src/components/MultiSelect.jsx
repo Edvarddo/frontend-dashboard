@@ -82,8 +82,8 @@ const MultiSelect = forwardRef(
     const [selectedValues, setSelectedValues] = useState(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
-    console.log(options)
-    console.log(selectedValues)
+    // console.log(options)
+    // console.log(selectedValues)
 
     const handleInputKeyDown = (event) => {
       if (event.key === "Enter") {
@@ -97,7 +97,7 @@ const MultiSelect = forwardRef(
     };
 
     const toggleOption = (option) => {
-      console.log(selectedValues)
+      // console.log(selectedValues)
       const newSelectedValues = selectedValues.includes(option)
         ? selectedValues.filter((value) => value !== option)
         : [...selectedValues, option];
@@ -153,7 +153,7 @@ const MultiSelect = forwardRef(
                 <div className="flex flex-wrap items-center bg-green-50 w-full">
                   {selectedValues.slice(0, maxCount).map((value) => {
                     const option = options.find((o) => o.nombre === value);
-                    console.log(option)
+                    // console.log(option)
                     const IconComponent = option?.icon;
                     return (
                       <Badge

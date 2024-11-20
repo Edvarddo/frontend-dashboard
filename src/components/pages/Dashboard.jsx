@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Cell, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Skeleton } from '../ui/skeleton'
 import { Car } from 'lucide-react'
+import TopBar from '../TopBar'
 const Dashboard = ({ isOpened, setIsOpened }) => {
   // http://3.217.85.102/api/v1/publicaciones-por-categoria/ PIE CHART
   // http://3.217.85.102/api/v1/publicaciones-por-mes-y-categoria/ bar chart
@@ -20,7 +21,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const fetchData = async (urls) => {
     setLoading(true)
     console.log(urls)
-    const requests = urls.map(url => fetch(url))
+    const requests = urls.map(url => fetch(url,{
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    }))
     // console.log(requests)
     const responses = await Promise.all(requests)
     const data = await Promise.all(responses.map(response => {
@@ -119,15 +124,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     console.log("apply filters")
   }
   return (
-    <div className="bg-[#00A86B] min-h-screen min-w-[400px]">
-      <header className="burger-btn p-4 flex items-center">
-        <button onClick={handleOpenSidebar} className="text-white mr-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        <h1 className="text-white text-3xl font-bold">Dashboard</h1>
-      </header>
+    <>
+      <TopBar handleOpenSidebar={handleOpenSidebar} title="Dashboard" />
       <div className="p-8 bg-gray-100 min-h-screen">
         <div className="p-8 bg-gray-100 min-h-screen">
           <h1 className="text-3xl font-bold mb-6">Dashboard Municipal</h1>
@@ -136,23 +134,23 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             {
               loading ? (
                 <>
-                    <Skeleton width="full" height="h-32" >
-                      <Card className="h-32 bg-inherit">
-                      </Card>
-                    </Skeleton>
-                    <Skeleton width="full" height="h-32" >
-                      <Card className="h-32 bg-inherit">
-                      </Card>
-                    </Skeleton>
-                    <Skeleton width="full" height="h-32" >
-                      <Card className="h-32 bg-inherit">
-                      </Card>
-                    </Skeleton>
+                  <Skeleton width="full" height="h-32" >
+                    <Card className="h-32 bg-inherit">
+                    </Card>
+                  </Skeleton>
+                  <Skeleton width="full" height="h-32" >
+                    <Card className="h-32 bg-inherit">
+                    </Card>
+                  </Skeleton>
+                  <Skeleton width="full" height="h-32" >
+                    <Card className="h-32 bg-inherit">
+                    </Card>
+                  </Skeleton>
 
-                  
+
                 </>
-                
-                
+
+
               ) : (
                 <>
                   <Card>
@@ -183,7 +181,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                 </>
               )
             }
-            
+
 
           </div>
           <Card className="mb-8">
@@ -324,10 +322,10 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   </Card>
                 </>
               )
-              
+
             }
 
-       
+
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -402,9 +400,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
           </Card>
         </div>
       </div>
+    
+    </>
 
 
-    </div>
+   
   )
 }
 

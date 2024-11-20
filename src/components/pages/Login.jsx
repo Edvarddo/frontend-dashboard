@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
+
+// import AuthContext from '../../contexts/AuthContext';
+import  useAuth  from '../../hooks/useAuth';
+
 import axios from 'axios';
 // use history
 
@@ -17,8 +20,7 @@ export default function Login() {
   const [validCredentials, setValidCredentials] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
-  const useAuth = useContext(AuthContext)
-  const { setAuthToken, authToken } = useAuth;
+  const { setAuthToken, authToken, setIsAdmin, login } = useAuth();
 
 
   // Formato de RUT mientras el usuario escribe (XX.XXX.XXX-X)
@@ -39,12 +41,6 @@ export default function Login() {
     e.preventDefault();
     const isValid = password && (rut && rut.length === 12);
     if (!isValid) return;
-    console.log(isValid);
-    console.log(loginLoading)
-
-
-
-
     axios.post(import.meta.env.VITE_URL_PROD_VERCEL + 'token',
       {
         rut: rut.replace(/\./g, ''),
@@ -54,12 +50,18 @@ export default function Login() {
       .then((response) => {
 
         console.log(response);
-        localStorage.setItem('authToken', response.data.access);
-        setAuthToken(response.data.access);
+        // localStorage.setItem('authToken', response.data.access);
+        // setAuthToken(response.data.access);
+        login(response.data.access);
+        setIsAdmin(response.data.es_administrador);
         setLoginLoading(false);
+        if(response.data.es_administrador) navigate('/listado-publicaciones');
+        
+        setRut('');
+        setPassword('');
       })
       .catch((error) => {
-        console.error(error.status);
+        console.error(error);
         setValidCredentials(false);
         setLoginLoading(false);
       });
@@ -70,27 +72,27 @@ export default function Login() {
 
 
 
-  useEffect(() => {
-    const verifyTokenFormat = (token) => {
-      const tokenArray = token?.split('.');
-      console.log(tokenArray)
-      if (tokenArray?.length !== 3) {
-        return false;
-      }
-      return true;
-    }
-    const isTokenValid = verifyTokenFormat(authToken);
-    console.log(isTokenValid)
-    console.log(authToken)
-    if (authToken && isTokenValid) {
-      navigate('/listado-publicaciones')
-      console.log("aaaaaaaaaaaaaaa2")
-    } else {
-      navigate('/')
-      console.log("aaaaaaaaaaaaaaa")
-    }
+  // useEffect(() => {
+  //   const verifyTokenFormat = (token) => {
+  //     const tokenArray = token?.split('.');
+  //     console.log(tokenArray)
+  //     if (tokenArray?.length !== 3) {
+  //       return false;
+  //     }
+  //     return true;
+  //   }
+  //   const isTokenValid = verifyTokenFormat(authToken);
+  //   console.log(isTokenValid)
+  //   console.log(authToken)
+  //   if (authToken && isTokenValid) {
+  //     navigate('/listado-publicaciones')
+  //     console.log("aaaaaaaaaaaaaaa2")
+  //   } else {
+  //     navigate('/')
+  //     console.log("aaaaaaaaaaaaaaa")
+  //   }
     
-  }, [authToken])
+  // }, [authToken])
 
 
   return (
@@ -134,6 +136,7 @@ export default function Login() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <Button

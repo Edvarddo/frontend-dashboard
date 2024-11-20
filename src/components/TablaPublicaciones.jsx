@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from 'axios'
@@ -21,20 +21,27 @@ const TablaPublicaciones = ({
   const [nextPageUrl, setNextPageUrl] = useState(null)
   const [prevPageUrl, setPrevPageUrl] = useState(null)
   const [totalPublicaciones, setTotalPublicaciones] = useState(0)
-
+  const navigate = useNavigate()
   // const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const url_local = import.meta.env.VITE_URL_PROD_VERCEL
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzMwMTgxMjU4LCJpYXQiOjE3MzAwOTQ4NTgsImp0aSI6ImFkYTUzODQzMzY2NTQxYzM5ZDFiYmRiNDE1OTVjNGVjIiwicnV0IjoiMjAxMjM5MzAtNSJ9.IvyGeMNF0elq-E4xl_ZoFtTQif9Q96MGFwSqj_giwvA"
+  const token = localStorage.getItem('authToken')
   const fetchPublicaciones = (url) => {
     // fetch with axios
     setLoading(true)
     // add authorization token bearer
-    axios.get(url)
+    axios.get(url,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
       .then(response => {
-        console.log(response)
+ 
         setTotalPublicaciones(response.data.count)
-        setPublicaciones(response.data.results ? response.data.results : [])
+        setPublicaciones(response?.data?.results ? response?.data?.results : [])
+        console.log(response.data)
 
         setLoading(false)
       })
@@ -157,12 +164,12 @@ const TablaPublicaciones = ({
           { publicaciones.length != 0 ? (
             publicaciones.map((pub) => (
               <TableRow key={pub.id}>
-                <TableCell className={"hover:bg-green-50 cursor-pointer  "}>
+                <TableCell onClick={()=>{navigate(`/publicacion/${pub.id}`)}} className={"hover:bg-green-50 cursor-pointer  "}>
                       
-                  <Link className="" to={`/publicacion/${pub.id}`}>
+                  {/* <Link className="" to={`/publicacion/${pub.id}`}> */}
                   {pub.titulo}
 
-                  </Link>
+                  {/* </Link> */}
                 </TableCell>
                 <TableCell>{pub.descripcion}</TableCell>
                 <TableCell>{pub.situacion.nombre}</TableCell>
@@ -205,6 +212,7 @@ const TablaPublicaciones = ({
                 {/* <SelectItem value={null}>Todas las categorías</SelectItem> */}
                 <SelectItem value="5">5</SelectItem>
                 <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">15</SelectItem>
                 {/* <SelectItem value="15">15</SelectItem> */}
 
               </SelectContent>

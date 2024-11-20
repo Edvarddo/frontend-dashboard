@@ -3,6 +3,9 @@ import Dashboard from './components/pages/Dashboard'
 import Sidebar from './components/Sidebar'
 import DetallesPublicacion from './components/pages/DetallesPublicacion'
 import Descargar from './components/pages/Descargar'
+import Anuncio from './components/pages/Anuncio'
+import Reporte from './components/pages/Reporte'
+import Mapa from './components/pages/Mapa'
 import axios from 'axios'
 import { BrowserRouter as Router, Routes, Route, Outlet  } from 'react-router-dom'
 import './index.css'
@@ -17,8 +20,11 @@ const PrivLayout = ({ children, isOpened, setIsOpened }) => {
     
           <Sidebar isOpened={isOpened} />
       <div className={`content ${!isOpened ? 'overflow-hidden' : ''}`}>
-          {children}
+        <div className="bg-gray-100 min-h-screen min-w-[400px]">
+          {/* {children} */}
           <Outlet />
+
+        </div>
       </div>
 
    
@@ -48,24 +54,29 @@ function App() {
       <Router>
             <Routes>
                
-                <Route element={
-                  <PrivateRoute>
-                    <PrivLayout isOpened={isOpened} setIsOpened={setIsOpened} />
-                   
-                  </PrivateRoute>
-                  }>
-                    {/* <Route path="/" element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />} /> */}
-                    <Route path="/dashboard" element={<Dashboard isOpened={isOpened} setIsOpened={setIsOpened} />}/>
-                      
-                    <Route path="/listado-publicaciones" element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />} />
-                    <Route path="/publicacion/:id" element={<DetallesPublicacion isOpened={isOpened} setIsOpened={setIsOpened} />} />
-                    <Route path="/descargar" element={<Descargar isOpened={isOpened} setIsOpened={setIsOpened} />} />
-                </Route>
+               <Route path='/'>
+                  {/* PRIVATE ROUTES */}
+                  <Route element={<PrivLayout isOpened={isOpened} setIsOpened={setIsOpened} />}>
+                    <Route element={<PrivateRoute />}>
+                      <Route path="/dashboard" element={<Dashboard isOpened={isOpened} setIsOpened={setIsOpened} />}/>
+                      <Route path="/publicacion/:id" element={<DetallesPublicacion isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                        <Route path="/listado-publicaciones" element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                      <Route path="/descargar" element={<Descargar isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                      <Route path="/anuncios" element={<Anuncio isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                      <Route path="/reportes" element={<Reporte isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                      <Route path="/mapa" element={<Mapa isOpened={isOpened} setIsOpened={setIsOpened} />} />
+
+                    </Route> 
+                  </Route>
+                  {/* PUBLIC ROUTES */}
+                  <Route index path="/login" element={<Login isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                  {/* MISSING */}
+                  <Route path="*" element={<h1>404</h1>} />
+               </Route>
 
     
-                <Route element={<LayoutWithoutSidebar />}>
-                    <Route index path="/" element={<Login isOpened={isOpened} setIsOpened={setIsOpened} />} />
-                </Route>
+                
+                
             </Routes>
         </Router>
 

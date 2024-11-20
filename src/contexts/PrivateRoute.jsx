@@ -1,11 +1,10 @@
 import { Route, Navigate, Outlet } from 'react-router-dom';
-import  AuthContext  from './AuthContext';
-import { useContext } from 'react';
+// import  AuthContext  from './AuthContext';
+// import { useContext } from 'react';
+import useAuth from '../hooks/useAuth';
 
 export const PrivateRoute = ({children}) => {
-    const useAuth = useContext(AuthContext)
-    console.log(children)
-    const { authToken } = useAuth;
+    const { authToken, isAdmin } = useAuth();
     const verifyTokenFormat = (token) => {
         const tokenArray = token?.split('.');
         console.log(tokenArray)
@@ -15,16 +14,9 @@ export const PrivateRoute = ({children}) => {
         return true;
     }
     const isTokenValid = verifyTokenFormat(authToken);
-    console.log(isTokenValid)
-    // const { authToken } = useAuth();
-    
-    
-
     return (
         <>
-            {!(authToken && isTokenValid) ?  <Navigate to="/" />:children}
-        
-        
+            {!(authToken && isTokenValid) ?  <Navigate to="/login" />:<Outlet />}
         </>
     )
 };

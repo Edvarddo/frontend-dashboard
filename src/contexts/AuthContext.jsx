@@ -6,6 +6,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     console.log(localStorage.getItem('authToken'))
     const [authToken, setAuthToken] = useState(localStorage.getItem('authToken') || null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
 
     const login = (token) => {
@@ -19,7 +20,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ authToken, login, logout, setAuthToken }}>
+        <AuthContext.Provider value={
+            { 
+                authToken, 
+                login, 
+                logout, 
+                setAuthToken,
+                isAdmin,
+                setIsAdmin    
+            }}>
             {children}
         </AuthContext.Provider>
     );

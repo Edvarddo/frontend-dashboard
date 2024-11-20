@@ -11,6 +11,7 @@ import { CalendarIcon, ArrowLeftIcon, FilterIcon, DownloadIcon, HomeIcon, FileTe
 import DatePicker from "../DatePicker"
 import MultiSelect from "../MultiSelect"
 import axios from "axios"
+import TopBar from "../TopBar"
 export default function PublicacionesListado({
   isOpened,
   setIsOpened
@@ -60,14 +61,16 @@ export default function PublicacionesListado({
     try {
       // add loading state
       
-      const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url).then(res => res.json())))
+      const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url,{
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      }).then(res => res.json())))
       // change nombre_calle to nombre on juntasVecinales
-      console.log("juntasVecinales", juntasVecinales)
       juntasVecinales.map(junta => {
         junta.nombre = junta.nombre_calle
         return junta
       })
-      console.log("juntasVecinales", juntasVecinales)
 
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)
@@ -78,7 +81,7 @@ export default function PublicacionesListado({
     }
   }
   useEffect(() => {
-    console.log("fetching urls", api_url)
+
     fetchURLS([
       `${api_url}categorias/`,
       `${api_url}juntas-vecinales/`
@@ -97,7 +100,7 @@ export default function PublicacionesListado({
   }, [selectedCategoria, selectedJunta, selectedSituacion, selectedIniDate, selectedEndDate, publicacionesPorPagina])
 
   useEffect(() => {
-    console.log(filtrosObj)
+
   }, [filtrosObj])
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
@@ -113,9 +116,7 @@ export default function PublicacionesListado({
     const categoriesParams = filtrosObj.categoria.join(",")
     const juntasParams = filtrosObj.junta.join(",")
     const situacionesParams = filtrosObj.situacion.join(",")
-    console.log("categoriesParams", categoriesParams)
-    console.log("juntasParams", juntasParams)
-    console.log("situacionesParams", situacionesParams)
+
 
 
     const category = filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : "",
@@ -127,7 +128,7 @@ export default function PublicacionesListado({
     
     const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
     let url = `${api_url}publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
-    console.log("aplicando filtros", filtros)
+
     setUrl(url)
     setFiltros(filtros)
     setCurrentPage(1)
@@ -154,18 +155,8 @@ export default function PublicacionesListado({
   return (
 
 
-    <div className="bg-gray-100 min-h-screen min-w-[400px]">
-      <header className="burger-btn p-4 flex items-center bg-[#00A86B]">
-        <button
-          onClick={handleOpenSidebar}
-          className="text-white mr-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        <h1 className="text-white text-3xl font-bold">Listado de publicaciones</h1>
-      </header>
-
+    <>
+      <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
       <main className=" p-4  bg-gray-100 ">
         <div className="bg-white m-4 p-6 rounded-lg shadow-md">
 
@@ -257,8 +248,11 @@ export default function PublicacionesListado({
 
 
       </main>
+    
+    </>
+      
 
-    </div>
+    
 
   )
 }

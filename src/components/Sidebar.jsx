@@ -1,4 +1,4 @@
-import {useState, useContext} from 'react'
+import {useState, useContext, useEffect} from 'react'
 import logo from '../assets/logo_muni.png'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom';
@@ -14,60 +14,43 @@ import {
 import { Button } from './ui/button'
 import { set } from 'date-fns';
 import AuthContext from '../contexts/AuthContext';
-
+import  SidebarSectionContext  from '../contexts/SidebarSectionContext'
+// import {useSidebar} from '../contexts/SidebarSectionContext'
+import { useLocation } from 'react-router-dom';
 const Sidebar = ({
   isOpened
 }) => {
-  const sections = [
-    {
-      title: "Dashboard",
-      icon: <ChartPie className='icon' />,
-      link: "/dashboard"
-    },
-    {
-      title: "Publicaciones",
-      icon: <FileText className='icon' />,
-      link: "/listado-publicaciones"
-    },
-    {
-      title: "Anuncios",
-      icon: <Megaphone className='icon' />,
-      link: "/"
-    },
-    {
-      title: "Reportes",
-      icon: <ChartNoAxesColumn className='icon' />,
-      link: "/"
-    },
-    {
-      title: "Mapa",
-      icon: <Map className='icon' />,
-      link: "/"
-    },
-    // {
-    //   title: "Descargar",
-    //   icon: "bx bx-download",
-    //   link: "/descargar"
-    // },
-  ]
+  const location = useLocation();
   const navigate = useNavigate();
   const useAuth = useContext(AuthContext)
+  const useSidebar = useContext(SidebarSectionContext) 
+  console.log(useSidebar)
+  console.log(useAuth)
+  const { sections, setSelectedSection, selectedSection } = useSidebar;
   const { authToken, setAuthToken } = useAuth;
   const handleLogout = () => {
     console.log('Cerrar Sesión')
-    // navigate to login
-    
     setTimeout(() => {
       setAuthToken(null);
       localStorage.removeItem('authToken');
-      navigate('/');
+      navigate('/login');
     }, 1000);
-    
-    // navigate('/');
+
   }
+  // const { sections, setSelectedSection, selectedSection } = useSidebar()
+  // console.log(useSidebar)
+  // console.log(sections)
+  
   
   // section state
-  const [selectedSection, setSelectedSection] = useState(sections[1].title)
+  // const [selectedSection, setSelectedSection] = useState(sections[1].title)
+  useEffect(() => {
+    const section = sections.find(section => section.link === location.pathname);
+    if (section) {
+      setSelectedSection(section.title);
+    }
+  }, [location]);
+
   return (
     <nav className={`sidebar ${!isOpened ? "closed" : ""}`}>
       <header className="sidebar-header">
@@ -79,14 +62,13 @@ const Sidebar = ({
       <div className="menu">
         <ul className="menu-list">
           {
-            sections.map((section, index) => (
+            sections?.map((section, index) => (
               
-              <li key={index} className={`nav-link  ${selectedSection === section.title ? "active" : ""}`}>
-                <Link to={section.link} onClick={() => setSelectedSection(section.title)}>
-                  {/* <i className={` icon`} data-lucide={`${section.icon}`}></i> */}
-                  {section.icon}
+              <li key={index} className={`nav-link  ${selectedSection === section?.title ? "active" : ""}`}>
+                <Link to={section?.link} onClick={() => setSelectedSection(section?.title)}>
+                  {section?.icon}
                   <span className="text nav-text">
-                    {section.title}
+                    {section?.title}
                   </span>
                 </Link>
               </li>
