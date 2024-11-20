@@ -53,7 +53,7 @@ function App() {
     <>
       <Router>
             <Routes>
-               
+            <Route index path="/" element={<Login isOpened={isOpened} setIsOpened={setIsOpened} />} />
                <Route path='/'>
                   {/* PRIVATE ROUTES */}
                   <Route element={<PrivLayout isOpened={isOpened} setIsOpened={setIsOpened} />}>
