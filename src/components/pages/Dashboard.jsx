@@ -58,7 +58,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   useEffect(() => {
     fetchData([
       `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-mes-y-categoria/`,
-      `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-categoria`,
+      `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-categoria/`,
       `${import.meta.env.VITE_URL_PROD_VERCEL}resumen-estadisticas/`
     ])
   }, [])

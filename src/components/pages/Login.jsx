@@ -41,7 +41,7 @@ export default function Login() {
     e.preventDefault();
     const isValid = password && (rut && rut.length === 12);
     if (!isValid) return;
-    axios.post(import.meta.env.VITE_URL_PROD_VERCEL + 'token',
+    axios.post(import.meta.env.VITE_URL_PROD_VERCEL + 'token/',
       {
         rut: rut.replace(/\./g, ''),
         password: password
