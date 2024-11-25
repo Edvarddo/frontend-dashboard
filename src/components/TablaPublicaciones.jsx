@@ -7,7 +7,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from 'axios'
-import { da } from "date-fns/locale"
+import { da, is } from "date-fns/locale"
+import useAxiosPrivate from '../hooks/useAxiosPrivate'
 const TablaPublicaciones = ({
   currentPage,
   publicacionesPorPagina,
@@ -17,6 +18,7 @@ const TablaPublicaciones = ({
   setLoading,
   loading
 }) => {
+  const axiosPrivate = useAxiosPrivate();
   const [publicaciones, setPublicaciones] = useState([])
   const [nextPageUrl, setNextPageUrl] = useState(null)
   const [prevPageUrl, setPrevPageUrl] = useState(null)
@@ -30,16 +32,10 @@ const TablaPublicaciones = ({
     // fetch with axios
     setLoading(true)
     // add authorization token bearer
-    axios.get(url,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }
-    )
+    axiosPrivate.get(url)
       .then(response => {
- 
-        setTotalPublicaciones(response.data.count)
+
+        setTotalPublicaciones(response?.data?.count)
         setPublicaciones(response?.data?.results ? response?.data?.results : [])
         console.log(response.data)
 
@@ -50,29 +46,6 @@ const TablaPublicaciones = ({
         setLoading(false)
       })
 
-    // fetch("http://localhost:3000/api-proxy/",
-    //   // {
-    //   //   method: 'GET',
-    //   //   headers: {
-    //   //     'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5OTg0MDIwLCJpYXQiOjE3Mjk4OTc2MjAsImp0aSI6ImI4YmZiNDI4Y2E5OTQyMTI5YThmZDM5YzI4MTljNWZhIiwicnV0IjoiMjAxMjM5MzAtNSJ9.YcTJPiqkHwMcprG0b7b5Kw3OJuCI5B-9N8EhPmjt-Q8`
-    //   //   }
-    //   // }
-    // )
-    //   .then(response => {
-    //     console.log(response)
-    //     response.json()
-    //   })
-    //   .then(data => {
-    //     console.log(data)
-    //     setTotalPublicaciones(data.count)
-    //     setPublicaciones(data.results ? data.results : [])
-
-    //     setLoading(false)
-    //   })
-    //   .catch(error => {
-    //     setError(error)
-    //     setLoading(false)
-    //   })
   }
   const handleNextPage = () => {
 
@@ -100,6 +73,9 @@ const TablaPublicaciones = ({
     } else {
       fetchPublicaciones(`${url ? url  : baseUrl.concat("?")}page=${currentPage}&${pagesize}`)
     }
+    return () => {
+    }
+
   }, [currentPage, url, publicacionesPorPagina])
 
 

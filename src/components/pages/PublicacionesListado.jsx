@@ -12,10 +12,14 @@ import DatePicker from "../DatePicker"
 import MultiSelect from "../MultiSelect"
 import axios from "axios"
 import TopBar from "../TopBar"
+import {BASE_URL} from '../../api/axios'
+import useAxiosPrivate from '../../hooks/useAxiosPrivate'
+
 export default function PublicacionesListado({
   isOpened,
   setIsOpened
 }) {
+  const axiosPrivate = useAxiosPrivate();
   // PARAMETROS URL
   const [currentPage, setCurrentPage] = useState(1)
   const [url, setUrl] = useState(null)
@@ -25,11 +29,7 @@ export default function PublicacionesListado({
   // OPCIONES SELECT
   const [categorias, setCategorias] = useState([])
   const [juntasVecinales, setJuntasVecinales] = useState([])
-  // const situaciones = [
-  //   "Recibido",
-  //   "En curso",
-  //   "Resuelto"
-  // ]
+
   const situaciones = [
     {nombre: "Recibido", value: "recibido"},
     {nombre: "En curso", value: "en_curso"},
@@ -37,9 +37,6 @@ export default function PublicacionesListado({
   ]
 
   // VALORES SELECCIONADOS FILTROS
-  const [selectedCategoria, setSelectedCategoria] = useState(null)
-  const [selectedSituacion, setSelectedSituacion] = useState(null)
-  const [selectedJunta, setSelectedJunta] = useState(null)
   const [selectedIniDate, setSelectedIniDate] = useState(null)
   const [selectedEndDate, setSelectedEndDate] = useState(null)
   const [clearValues , setClearValues] = useState(false)
@@ -59,14 +56,15 @@ export default function PublicacionesListado({
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
   const fetchURLS = async (urls) => {
     try {
-      // add loading state
-      
-      const [categorias, juntasVecinales] = await Promise.all(urls.map(url => fetch(url,{
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      }).then(res => res.json())))
-      // change nombre_calle to nombre on juntasVecinales
+
+      const [categorias, juntasVecinales] = await Promise.all(urls.map(url => axiosPrivate.get(url)
+      .then(res => {
+        return res.data;
+      }))
+      )
+      console.log(juntasVecinales)
+      // set values
+
       juntasVecinales.map(junta => {
         junta.nombre = junta.nombre_calle
         return junta
@@ -83,25 +81,13 @@ export default function PublicacionesListado({
   useEffect(() => {
 
     fetchURLS([
-      `${api_url}categorias/`,
-      `${api_url}juntas-vecinales/`
+      `categorias/`,
+      `juntas-vecinales/`
     ])
+    console.log(BASE_URL, axiosPrivate)
 
   }, [])
-  useEffect(() => {
-    const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
-      junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
-      situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
-      iniDate = selectedIniDate ? "fecha_publicacion_after=" + format(selectedIniDate, "yyyy-MM-dd") + "&" : "",
-      endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
-      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
-    const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
-    setFiltros(filtros)
-  }, [selectedCategoria, selectedJunta, selectedSituacion, selectedIniDate, selectedEndDate, publicacionesPorPagina])
 
-  useEffect(() => {
-
-  }, [filtrosObj])
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
@@ -113,11 +99,9 @@ export default function PublicacionesListado({
   }
   const aplicarFiltros = () => {
     // create url with filters object
-    const categoriesParams = filtrosObj.categoria.join(",")
-    const juntasParams = filtrosObj.junta.join(",")
-    const situacionesParams = filtrosObj.situacion.join(",")
-
-
+    const categoriesParams = filtrosObj.categoria.join(","),
+    juntasParams = filtrosObj.junta.join(","),
+    situacionesParams = filtrosObj.situacion.join(",")
 
     const category = filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : "",
       junta = filtrosObj.junta.length >0 ? "junta_vecinal=" + juntasParams + "&" : "",
@@ -134,13 +118,7 @@ export default function PublicacionesListado({
     setCurrentPage(1)
   }
   const limpiarFiltros = () => {
-    setSelectedCategoria(null)
-    setSelectedSituacion(null)
-    setSelectedJunta(null)
-    setSelectedIniDate(null)
-    setSelectedEndDate(null)
     setUrl(null)
-    // void filtersObj
     setFiltrosObj({
       categoria: [],
       junta: [],
@@ -227,7 +205,7 @@ export default function PublicacionesListado({
 
             </Button>
             <div className="filter-btn-cont w-full md:w-[unset] ">
-              <Button onClick={limpiarFiltros} className="w-full mb-2 mr-2 md:w-[unset] filter-btn" variant="outline">Limpiar filtros</Button>
+              <Button disabled={loading} onClick={limpiarFiltros} className="w-full mb-2 mr-2 md:w-[unset] filter-btn" variant="outline">Limpiar filtros</Button>
               <Button disabled={isValid } onClick={aplicarFiltros}  className="w-full md:w-[unset] bg-green-500 hover:bg-green-600 text-white filter-btn">Aplicar filtros</Button>
 
             </div>
