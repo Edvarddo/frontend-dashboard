@@ -1,12 +1,18 @@
-import { set } from 'date-fns'
-import { useState, useEffect } from 'react'
+import { set, format } from 'date-fns'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Cell, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Skeleton } from '../ui/skeleton'
-import { Car } from 'lucide-react'
+import { ChartColumnIncreasing, ChartPie, ChartLine } from 'lucide-react'
 import TopBar from '../TopBar'
+import Filters from "../Filters"
+import EmptyState from '../EmptyState'
+import { getColorForCategory, chartColors } from '@/lib/utils'
 const Dashboard = ({ isOpened, setIsOpened }) => {
   // http://3.217.85.102/api/v1/publicaciones-por-categoria/ PIE CHART
   // http://3.217.85.102/api/v1/publicaciones-por-mes-y-categoria/ bar chart
@@ -14,14 +20,54 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   const [barData, setBarData] = useState([])
   const [pieData, setPieData] = useState([])
-  const [loading, setLoading] = useState(true)
   const [cardsData, setCardsData] = useState({})
   const [barKeys, setBarKeys] = useState([])
+  const [lineChartData, setLineChartData] = useState([])
+
+  const [categorias, setCategorias] = useState([])
+  const [juntasVecinales, setJuntasVecinales] = useState([])
+  const [departamentos, setDepartamentos] = useState([])
+
+  const situaciones = [
+    { nombre: "Recibido", value: "recibido" },
+    { nombre: "En curso", value: "en_curso" },
+    { nombre: "Resuelto", value: "resuelto" }
+  ]
+
+  // VALORES SELECCIONADOS FILTROS
+  const [filtros, setFiltros] = useState(null)
+  const [selectedCategoria, setSelectedCategoria] = useState(null)
+  const [selectedSituacion, setSelectedSituacion] = useState(null)
+  const [selectedJunta, setSelectedJunta] = useState(null)
+  const [selectedDepto, setSelectedDepto] = useState(null)
+  const [dateRange, setDateRange] = useState({ from: null, to: null })
+  const [clearValues, setClearValues] = useState(false)
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [additionalComments, setAdditionalComments] = useState("")
+  const barChartRef = useRef(null);
+  const pieChartRef = useRef(null);
+  const lineChartRef = useRef(null);
+  // object filtros
+  const [filtrosObj, setFiltrosObj] = useState({
+    categoria: [],
+    junta: [],
+    situacion: [],
+    departamentos: [],
+    iniDate: null,
+    endDate: null
+  })
+  const [loading, setLoading] = useState(false)
+  // VALIDACIÓN
+  const [isValid, setIsValid] = useState(false)
+  const [filterError, setFilterError] = useState(null)
+
+  const api_url = import.meta.env.VITE_URL_PROD_VERCEL
+
   // fetch all
   const fetchData = async (urls) => {
-    setLoading(true)
     console.log(urls)
-    const requests = urls.map(url => fetch(url,{
+    const requests = urls.map(url => fetch(url, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`
       }
@@ -32,9 +78,40 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       console.log(response.data);
       return response.json()
     }))
+
+    setCategorias(data[0])
+
+    const juntas = data[1].map(junta => {
+      junta.nombre = junta.nombre_calle
+      return junta
+    })
+
+    setJuntasVecinales(juntas)
+    setDepartamentos(data[2])
+  }
+
+
+  const fetchCharData = async (urls) => {
+    setLoading(true)
+    console.log(urls)
+    const requests = urls.map(url => fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    }))
+    // console.log(requests)
+    const responses = await Promise.all(requests)
+    const data = await Promise.all(responses.map(response => {
+      console.log(response.data);
+      return response.json()
+    }))
+
     console.log(data[0])
     console.log(data[1])
+    console.log(data[2])
+
     let distinctValues = []
+
     data[0].map((monthData, i) => {
       console.log(Object.keys(monthData))
       Object.keys(monthData).forEach((key, index) => {
@@ -43,12 +120,14 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
         }
       })
     })
-    console.log(data[2])
-    console.log(distinctValues)
+
     setCardsData(data[2])
     setBarKeys(distinctValues)
     setBarData(data[0])
     setPieData(data[1])
+    setLineChartData(data[3])
+
+
     setLoading(false)
   }
 
@@ -57,39 +136,170 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   useEffect(() => {
     fetchData([
-      `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-mes-y-categoria/`,
-      `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones-por-categoria/`,
-      `${import.meta.env.VITE_URL_PROD_VERCEL}resumen-estadisticas/`
-    ])
-  }, [])
+      `${api_url}categorias/`,
+      `${api_url}juntas-vecinales/`,
+      `${api_url}departamentos-municipales/`
 
+    ])
+  }, [api_url])
+
+  useEffect(() => {
+    fetchCharData([
+      `${api_url}publicaciones-por-mes-y-categoria/?${filtros}`,
+      `${api_url}publicaciones-por-categoria/?${filtros}`,
+      `${api_url}resumen-estadisticas/?${filtros}`,
+      `${api_url}resueltos-por-mes/?${filtros}`
+
+    ])
+  }, [filtros, api_url])
+
+
+
+
+  useEffect(() => {
+
+  }, [filtrosObj])
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
-  const barChartData = [
-    { name: 'Ene', Infraestructura: 4000, Seguridad: 2400, Medio_Ambiente: 2400 },
-    { name: 'Feb', Infraestructura: 3000, Seguridad: 1398, Medio_Ambiente: 2210 },
-    { name: 'Mar', Infraestructura: 2000, Seguridad: 9800, Medio_Ambiente: 2290 },
-    { name: 'Abr', Infraestructura: 2780, Seguridad: 3908, Medio_Ambiente: 2000 },
-    { name: 'May', Infraestructura: 1890, Seguridad: 4800, Medio_Ambiente: 2181 },
-    { name: 'Jun', Infraestructura: 2390, Seguridad: 3800, Medio_Ambiente: 2500 },
-  ]
+  const handleDownload = () => {
+    console.log("download")
+  }
 
-  const pieChartData = [
-    { name: 'Infraestructura', value: 400 },
-    { name: 'Seguridad', value: 300 },
-    { name: 'Medio Ambiente', value: 300 },
-    { name: 'Cultura', value: 200 },
-  ]
+  const aplicarFiltros = () => {
+    const categoriesParams = filtrosObj.categoria.join(",")
+    const juntasParams = filtrosObj.junta.join(",")
+    const situacionesParams = filtrosObj.situacion.join(",")
+    const departamentosParams = filtrosObj.departamentos.join(",")
 
-  const lineChartData = [
-    { name: 'Ene', resueltos: 400 },
-    { name: 'Feb', resueltos: 300 },
-    { name: 'Mar', resueltos: 500 },
-    { name: 'Abr', resueltos: 280 },
-    { name: 'May', resueltos: 590 },
-    { name: 'Jun', resueltos: 320 },
-  ]
+
+
+    const category = filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : "",
+      junta = filtrosObj.junta.length > 0 ? "junta_vecinal=" + juntasParams + "&" : "",
+      situation = filtrosObj.situacion.length > 0 ? "situacion=" + situacionesParams + "&" : "",
+      departamento = filtrosObj.departamentos.length > 0 ? "departamento=" + departamentosParams + "&" : "",
+      iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
+      endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : ""
+
+
+    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
+    setFiltros(filtros)
+  }
+  const limpiarFiltros = () => {
+    setSelectedCategoria(null)
+    setSelectedSituacion(null)
+    setSelectedJunta(null)
+    setSelectedDepto(null)
+    setDateRange({ from: null, to: null })
+    // void filtersObj
+    setFiltrosObj({
+      categoria: [],
+      junta: [],
+      situacion: [],
+      departamentos: [],
+      iniDate: null,
+      endDate: null
+    })
+    setClearValues(!clearValues)
+    setFiltros(null)
+  }
+
+  const splitTextToLines = (doc, text, maxWidth) => {
+    const lines = [];
+    let currentLine = '';
+    const words = text.split(' ');
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const width = doc.getStringUnitWidth(currentLine + ' ' + word) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+      if (width < maxWidth) {
+        currentLine += (currentLine ? ' ' : '') + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    return lines;
+  };
+
+  const handleExportPDF = async (comments = "") => {
+    const doc = new jsPDF();
+
+    // Título del PDF
+    doc.setFontSize(18);
+    doc.text('Dashboard Municipal', 14, 20);
+
+    // Subtítulos y datos generales
+    doc.setFontSize(14);
+    doc.text('Resumen de Estadísticas', 14, 30);
+    doc.text(`Publicaciones Recibidas: ${cardsData?.publicaciones || 0}`, 14, 40);
+    doc.text(`Usuarios Activos: ${cardsData?.usuarios || 0}`, 14, 50);
+    doc.text(`Publicaciones Resueltas: ${cardsData?.problemas_resueltos || 0}`, 14, 60);
+
+    // Capturar y añadir el Bar Chart
+    if (barChartRef.current && barData.length > 0) {
+      const barCanvas = await html2canvas(barChartRef.current);
+      const barImgData = barCanvas.toDataURL('image/png');
+      doc.addPage();
+      doc.text('Publicaciones por Mes y Categoría:', 14, 20);
+      doc.addImage(barImgData, 'PNG', 14, 30, 180, 90); // Ajustar dimensiones si es necesario
+    }
+
+    // Capturar y añadir el Pie Chart
+    if (pieChartRef.current && pieData.length > 0) {
+      const pieCanvas = await html2canvas(pieChartRef.current);
+      const pieImgData = pieCanvas.toDataURL('image/png');
+      doc.addPage();
+      doc.text('Publicaciones por Categoría:', 14, 20);
+      doc.addImage(pieImgData, 'PNG', 14, 30, 180, 90);
+    }
+
+    // Capturar y añadir el Line Chart
+    if (lineChartRef.current && lineChartData.length > 0) {
+      const lineCanvas = await html2canvas(lineChartRef.current);
+      const lineImgData = lineCanvas.toDataURL('image/png');
+      doc.addPage();
+      doc.text('Resueltos por Mes:', 14, 20);
+      doc.addImage(lineImgData, 'PNG', 14, 30, 180, 90);
+    }
+
+    if (comments) {
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text('Comentarios Adicionales:', 14, 20);
+
+      // Configurar el ancho máximo del texto
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      const margin = 14; // Margen izquierdo y derecho
+      const maxWidth = pageWidth - margin * 2; // Ancho máximo permitido para el texto
+
+      doc.setFontSize(12);
+      const lines = doc.splitTextToSize(comments, maxWidth); // Dividir texto en líneas ajustadas al ancho
+      doc.text(lines, margin, 30); // Añadir texto, respetando el margen
+    }
+
+    // Guardar el PDF
+    doc.save('dashboard.pdf');
+  };
+
+  const handleModalConfirm = () => {
+    handleExportPDF(additionalComments);
+    setIsModalOpen(false);
+    setAdditionalComments("");
+  };
+
+  // const lineChartData = [
+  //   { name: 'Ene', resueltos: 400 },
+  //   { name: 'Feb', resueltos: 300 },
+  //   { name: 'Mar', resueltos: 500 },
+  //   { name: 'Abr', resueltos: 280 },
+  //   { name: 'May', resueltos: 590 },
+  //   { name: 'Jun', resueltos: 320 },
+  // ]
+
 
   const areaChartData = [
     { name: 'Ene', Infraestructura: 4000, Seguridad: 2400, Medio_Ambiente: 2400 },
@@ -110,25 +320,12 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   ]
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
-  const filters = {
-    category: "infraestructura",
-    council: "junta1",
-    status: "recibido",
-    startDate: "2022-01-01",
-    endDate: "2022-12-31",
-  }
-  const clearFilters = () => {
-    console.log("clear filters")
-  }
-  const applyFilters = () => {
-    console.log("apply filters")
-  }
+
   return (
     <>
-      <TopBar handleOpenSidebar={handleOpenSidebar} title="Dashboard" />
+      <TopBar handleOpenSidebar={handleOpenSidebar} title="Dashboard Municipal" />
       <div className="p-8 bg-gray-100 min-h-screen">
         <div className="p-8 bg-gray-100 min-h-screen">
-          <h1 className="text-3xl font-bold mb-6">Dashboard Municipal</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {
@@ -184,82 +381,27 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
 
           </div>
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Filtros</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                  <Select onValueChange={(value) => handleFilterChange('category', value)} value={filters.category}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="infraestructura">Infraestructura</SelectItem>
-                      <SelectItem value="seguridad">Seguridad</SelectItem>
-                      <SelectItem value="medio_ambiente">Medio Ambiente</SelectItem>
-                      <SelectItem value="cultura">Cultura</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Junta Vecinal</label>
-                  <Select onValueChange={(value) => handleFilterChange('council', value)} value={filters.council}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar junta vecinal" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="junta1">Junta Vecinal 1</SelectItem>
-                      <SelectItem value="junta2">Junta Vecinal 2</SelectItem>
-                      <SelectItem value="junta3">Junta Vecinal 3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Situación</label>
-                  <Select onValueChange={(value) => handleFilterChange('status', value)} value={filters.status}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar situación" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recibido">Recibido</SelectItem>
-                      <SelectItem value="en_curso">En Curso</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Inicio</label>
-                  {/* skeleton fake datepicker */}
-                  <Skeleton width="full" height="h-10">
-                    <input type="text" className="border rounded-l px-2 py-1 w-full md:w-1/2" placeholder="Ej: 31-10-2024" />
-                  </Skeleton>
-                  {/* <DatePicker
-                    selectedDate={filters.startDate}
-                    onDateSelect={(date) => handleFilterChange('startDate', date)}
-                  /> */}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Fin</label>
-                  {/* skeleton fake datepicker */}
-                  <Skeleton width="full" height="h-10">
-                    <input type="text" className="border rounded-l px-2 py-1 w-full md:w-1/2" placeholder="Ej: 31-10-2024" />
-                  </Skeleton>
-                  {/* <DatePicker
-                    selectedDate={filters.endDate}
-                    onDateSelect={(date) => handleFilterChange('endDate', date)}
-                  /> */}
-                </div>
-              </div>
-              <div className="flex justify-end space-x-4">
-                <Button variant="outline" onClick={clearFilters}>Limpiar Filtros</Button>
-                <Button onClick={applyFilters}>Aplicar Filtros</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className='mb-5'>
+            <Filters
+              clearValues={clearValues}
+              categorias={categorias}
+              situaciones={situaciones}
+              juntasVecinales={juntasVecinales}
+              departamentos={departamentos}
+              setFiltrosObj={setFiltrosObj}
+              filtrosObj={filtrosObj}
+              dateRange={dateRange}
+              setDateRange={setDateRange}
+              setIsValid={setIsValid}
+              isValid={isValid}
+              loading={loading}
+              handleDownload={handleDownload}
+              limpiarFiltros={limpiarFiltros}
+              aplicarFiltros={aplicarFiltros}
+              isDownloadAvailable={false}
+              showDownload={false}
+            />
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {
               loading ? (
@@ -275,48 +417,73 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                 </>
               ) : (
                 <>
-                  <Card>
+                  <Card ref={barChartRef}>
                     <CardHeader>
                       <CardTitle>Publicaciones por Mes y Categoría</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={barData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          {barKeys.map((key, index) => (
-                            <Bar key={index} dataKey={key} stackId="a" fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </BarChart>
+                        {barData.length === 0
+                          ?
+                          (
+                            <div className="flex justify-center items-center h-full">
+                              <EmptyState Image={ChartColumnIncreasing} title="No hay datos para mostrar" description="No se encontraron datos para mostrar" />
+                            </div>
+                          )
+                          :
+                          (
+                            <BarChart data={barData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" />
+                              <YAxis />
+                              <Tooltip />
+                              <Legend />
+                              {barKeys.map((key, index) => (
+                                console.log(key),
+                                console.log(getColorForCategory(key)),
+                                <Bar key={index} dataKey={key} stackId="a" fill={getColorForCategory(key)} />
+                              ))}
+                            </BarChart>
+                          )
+                        }
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card ref={pieChartRef}>
                     <CardHeader>
                       <CardTitle>Distribución de Publicaciones por Categoría</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {pieData?.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
+                        {pieData.length === 0
+                          ?
+                          (
+                            <div className="flex justify-center items-center h-full">
+                              <EmptyState Image={ChartPie} title="No hay datos para mostrar" description="No se encontraron datos para mostrar" />
+                            </div>
+                          )
+                          :
+                          (
+                            <PieChart>
+                              <Pie
+                                label={true}
+                                data={pieData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={true}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {pieData?.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={getColorForCategory(entry.name)} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                              <Legend />
+                            </PieChart>
+                          )
+                        }
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
@@ -327,26 +494,51 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
 
           </div>
+          {loading ?
+            (
+              <Skeleton width="full" height="h-96">
+                <Card className="h-96 bg-inherit">
+                </Card>
+              </Skeleton>
+            )
+            :
+            (
+              <Card className="mb-8" ref={lineChartRef}>
+                <CardHeader>
+                  <CardTitle>Tendencia de Resolución de Problemas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    {lineChartData.length === 0
+                      ?
+                      (
+                        <div className="flex justify-center items-center h-full">
+                          <EmptyState Image={ChartLine} title="No hay datos para mostrar" description="No se encontraron datos para mostrar" />
+                        </div>
+                      )
+                      :
+                      (
+                        <LineChart data={lineChartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line name="Recibidos" strokeWidth={3} type="monotone" dataKey="recibidos" stroke="#82ca9d" />
+                          <Line name="Resueltos" strokeWidth={3} type="monotone" dataKey="resueltos" stroke="#8884d8" />
+                          <Line name="En curso" strokeWidth={3} type="monotone" dataKey="en_curso" stroke="#ff8042" />
+                        </LineChart>
+                      )
+                    }
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tendencia de Resolución de Problemas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={lineChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="resueltos" stroke="#8884d8" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
+            )
+          }
+
+          {/* 
             <Card>
               <CardHeader>
                 <CardTitle>Presupuesto Asignado por Categoría</CardTitle>
@@ -365,10 +557,9 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
-          </div>
+            </Card> */}
 
-          <Card className="mb-8">
+          {/* <Card className="mb-8">
             <CardHeader>
               <CardTitle>Relación entre Tiempo de Resolución y Prioridad</CardTitle>
             </CardHeader>
@@ -384,7 +575,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                 </ScatterChart>
               </ResponsiveContainer>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card>
             <CardHeader>
@@ -392,19 +583,40 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-4">
-                <Button>Nueva Publicación</Button>
-                <Button variant="outline">Ver Todas las Publicaciones</Button>
-                <Button variant="outline">Generar Reporte</Button>
+                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button disabled={pieData.length <= 0 && barData.length <= 0 && lineChartData.length <= 0} className="w-full md:w-[unset] bg-green-500 hover:bg-green-600 text-white filter-btn">
+                      Generar Reporte
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Agregar Comentarios al Reporte</DialogTitle>
+                      <DialogDescription>
+                        Puede agregar comentarios adicionales que se incluirán en el reporte PDF.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                      value={additionalComments}
+                      onChange={(e) => setAdditionalComments(e.target.value)}
+                      placeholder="Escriba sus comentarios aquí..."
+                    />
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+                      <Button className="w-full md:w-[unset] bg-green-500 hover:bg-green-600 text-white filter-btn" onClick={handleModalConfirm}>Descargar</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
-    
+      </div >
+
     </>
 
 
-   
+
   )
 }
 

@@ -12,8 +12,11 @@ import DatePicker from "../DatePicker"
 import MultiSelect from "../MultiSelect"
 import axios from "axios"
 import TopBar from "../TopBar"
-import {BASE_URL} from '../../api/axios'
+import { BASE_URL } from '../../api/axios'
 import useAxiosPrivate from '../../hooks/useAxiosPrivate'
+
+
+import Filters from "../Filters"
 
 export default function PublicacionesListado({
   isOpened,
@@ -29,22 +32,32 @@ export default function PublicacionesListado({
   // OPCIONES SELECT
   const [categorias, setCategorias] = useState([])
   const [juntasVecinales, setJuntasVecinales] = useState([])
-
+  const [departamentos, setDepartamentos] = useState([])
+  // const situaciones = [
+  //   "Recibido",
+  //   "En curso",
+  //   "Resuelto"
+  // ]
   const situaciones = [
-    {nombre: "Recibido", value: "recibido"},
-    {nombre: "En curso", value: "en_curso"},
-    {nombre: "Resuelto", value: "resuelto"}
+    { nombre: "Recibido", value: "recibido" },
+    { nombre: "En curso", value: "en_curso" },
+    { nombre: "Resuelto", value: "resuelto" }
   ]
 
   // VALORES SELECCIONADOS FILTROS
-  const [selectedIniDate, setSelectedIniDate] = useState(null)
-  const [selectedEndDate, setSelectedEndDate] = useState(null)
-  const [clearValues , setClearValues] = useState(false)
+  const [selectedCategoria, setSelectedCategoria] = useState(null)
+  const [selectedSituacion, setSelectedSituacion] = useState(null)
+  const [selectedJunta, setSelectedJunta] = useState(null)
+  const [selecteDepto, setSelectedDepto] = useState(null)
+  const [dateRange, setDateRange] = useState({ from: null, to: null })
+  const [clearValues, setClearValues] = useState(false)
+  const [isDownloadAvailable, setIsDownloadAvailable] = useState(false)
   // object filtros
   const [filtrosObj, setFiltrosObj] = useState({
     categoria: [],
     junta: [],
     situacion: [],
+    departamentos: [],
     iniDate: null,
     endDate: null
   })
@@ -56,15 +69,14 @@ export default function PublicacionesListado({
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
   const fetchURLS = async (urls) => {
     try {
+      // add loading state
 
-      const [categorias, juntasVecinales] = await Promise.all(urls.map(url => axiosPrivate.get(url)
-      .then(res => {
-        return res.data;
-      }))
-      )
-      console.log(juntasVecinales)
-      // set values
-
+      const [categorias, juntasVecinales, departamentos] = await Promise.all(urls.map(url => fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      }).then(res => res.json())))
+      // change nombre_calle to nombre on juntasVecinales
       juntasVecinales.map(junta => {
         junta.nombre = junta.nombre_calle
         return junta
@@ -72,62 +84,115 @@ export default function PublicacionesListado({
 
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)
-      
+      setDepartamentos(departamentos)
+
     } catch (e) {
       setFilterError(e)
-      
+
     }
   }
   useEffect(() => {
 
     fetchURLS([
-      `categorias/`,
-      `juntas-vecinales/`
+      `${api_url}categorias/`,
+      `${api_url}juntas-vecinales/`,
+      `${api_url}departamentos-municipales/`
     ])
     console.log(BASE_URL, axiosPrivate)
 
   }, [])
+  useEffect(() => {
+    const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
+      junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
+      situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
+      departamento = selecteDepto ? "departamento=" + selecteDepto + "&" : "",
+      iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
+      endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
+      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
+    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
+    setFiltros(filtros)
+  }, [selectedCategoria, selectedJunta, selectedSituacion, dateRange, publicacionesPorPagina, selecteDepto])
 
+  useEffect(() => {
+
+  }, [filtrosObj])
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
-  const handleDownload = () => {
-    // change the href to the correct url
-    window.location.href = `https://proyecto-municipal-vercel.vercel.app/api/export-to-excel/${filtros ? "?" + filtros : ""}`
+  const handleDownload = async () => {
+    try {
+      const token = localStorage.getItem("authToken"); // Obtén el token desde el almacenamiento local
+      const response = await axios.get(`${api_url}export-to-excel/?${filtros}`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+        },
+        responseType: "blob", // Asegúrate de manejar la respuesta como un archivo blob
+      });
 
+      // Crear una URL para el archivo y desencadenar la descarga
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
 
-  }
+      // Opcional: Usa una fecha o nombre personalizado para el archivo
+      const filename = `publicaciones_${new Date().toISOString().split("T")[0]}.xlsx`;
+      link.setAttribute("download", filename);
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Limpia el elemento creado
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error al descargar el archivo:", error);
+    }
+  };
+
   const aplicarFiltros = () => {
     // create url with filters object
-    const categoriesParams = filtrosObj.categoria.join(","),
-    juntasParams = filtrosObj.junta.join(","),
-    situacionesParams = filtrosObj.situacion.join(",")
+    const categoriesParams = filtrosObj.categoria.join(",")
+    const juntasParams = filtrosObj.junta.join(",")
+    const situacionesParams = filtrosObj.situacion.join(",")
+    const departamentosParams = filtrosObj.departamentos.join(",")
+
+
 
     const category = filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : "",
-      junta = filtrosObj.junta.length >0 ? "junta_vecinal=" + juntasParams + "&" : "",
-      situation = filtrosObj.situacion.length >0 ? "situacion=" + situacionesParams + "&" : "",
-      iniDate = selectedIniDate ? "fecha_publicacion_after=" + format(selectedIniDate, "yyyy-MM-dd") + "&" : "",
-      endDate = selectedEndDate ? "fecha_publicacion_before=" + format(selectedEndDate, "yyyy-MM-dd")+ "&" : "",
+      junta = filtrosObj.junta.length > 0 ? "junta_vecinal=" + juntasParams + "&" : "",
+      situation = filtrosObj.situacion.length > 0 ? "situacion=" + situacionesParams + "&" : "",
+      departamento = filtrosObj.departamentos.length > 0 ? "departamento=" + departamentosParams + "&" : "",
+      iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
+      endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
-    
-    const filtros = `${category}${junta}${situation}${iniDate}${endDate}` 
-    let url = `${api_url}publicaciones/?${category}${junta}${situation}${iniDate}${endDate}`
+
+
+    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
+    let url = `${api_url}publicaciones/?${category}${junta}${situation}${departamento}${iniDate}${endDate}`
+
+    console.log(filtros)
+    console.log(filtrosObj.categoria.length)
 
     setUrl(url)
     setFiltros(filtros)
     setCurrentPage(1)
   }
   const limpiarFiltros = () => {
+    setSelectedCategoria(null)
+    setSelectedSituacion(null)
+    setSelectedJunta(null)
+    setSelectedDepto(null)
+    setDateRange({ from: null, to: null })
     setUrl(null)
     setFiltrosObj({
       categoria: [],
       junta: [],
       situacion: [],
+      departamentos: [],
       iniDate: null,
       endDate: null
     })
     setClearValues(!clearValues)
-    
+
   }
 
   return (
@@ -136,81 +201,27 @@ export default function PublicacionesListado({
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
       <main className=" p-4  bg-gray-100 ">
-        <div className="bg-white m-4 p-6 rounded-lg shadow-md">
+        <div className="m-4">
+          <Filters
+            clearValues={clearValues}
+            categorias={categorias}
+            situaciones={situaciones}
+            juntasVecinales={juntasVecinales}
+            departamentos={departamentos}
+            setFiltrosObj={setFiltrosObj}
+            filtrosObj={filtrosObj}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            setIsValid={setIsValid}
+            isValid={isValid}
+            loading={loading}
+            handleDownload={handleDownload}
+            limpiarFiltros={limpiarFiltros}
+            aplicarFiltros={aplicarFiltros}
+            showDownload={true}
+            isDownloadAvailable={isDownloadAvailable}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <div>
-              <h2 className="mb-2 font-semibold">Categoría</h2>
-              <div>
-              <MultiSelect clearValues = {clearValues} options={categorias} 
-              onValueChange={(val)=>{
-                setFiltrosObj({ ...filtrosObj, categoria: val })
-              }} />
-            </div>
-            </div>
-            <div>
-              <h2 className="mb-2 font-semibold">Estado de la publicación</h2>
-              <div>
-              <MultiSelect clearValues = {clearValues} options={situaciones} onValueChange={(val)=>{
-                setFiltrosObj({ ...filtrosObj, situacion: val })
-              }} />
-            </div>
-            </div>
-            <div>
-              <h2 className="mb-2 font-semibold">Junta vecinal</h2>
-              <div>
-              <MultiSelect clearValues = {clearValues} options={juntasVecinales} onValueChange={(val)=>{
-                setFiltrosObj({ ...filtrosObj, junta: val })
-              }} />
-            </div>
-            </div>
-            
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h2 className="mb-2 font-semibold">Fecha inicial</h2>
-              <div className="flex">
-                <DatePicker
-                  selectedDate={selectedIniDate}
-                  setSelectedDate={setSelectedIniDate}
-                  setIsValid={setIsValid}
-                  isValid={isValid}
-                />
-              </div>
-            </div>
-            <div>
-              <h2 className="mb-2 font-semibold">Fecha fin</h2>
-              <div className="flex">
-                {/* <input type="text" className="border rounded-l px-2 py-1 w-full" placeholder="Ej: 31-10-2024" /> */}
-
-
-                <DatePicker
-                  selectedDate={selectedEndDate}
-                  setSelectedDate={setSelectedEndDate}
-                  setIsValid={setIsValid}
-                  isValid={isValid}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-between flex-wrap  mb-6 btn-section  p-1">
-            <Button disabled={loading} variant="outline" onClick={handleDownload} className="mb-3 bg-blue-500 hover:bg-blue-600 filter-btn w-full md:w-[unset]  ">
-
-              <span className="text-white flex justify-items-center justify-center">
-                <Download className="mr-2 h-4 w-4" />
-                Descargar datos
-              </span>
-
-
-            </Button>
-            <div className="filter-btn-cont w-full md:w-[unset] ">
-              <Button disabled={loading} onClick={limpiarFiltros} className="w-full mb-2 mr-2 md:w-[unset] filter-btn" variant="outline">Limpiar filtros</Button>
-              <Button disabled={isValid } onClick={aplicarFiltros}  className="w-full md:w-[unset] bg-green-500 hover:bg-green-600 text-white filter-btn">Aplicar filtros</Button>
-
-            </div>
-          </div>
         </div>
         <div className="bg-white m-4  p-6 rounded-lg shadow-md">
           <TablaPublicaciones
@@ -221,17 +232,18 @@ export default function PublicacionesListado({
             loading={loading}
             setLoading={setLoading}
             url={url}
+            setDownloadIsAvailable={setIsDownloadAvailable}
           />
 
         </div>
 
 
       </main>
-    
-    </>
-      
 
-    
+    </>
+
+
+
 
   )
 }
