@@ -42,7 +42,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   const handleStateChange = (checked) => {
     setEstado(checked)
     let festado = checked ? 'Publicado' : 'Pendiente'
-    setAnuncio({...anuncio, estado: festado})
+    setAnuncio({ ...anuncio, estado: festado })
   }
 
   const handleOpenSidebar = () => {
@@ -88,44 +88,64 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     })
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const formData = new FormData()
-    Object.keys(anuncio).forEach(key => {
-      formData.append(key, anuncio[key])
-    })
-    selectedFiles.forEach(fileObj => {
-      formData.append('imagenes', fileObj.file)
-    })
-    console.log("formData", formData)
-    console.log("anuncio", selectedFiles)
-    axiosPrivate.post('anuncios-municipales/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-      .then(response => {
-        toast({
-          title: "Anuncio creado",
-          description: "El anuncio ha sido creado exitosamente.",
-          duration: 5000,
-          className: "bg-green-500 text-white",
-        })
-        navigate("/anuncios", { state: { from: "anuncio-formulario" } })
-      })
-      .catch(error => {
-        console.error("Error creating anuncio:", error)
-        toast({
-          title: "Error",
-          description: "Hubo un problema al crear el anuncio. Por favor, intente nuevamente.",
-          variant: "destructive",
-          duration: 5000,
-        })
-      })
-    
-    
 
-  }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    // Crear el anuncio
+    try {
+      const anuncioData = {
+        usuario: 1, // Asumimos que el usuario está autenticado y su ID está disponible
+        titulo: anuncio.titulo,
+        subtitulo: "AA",
+        estado: "Pendiente",
+        descripcion: anuncio.descripcion,
+        categoria: anuncio.categoria,
+        fecha: new Date().toISOString(),
+      };
+
+      const anuncioResponse = await axiosPrivate.post(
+        "anuncios-municipales/",
+        anuncioData
+      );
+
+      const anuncioId = anuncioResponse?.data?.id;
+
+      console.log(anuncioResponse)
+
+      console.log(selectedFiles)
+
+      // Subir las imágenes
+      for (const image of selectedFiles) {
+        const formData = new FormData();
+        formData.append("anuncio", anuncioId)
+        formData.append("anuncio_id", anuncioId);
+        formData.append("imagen", image?.file);
+        formData.append("extension", image?.name?.split(".")?.pop());
+
+        await axiosPrivate.post("/imagenes-anuncios/", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          }
+        });
+      }
+
+      toast({
+        title: "Éxito",
+        description: "El anuncio y las imágenes fueron creados correctamente.",
+        variant: "success",
+      });
+
+      navigate("/ruta-anuncios"); // Redirigir a la página de anuncios
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Hubo un problema al crear el anuncio o subir las imágenes.",
+        variant: "destructive",
+      });
+      console.error(error);
+    }
+  };
 
   const extractCategoriesValues = (categories) => {
     return categories.map((category) => ({
@@ -155,9 +175,9 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
       })
     }
   }, [selectedFiles])
- 
 
-  
+
+
 
   return (
     <>
@@ -165,9 +185,9 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
       <main className="p-6">
         <Card>
           <CardContent className="p-6">
-            <Button 
-              onClick={() => navigate("/anuncios", { state: { from: "anuncio-formulario" } })} 
-              variant="outline" 
+            <Button
+              onClick={() => navigate("/anuncios", { state: { from: "anuncio-formulario" } })}
+              variant="outline"
               className="mb-4 bg-white text-green-600 border-green-600 hover:bg-green-50 w-full lg:w-auto"
             >
               <ArrowLeftIcon className="mr-2 h-4 w-4" />
@@ -182,13 +202,13 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     required
                     placeholder="Ingrese el título"
                     value={anuncio.titulo}
-                    onChange={(e) => setAnuncio({...anuncio, titulo: e.target.value})}
+                    onChange={(e) => setAnuncio({ ...anuncio, titulo: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="categoria">Categoría*</Label>
                   <Select
-                    onValueChange={(value) => setAnuncio({...anuncio, categoria: parseInt(value)})}
+                    onValueChange={(value) => setAnuncio({ ...anuncio, categoria: parseInt(value) })}
                     required
                   >
                     <SelectTrigger id="categoria">
@@ -216,7 +236,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                   className="min-h-[150px]"
                   placeholder="Ingrese la descripción"
                   value={anuncio.descripcion}
-                  onChange={(e) => setAnuncio({...anuncio, descripcion: e.target.value})}
+                  onChange={(e) => setAnuncio({ ...anuncio, descripcion: e.target.value })}
                 />
               </div>
 
@@ -228,7 +248,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     type="date"
                     required
                     value={anuncio.fecha_publicacion}
-                    onChange={(e) => setAnuncio({...anuncio, fecha_publicacion: e.target.value})}
+                    onChange={(e) => setAnuncio({ ...anuncio, fecha_publicacion: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -238,7 +258,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     required
                     placeholder="Ej: Municipalidad de Calama"
                     value={anuncio.autor}
-                    onChange={(e) => setAnuncio({...anuncio, autor: e.target.value})}
+                    onChange={(e) => setAnuncio({ ...anuncio, autor: e.target.value })}
                   />
                 </div>
               </div>
@@ -246,9 +266,8 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
               <div className="space-y-2">
                 <Label>Adjuntar imágenes</Label>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                    isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                    }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -270,6 +289,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                       multiple
                       className="hidden"
                       onChange={handleFileChange}
+                      accept="image/jpeg, image/png, image/gif"
                     />
                   </div>
                 </div>
