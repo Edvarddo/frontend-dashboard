@@ -14,11 +14,10 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeftIcon, Upload, X } from 'lucide-react'
+import { ArrowLeftIcon } from 'lucide-react'
 import useAxiosPrivate from '../hooks/useAxiosPrivate'
+import { parse } from 'date-fns'
 import { useToast } from "../hooks/use-toast"
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 
 const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   const axiosPrivate = useAxiosPrivate()
@@ -31,17 +30,14 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     titulo: '',
     subtitulo: '',
     descripcion: '',
-    estado: '',
+    estado: '' ,
     categoria: '',
-    fecha_publicacion: format(new Date(), 'yyyy-MM-dd'),
-    autor: 'Municipalidad de Calama'
   })
-  const [selectedFiles, setSelectedFiles] = useState([])
-  const [isDragging, setIsDragging] = useState(false)
 
   const handleStateChange = (checked) => {
     setEstado(checked)
     let festado = checked ? 'Publicado' : 'Pendiente'
+    console.log(festado)
     setAnuncio({...anuncio, estado: festado})
   }
 
@@ -49,62 +45,14 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     setIsOpened(!isOpened)
   }
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files)
-    addFiles(files)
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const files = Array.from(e.dataTransfer.files)
-    addFiles(files)
-  }
-
-  const addFiles = (files) => {
-    const newFiles = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }))
-    setSelectedFiles(prevFiles => [...prevFiles, ...newFiles])
-  }
-
-  const removeFile = (index) => {
-    setSelectedFiles(prevFiles => {
-      const updatedFiles = [...prevFiles]
-      URL.revokeObjectURL(updatedFiles[index].preview)
-      updatedFiles.splice(index, 1)
-      return updatedFiles
-    })
-  }
-
   const handleSubmit = (e) => {
     e.preventDefault()
-    const formData = new FormData()
-    Object.keys(anuncio).forEach(key => {
-      formData.append(key, anuncio[key])
-    })
-    selectedFiles.forEach(fileObj => {
-      formData.append('imagenes', fileObj.file)
-    })
-    console.log("formData", formData)
-    console.log("anuncio", selectedFiles)
-    axiosPrivate.post('anuncios-municipales/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    console.log(anuncio)
+    console.log("Formulario enviado")
+    
+    axiosPrivate.post('anuncios-municipales/', anuncio)
       .then(response => {
+        console.log(response)
         toast({
           title: "Anuncio creado",
           description: "El anuncio ha sido creado exitosamente.",
@@ -122,9 +70,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
           duration: 5000,
         })
       })
-    
-    
-
   }
 
   const extractCategoriesValues = (categories) => {
@@ -147,17 +92,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   useEffect(() => {
     fetchURLS('categorias/')
   }, [])
-
-  useEffect(() => {
-    return () => {
-      selectedFiles.forEach(fileObj => {
-        URL.revokeObjectURL(fileObj.preview)
-      })
-    }
-  }, [selectedFiles])
- 
-
-  
 
   return (
     <>
@@ -186,6 +120,15 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="subtitulo">Subtítulo</Label>
+                  <Input
+                    id="subtitulo"
+                    placeholder="Ingrese el subtítulo"
+                    value={anuncio.subtitulo}
+                    onChange={(e) => setAnuncio({...anuncio, subtitulo: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="categoria">Categoría*</Label>
                   <Select
                     onValueChange={(value) => setAnuncio({...anuncio, categoria: parseInt(value)})}
@@ -206,6 +149,19 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="estado" 
+                      checked={estado}
+                      onCheckedChange={(checked) => handleStateChange(checked)}
+                    />
+                    <Label htmlFor="estado" className="text-sm font-normal">
+                      {estado ? 'Publicado' : 'Pendiente'}
+                    </Label>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -220,93 +176,13 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="fecha_publicacion">Fecha de publicación*</Label>
-                  <Input
-                    id="fecha_publicacion"
-                    type="date"
-                    required
-                    value={anuncio.fecha_publicacion}
-                    onChange={(e) => setAnuncio({...anuncio, fecha_publicacion: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="autor">Autor*</Label>
-                  <Input
-                    id="autor"
-                    required
-                    placeholder="Ej: Municipalidad de Calama"
-                    value={anuncio.autor}
-                    onChange={(e) => setAnuncio({...anuncio, autor: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Adjuntar imágenes</Label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                    isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <Upload className="h-8 w-4 text-gray-400" />
-                    <div className="text-center">
-                      <Label
-                        htmlFor="imagenes"
-                        className="text-green-600 hover:text-green-700 cursor-pointer"
-                      >
-                        Seleccione archivos
-                      </Label>
-                      <span className="text-gray-500"> o arrastre y suelte aquí</span>
-                    </div>
-                    <Input
-                      id="imagenes"
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                  </div>
-                </div>
-
-                {selectedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm text-gray-500 mb-2">
-                      {selectedFiles.length} {selectedFiles.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {selectedFiles.map((fileObj, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={fileObj.preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6"
-                            onClick={() => removeFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               <div className="flex justify-end">
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  
+                 type="submit" className="bg-emerald-600 hover:bg-emerald-700">
                   Publicar anuncio
                 </Button>
+               
               </div>
             </form>
           </CardContent>

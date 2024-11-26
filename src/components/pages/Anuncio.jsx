@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Plus, ChevronDown, ChevronUp, Eye, Edit, Trash2, Calendar, Tag, MapPin, Users, Clock, ChevronLeft, ChevronRight, X, Upload } from 'lucide-react'
 import Image from '../../assets/placeholder.svg'
 import TopBar from "../TopBar"
@@ -18,6 +19,7 @@ import { Skeleton } from '../ui/skeleton'
 import ImageCarousel from '../ImageCarousel'
 import ImageGallery from '../ImageGallery'
 import { useToast } from "../../hooks/use-toast"
+import EditAnuncioModal from '../EditAnuncioModal'
 
 const estadoColors = {
   'Publicado': 'bg-green-100 text-green-800',
@@ -25,109 +27,103 @@ const estadoColors = {
   'Pendiente': 'bg-blue-100 text-blue-800'
 }
 
-const EditAnuncioModal = ({ anuncio, onSave, onClose, categorias }) => {
-  const [editedAnuncio, setEditedAnuncio] = useState({
-    id: anuncio?.id,
-    usuario: 1,
-    titulo: anuncio?.titulo,
-    subtitulo: anuncio?.subtitulo,
-    descripcion: anuncio?.descripcion,
-    categoria: anuncio?.categoria.id,
-    estado: anuncio?.estado
-  })
+// const EditAnuncioModal = ({ anuncio, onSave, onClose, categorias }) => {
+//   const [editedAnuncio, setEditedAnuncio] = useState({
+//     id: anuncio?.id,
+//     usuario: 1,
+//     titulo: anuncio?.titulo,
+//     subtitulo: anuncio?.subtitulo,
+//     descripcion: anuncio?.descripcion,
+//     categoria: anuncio?.categoria.id,
+//     estado: anuncio?.estado
+//   })
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setEditedAnuncio(prev => ({ ...prev, [name]: value }))
-  }
+//   const handleChange = (e) => {
+//     const { name, value } = e.target
+//     setEditedAnuncio(prev => ({ ...prev, [name]: value }))
+//   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    onSave(editedAnuncio)
-  }
+//   const handleSubmit = (e) => {
+//     e.preventDefault()
+//     onSave(editedAnuncio)
+//   }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="titulo">Título</Label>
-        <Input
-          id="titulo"
-          name="titulo"
-          value={editedAnuncio.titulo}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="subtitulo">Subtítulo</Label>
-        <Input
-          id="subtitulo"
-          name="subtitulo"
-          value={editedAnuncio.subtitulo}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <Label htmlFor="descripcion">Descripción</Label>
-        <Textarea
-          id="descripcion"
-          name="descripcion"
-          value={editedAnuncio.descripcion}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="categoria">Categoría</Label>
-        <Select
-          name="categoria"
-          value={editedAnuncio?.categoria?.toString()}
-          onValueChange={(value) => setEditedAnuncio(prev => ({ ...prev, categoria: parseInt(value) }))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Seleccione una categoría" />
-          </SelectTrigger>
-          <SelectContent>
-            {categorias.map((categoria) => (
-              <SelectItem
-                key={categoria.value}
-                value={categoria.value.toString()}
-              >
-                {categoria.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="estado">Estado</Label>
-        <Select
-          name="estado"
-          value={editedAnuncio.estado}
-          onValueChange={(value) => handleChange({ target: { name: 'estado', value } })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Seleccione un estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Publicado">Publicado</SelectItem>
-            <SelectItem value="Borrador">Borrador</SelectItem>
-            <SelectItem value="Pendiente">Pendiente</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end space-x-2">
-        {/* <Button type="button" variant="outline" onClick={() => {
-          onClose();
-          document.querySelector('dialog')?.close();
-        }}>
-          Cancelar
-        </Button> */}
-        <Button className="w-full" type="submit">Guardar cambios</Button>
-      </div>
-    </form>
-  )
-}
+//   return (
+//     <form onSubmit={handleSubmit} className="space-y-4">
+//       <div>
+//         <Label htmlFor="titulo">Título</Label>
+//         <Input
+//           id="titulo"
+//           name="titulo"
+//           value={editedAnuncio.titulo}
+//           onChange={handleChange}
+//           required
+//         />
+//       </div>
+//       <div>
+//         <Label htmlFor="subtitulo">Subtítulo</Label>
+//         <Input
+//           id="subtitulo"
+//           name="subtitulo"
+//           value={editedAnuncio.subtitulo}
+//           onChange={handleChange}
+//         />
+//       </div>
+//       <div>
+//         <Label htmlFor="descripcion">Descripción</Label>
+//         <Textarea
+//           id="descripcion"
+//           name="descripcion"
+//           value={editedAnuncio.descripcion}
+//           onChange={handleChange}
+//           required
+//         />
+//       </div>
+//       <div>
+//         <Label htmlFor="categoria">Categoría</Label>
+//         <Select
+//           name="categoria"
+//           value={editedAnuncio?.categoria?.toString()}
+//           onValueChange={(value) => setEditedAnuncio(prev => ({ ...prev, categoria: parseInt(value) }))}
+//         >
+//           <SelectTrigger>
+//             <SelectValue placeholder="Seleccione una categoría" />
+//           </SelectTrigger>
+//           <SelectContent>
+//             {categorias.map((categoria) => (
+//               <SelectItem
+//                 key={categoria.value}
+//                 value={categoria.value.toString()}
+//               >
+//                 {categoria.nombre}
+//               </SelectItem>
+//             ))}
+//           </SelectContent>
+//         </Select>
+//       </div>
+//       <div>
+//         <Label htmlFor="estado">Estado</Label>
+//         <Select
+//           name="estado"
+//           value={editedAnuncio.estado}
+//           onValueChange={(value) => handleChange({ target: { name: 'estado', value } })}
+//         >
+//           <SelectTrigger>
+//             <SelectValue placeholder="Seleccione un estado" />
+//           </SelectTrigger>
+//           <SelectContent>
+//             <SelectItem value="Publicado">Publicado</SelectItem>
+//             <SelectItem value="Borrador">Borrador</SelectItem>
+//             <SelectItem value="Pendiente">Pendiente</SelectItem>
+//           </SelectContent>
+//         </Select>
+//       </div>
+//       <div className="flex justify-end space-x-2">
+//         <Button className="w-full" type="submit">Guardar cambios</Button>
+//       </div>
+//     </form>
+//   )
+// }
 
 const Anuncio = ({ setIsOpened, isOpened }) => {
   const [expandedId, setExpandedId] = useState(null)
@@ -135,6 +131,8 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [editingAnuncio, setEditingAnuncio] = useState(null)
   const [categorias, setCategorias] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const { toast } = useToast()
   const axiosPrivate = useAxiosPrivate()
   const navigate = useNavigate()
@@ -168,20 +166,24 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
     setIsOpened(!isOpened)
   }
 
-  useEffect(() => {
-    console.log('Anuncios')
+  const fetchAnuncios = (page = 1) => {
     setIsLoading(true)
-    axiosPrivate.get('anuncios-municipales/')
+    axiosPrivate.get(`anuncios-municipales/?page=${page}`)
       .then((response) => {
-        console.log(response.data.results)
-        setListadoAnuncios(response.data.results)
+        console.log(response?.data)
+        setListadoAnuncios(response?.data?.results)
+        setTotalPages(Math.ceil(response?.data?.count / 5)) // Assuming 5 items per page
         setIsLoading(false)
       })
       .catch((error) => {
         console.error(error)
         setIsLoading(false)
       })
-  }, [])
+  }
+
+  useEffect(() => {
+    fetchAnuncios(currentPage)
+  }, [currentPage])
 
   const handleEditClick = (anuncio) => {
     setEditingAnuncio(anuncio)
@@ -208,6 +210,33 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
         toast({
           title: "Error",
           description: "Hubo un problema al actualizar el anuncio. Por favor, intente nuevamente.",
+          variant: "destructive",
+          duration: 5000,
+        })
+      })
+  }
+
+  const handleDeleteAnuncio = (anuncioId) => {
+    axiosPrivate.delete(`anuncios-municipales/${anuncioId}/`)
+      .then(() => {
+        toast({
+          title: "Anuncio eliminado",
+          description: "El anuncio ha sido eliminado exitosamente.",
+          duration: 5000,
+          className: "bg-green-500 text-white",
+        })
+        setListadoAnuncios(prevAnuncios => prevAnuncios.filter(a => a.id !== anuncioId))
+        if (listadoAnuncios.length === 1 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1)
+        } else {
+          fetchAnuncios(currentPage)
+        }
+      })
+      .catch(error => {
+        console.error("Error deleting anuncio:", error)
+        toast({
+          title: "Error",
+          description: "Hubo un problema al eliminar el anuncio. Por favor, intente nuevamente.",
           variant: "destructive",
           duration: 5000,
         })
@@ -297,7 +326,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                                 className="absolute right-4 top-4"
                                 onClick={() => document.querySelector('dialog').close()}
                               >
-                                <X className="h-4 w-4" />
+                                {/* <X className="h-4 w-4" /> */}
                               </Button>
                             </DialogContent>
                           </Dialog>
@@ -321,11 +350,8 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver
-                        </Button>
+                      <div className="flex justify-en
+d space-x-2">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" onClick={() => handleEditClick(anuncio)}>
@@ -342,10 +368,29 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                             />
                           </DialogContent>
                         </Dialog>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Está seguro de eliminar este anuncio?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el anuncio
+                                y removerá los datos de nuestros servidores.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteAnuncio(anuncio.id)}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardContent>
                   </CollapsibleContent>
@@ -353,6 +398,27 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
               </Collapsible>
             ))
           )}
+        </div>
+        <div className="mt-4 flex justify-center">
+          <Button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="mr-2"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Anterior
+          </Button>
+          <span className="mx-2 self-center">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="ml-2"
+          >
+            Siguiente
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
         </div>
       </div>
     </>
