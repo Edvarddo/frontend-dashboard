@@ -403,7 +403,7 @@ d space-x-2">
           <Button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="mr-2"
+            className="mr-2 bg-emerald-600 hover:bg-emerald-700"
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Anterior
@@ -414,7 +414,7 @@ d space-x-2">
           <Button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="ml-2"
+            className="ml-2 bg-emerald-600 hover:bg-emerald-700"
           >
             Siguiente
             <ChevronRight className="h-4 w-4 ml-2" />
