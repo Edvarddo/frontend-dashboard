@@ -23,7 +23,7 @@ import EditAnuncioModal from '../EditAnuncioModal'
 
 const estadoColors = {
   'Publicado': 'bg-green-100 text-green-800',
-  'Borrador': 'bg-yellow-100 text-yellow-800',
+  // 'Borrador': 'bg-yellow-100 text-yellow-800',
   'Pendiente': 'bg-blue-100 text-blue-800'
 }
 
@@ -309,16 +309,16 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                         </div>
                         {anuncio.imagenes.length > 1 && (
                           <Dialog>
-                            <DialogTrigger asChild className='bg-red-100'>
+                            <DialogTrigger asChild className=''>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="mt-2 bg-red-100"
+                                className="mt-2 "
                               >
                                 Ver todas las imágenes ({anuncio.imagenes.length})
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl w-full bg-red-200 ">
+                            <DialogContent className="max-w-4xl w-full  ">
                               <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
                               <Button
                                 variant="ghost"
