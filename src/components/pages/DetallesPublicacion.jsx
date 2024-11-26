@@ -28,8 +28,10 @@ import axios from 'axios';
 import { set } from 'date-fns';
 import TopBar from '../TopBar';
 import { useNavigate } from 'react-router-dom';
+import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 
 const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
+  const axiosPrivate = useAxiosPrivate();
   const DefaultIcon = L.icon({
     iconUrl: icon,
     shadowUrl: iconShadow,
@@ -43,7 +45,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const [publicacion, setPublicacion] = useState({})
   const statusConfig = {
     received: { label: 'Recibido', icon: <MailQuestion className="h-4 w-4" />, color: 'bg-yellow-500' },
-    inProcess: { label: 'En proceso', icon: <Clock className="h-4 w-4" />, color: 'bg-blue-500' },
+    inProcess: { label: 'En curso', icon: <Clock className="h-4 w-4" />, color: 'bg-blue-500' },
     resolved: { label: 'Resuelto', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-500' },
   }
   const navigate = useNavigate();
@@ -54,27 +56,20 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const [tempStatus, setTempStatus] = useState(status)
 
   const url_local = import.meta.env.VITE_URL_PROD_VERCEL
-  const url = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/${id}/`
+  const url = `publicaciones/${id}/`
   const fetchPublicacion = (url) => {
     setLoading(true)
-    fetch(url,
-      {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-
-      }
-    )
-      .then(response => response.json())
-      .then(data => {
-        setPublicacion(data)
-        console.log(data)
-        setLoading(false)
-      })
+    axiosPrivate.get(url
+    ).then(response => {
+      console.log(response.data)
+      setPublicacion(response.data)
+      setLoading(false)
+    })
       .catch(error => {
         setError(error)
         setLoading(false)
       })
+
   }
   useEffect(() => {
     fetchPublicacion(url)
@@ -107,18 +102,11 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
 
   const confirmStatusChange = () => {
     setStatus(tempStatus)
-    const token = localStorage.getItem('authToken')
-    const url = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/${id}/`
-    axios.patch(url, { situacion: tempStatus === 'received' ? 1 : tempStatus === 'inProcess' ? 2 : 3 },
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
 
+    const url = `publicaciones/${id}/`
+    axiosPrivate.patch(url, { situacion: tempStatus === 'received' ? 1 : tempStatus === 'inProcess' ? 2 : 3 })
+      .then(response => {
         console.log(response)
-        // change situacion/estado in publicacion
         setPublicacion({ ...publicacion, situacion: { nombre: tempStatus === 'received' ? 'Recibido' : tempStatus === 'inProcess' ? 'En curso' : 'Resuelto' } })
         console.log(response.data)
       })
@@ -197,7 +185,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                   className={`pub-detail-tab w-[32%] ${activeTab === 'evidencias' ? 'bg-green-600 text-white  ' : 'text-green-600'}`}
                 >
                   <ImageIcon className=" h-4 w-4 mr-2" />
-                  {/* span hidden on mobile sizes */}
+
                   <span className="hidden md:inline">Evidencias</span>
                 </Button>
               </div>
@@ -220,6 +208,12 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                     <CardContent>
                       <div className="grid gap-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-green-600">Nombre de usuario:</p>
+                            <p>
+                              {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.usuario?.nombre}
+                            </p>
+                          </div>
                           <div className="space-y-1">
                             <p className="text-sm font-medium text-green-600">Categoría:</p>
                             <p>
@@ -277,9 +271,9 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                                       <SelectValue placeholder="Seleccionar estado" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="received">Recibido</SelectItem>
-                                      <SelectItem value="inProcess">En curso</SelectItem>
-                                      <SelectItem value="resolved">Resuelto</SelectItem>
+                                      <SelectItem value="received">Recibido {publicacion?.situacion?.nombre === 'Recibido' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                                      <SelectItem value="inProcess">En curso {publicacion?.situacion?.nombre === 'En curso' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                                      <SelectItem value="resolved">Resuelto {publicacion?.situacion?.nombre === 'Resuelto' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
                                     </SelectContent>
                                   </Select>
                                   <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
@@ -319,114 +313,9 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                           </div>
                         </div>
                       </div>
-                      {/* <dl className="grid grid-cols-1 gap-2 text-sm">
-                        <div className="flex justify-between">
-
-                          <dt className="font-medium text-green-600">Categoría:</dt>
-                          <dd>
-                            {
-                              loading ? <Skeleton className="h-4 w-24" /> : publicacion?.categoria?.nombre
-                            }
-                          </dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Fecha de publicación:</dt>
-                          <dd>
-
-                            {
-                              loading ? <Skeleton className="h-4 w-24" /> : new Date(publicacion.fecha_publicacion).toLocaleDateString('es-CL')
-
-                            }
-                          </dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Junta Vecinal:</dt>
-                          <dd>
-                            {
-                              loading ? <Skeleton className="h-4 w-24" /> : publicacion?.junta_vecinal?.nombre_calle
-                            }
-                          </dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Estado:</dt>
-                          <dd>
-                            {
-                              loading ? <Skeleton className="h-4 w-24" /> : (<Badge className="bg-green-100 text-green-800">
-                                {publicacion?.situacion?.nombre}
-                              </Badge>)
-                            }
-                            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="icon">
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                  <DialogTitle>Editar Estado</DialogTitle>
-                                </DialogHeader>
-                                <Select onValueChange={handleStatusChange} defaultValue={status}>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Seleccionar estado" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="received">Recibido</SelectItem>
-                                    <SelectItem value="inProcess">En curso</SelectItem>
-                                    <SelectItem value="resolved">Resuelto</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </DialogContent>
-                            </Dialog>
-                          </dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Responsable:</dt>
-                          <dd>
-                            {
-                              loading ? <Skeleton className="h-4 w-24" /> : "Administrador Municipal"
-                            }
-                          </dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Departamento:</dt>
-                          <dd>
-                            {
-                              loading ? <Skeleton className="h-4 w-24" /> : publicacion?.departamento?.nombre
-                            }
-                          </dd>
-                        </div>
-                      </dl> */}
                     </CardContent>
                   </Card>
-                  {/* <Card>
-                    <CardHeader>
-                      <CardTitle className="text-green-700">Detalles del proyecto</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <dl className="grid grid-cols-1 gap-2 text-sm">
-                        <div>
-                          <dt className="font-medium text-green-600">Descripción:</dt>
-                          <dd className="mt-1">Descripción del proyecto de ejemplo.</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Presupuesto:</dt>
-                          <dd>$100,000</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Fecha de inicio:</dt>
-                          <dd>01/02/2024</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Fecha de finalización:</dt>
-                          <dd>31/12/2024</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium text-green-600">Avance:</dt>
-                          <dd>50%</dd>
-                        </div>
-                      </dl>
-                    </CardContent>
-                  </Card> */}
+
                 </div>
                 <Card>
                   <CardHeader>
@@ -456,28 +345,39 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                   <div className=" bg-green-100 rounded-md overflow-hidden flex items-center justify-center w-full h-full">
                     {
                       loading ? <Skeleton className="h-96 w-full" /> : (
-                        <MapContainer
-                          center={[publicacion?.latitud, publicacion?.longitud]}
-                          zoom={16}
-                          minZoom={13}
-                          maxZoom={18}
 
-
-                        >
-                          <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          />
-                          <Marker
-                            position={[publicacion.latitud, publicacion.longitud]}
+                        publicacion.latitud ? (
+                          <MapContainer
+                            center={[publicacion?.latitud, publicacion?.longitud]}
+                            zoom={16}
+                            minZoom={13}
+                            maxZoom={18}
                           >
-                            <Popup>
-                              {publicacion?.junta_vecinal?.nombre_calle}
-                            </Popup>
-                          </Marker>
-                        </MapContainer>
+                            <TileLayer
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <Marker
+                              position={[publicacion?.latitud, publicacion?.longitud]}
+                            >
+                              <Popup>
+                                {publicacion?.junta_vecinal?.nombre_calle}
+                              </Popup>
+                            </Marker>
+                          </MapContainer>
+                        ) : (
+                          //no map with icon
+                          <div className='bg-gray-200 h-96'>
+
+
+                          </div>
+
+                        )
+
+
+
                       )
                     }
-                    {/* see big map */}
+
 
                   </div>
 

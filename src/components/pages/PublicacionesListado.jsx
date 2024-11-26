@@ -12,6 +12,9 @@ import DatePicker from "../DatePicker"
 import MultiSelect from "../MultiSelect"
 import axios from "axios"
 import TopBar from "../TopBar"
+import { BASE_URL } from '../../api/axios'
+import useAxiosPrivate from '../../hooks/useAxiosPrivate'
+
 
 import Filters from "../Filters"
 
@@ -19,6 +22,7 @@ export default function PublicacionesListado({
   isOpened,
   setIsOpened
 }) {
+  const axiosPrivate = useAxiosPrivate();
   // PARAMETROS URL
   const [currentPage, setCurrentPage] = useState(1)
   const [url, setUrl] = useState(null)
@@ -94,6 +98,7 @@ export default function PublicacionesListado({
       `${api_url}juntas-vecinales/`,
       `${api_url}departamentos-municipales/`
     ])
+    console.log(BASE_URL, axiosPrivate)
 
   }, [])
   useEffect(() => {
@@ -178,7 +183,6 @@ export default function PublicacionesListado({
     setSelectedDepto(null)
     setDateRange({ from: null, to: null })
     setUrl(null)
-    // void filtersObj
     setFiltrosObj({
       categoria: [],
       junta: [],
