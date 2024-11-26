@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeftIcon, Upload, X } from 'lucide-react'
+import { ArrowLeftIcon, Upload, X, Loader2 } from 'lucide-react'
 import useAxiosPrivate from '../hooks/useAxiosPrivate'
 import { useToast } from "../hooks/use-toast"
 import { format } from 'date-fns'
@@ -38,6 +38,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   })
   const [selectedFiles, setSelectedFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleStateChange = (checked) => {
     setEstado(checked)
@@ -88,20 +89,20 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     })
   }
 
-
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsUploading(true);
 
-    // Crear el anuncio
     try {
       const anuncioData = {
-        usuario: 1, // Asumimos que el usuario está autenticado y su ID está disponible
+        usuario: 1,
         titulo: anuncio.titulo,
-        subtitulo: "AA",
-        estado: "Pendiente",
+        subtitulo: anuncio.subtitulo,
+        estado: anuncio.estado,
         descripcion: anuncio.descripcion,
         categoria: anuncio.categoria,
-        fecha: new Date().toISOString(),
+        fecha: anuncio.fecha_publicacion,
+        autor: anuncio.autor
       };
 
       const anuncioResponse = await axiosPrivate.post(
@@ -111,17 +112,12 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
       const anuncioId = anuncioResponse?.data?.id;
 
-      console.log(anuncioResponse)
-
-      console.log(selectedFiles)
-
-      // Subir las imágenes
       for (const image of selectedFiles) {
         const formData = new FormData();
         formData.append("anuncio", anuncioId)
         formData.append("anuncio_id", anuncioId);
         formData.append("imagen", image?.file);
-        formData.append("extension", image?.name?.split(".")?.pop());
+        formData.append("extension", image?.file?.name?.split(".")?.pop());
 
         await axiosPrivate.post("/imagenes-anuncios/", formData, {
           headers: {
@@ -133,10 +129,11 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
       toast({
         title: "Éxito",
         description: "El anuncio y las imágenes fueron creados correctamente.",
-        variant: "success",
+        variant: "custom",
+        className: "bg-green-500 text-white",
       });
 
-      navigate("/anuncios"); // Redirigir a la página de anuncios
+      navigate("/anuncios");
     } catch (error) {
       toast({
         title: "Error",
@@ -144,6 +141,8 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         variant: "destructive",
       });
       console.error(error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -176,9 +175,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     }
   }, [selectedFiles])
 
-
-
-
   return (
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Crear anuncio" />
@@ -206,25 +202,13 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="categoria">Categoría*</Label>
-                  <Select
-                    onValueChange={(value) => setAnuncio({ ...anuncio, categoria: parseInt(value) })}
-                    required
-                  >
-                    <SelectTrigger id="categoria">
-                      <SelectValue placeholder="Todas las categorías" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categorias.map((categoria) => (
-                        <SelectItem
-                          key={categoria.value}
-                          value={categoria.value.toString()}
-                        >
-                          {categoria.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="subtitulo">Subtítulo</Label>
+                  <Input
+                    id="subtitulo"
+                    placeholder="Ingrese el subtítulo"
+                    value={anuncio.subtitulo}
+                    onChange={(e) => setAnuncio({ ...anuncio, subtitulo: e.target.value })}
+                  />
                 </div>
               </div>
 
@@ -242,6 +226,27 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
+                  <Label htmlFor="categoria">Categoría*</Label>
+                  <Select
+                    onValueChange={(value) => setAnuncio({ ...anuncio, categoria: parseInt(value) })}
+                    required
+                  >
+                    <SelectTrigger id="categoria">
+                      <SelectValue placeholder="Seleccione una categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categorias.map((categoria) => (
+                        <SelectItem
+                          key={categoria.value}
+                          value={categoria.value.toString()}
+                        >
+                          {categoria.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="fecha_publicacion">Fecha de publicación*</Label>
                   <Input
                     id="fecha_publicacion"
@@ -251,16 +256,26 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     onChange={(e) => setAnuncio({ ...anuncio, fecha_publicacion: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="autor">Autor*</Label>
-                  <Input
-                    id="autor"
-                    required
-                    placeholder="Ej: Municipalidad de Calama"
-                    value={anuncio.autor}
-                    onChange={(e) => setAnuncio({ ...anuncio, autor: e.target.value })}
-                  />
-                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="autor">Autor*</Label>
+                <Input
+                  id="autor"
+                  required
+                  placeholder="Ej: Municipalidad de Calama"
+                  value={anuncio.autor}
+                  onChange={(e) => setAnuncio({ ...anuncio, autor: e.target.value })}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="estado"
+                  checked={estado}
+                  onCheckedChange={handleStateChange}
+                />
+                <Label htmlFor="estado">Publicar inmediatamente</Label>
               </div>
 
               <div className="space-y-2">
@@ -321,11 +336,22 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     </div>
                   </div>
                 )}
+
+                {isUploading && (
+                  <div className="flex items-center justify-center space-x-2 mt-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-green-600" />
+                    <span className="text-green-600">Subiendo imágenes...</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end">
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-                  Publicar anuncio
+                <Button 
+                  type="submit" 
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  disabled={isUploading}
+                >
+                  {isUploading ? 'Publicando...' : 'Publicar anuncio'}
                 </Button>
               </div>
             </form>
@@ -337,3 +363,4 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 }
 
 export default AnuncioFormulario
+
