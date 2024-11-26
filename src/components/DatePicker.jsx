@@ -37,12 +37,12 @@ const DatePicker = ({ dateRange, setDateRange, setIsValid }) => {
   }, [dateRange])
 
   return (
-    <div className="flex p-1 w-full">
+    <div className="flex p-1 w-full ">
       <input
         onChange={handleInputChange}
         value={inputValue}
         type="text"
-        className="border rounded-l px-2 py-1 w-full md:w-1/2"
+        className="border rounded-l px-2 py-1 w-full "
         placeholder="Ej: 01-01-2024 - 31-12-2024"
         pattern="\d{2}-\d{2}-\d{4} - \d{2}-\d{2}-\d{4}"
       />

@@ -23,11 +23,11 @@ export const SidebarSectionProvider = ({ children }) => {
       icon: <Megaphone className='icon' />,
       link: "/anuncios"
     },
-    {
-      title: "Reportes",
-      icon: <ChartNoAxesColumn className='icon' />,
-      link: "/reportes"
-    },
+    // {
+    //   title: "Reportes",
+    //   icon: <ChartNoAxesColumn className='icon' />,
+    //   link: "/reportes"
+    // },
     {
       title: "Mapa",
       icon: <Map className='icon' />,

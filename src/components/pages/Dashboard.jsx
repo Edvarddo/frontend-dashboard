@@ -297,11 +297,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold">{cardsData?.publicaciones || 0}</div>
                     <div className="flex items-center text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4 mr-1" />
-                      <span>5%</span>
+                      {/* <ArrowUpRight className="h-4 w-4 mr-1" />
+                      <span>5%</span> */}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">vs. mes anterior</p>
+                  {/* <p className="text-sm text-muted-foreground mt-2">vs. mes anterior</p> */}
                 </CardContent>
               </Card>
               <Card className="overflow-hidden bg-green-50">
@@ -315,11 +315,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold">{cardsData?.usuarios || 0}</div>
                     <div className="flex items-center text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4 mr-1" />
-                      <span>3%</span>
+                      {/* <ArrowUpRight className="h-4 w-4 mr-1" />
+                      <span>3%</span> */}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">vs. semana anterior</p>
+                  {/* <p className="text-sm text-muted-foreground mt-2">vs. semana anterior</p> */}
                 </CardContent>
               </Card>
               <Card className="overflow-hidden bg-purple-50">
@@ -333,11 +333,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold">{cardsData?.problemas_resueltos || 0}</div>
                     <div className="flex items-center text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4 mr-1" />
-                      <span>7%</span>
+                      {/* <ArrowUpRight className="h-4 w-4 mr-1" />
+                      <span>7%</span> */}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">vs. mes anterior</p>
+                  {/* <p className="text-sm text-muted-foreground mt-2">vs. mes anterior</p> */}
                 </CardContent>
               </Card>
               <Card className="overflow-hidden bg-yellow-50">
@@ -351,11 +351,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold">{calculateResolutionRate()}%</div>
                     <div className="flex items-center text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4 mr-1" />
-                      <span>2%</span>
+                      {/* <ArrowUpRight className="h-4 w-4 mr-1" />
+                      <span>2%</span> */}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">vs. mes anterior</p>
+                  {/* <p className="text-sm text-muted-foreground mt-2">vs. mes anterior</p> */}
                 </CardContent>
               </Card>
             </>
