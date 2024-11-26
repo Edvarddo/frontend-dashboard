@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 
 // import AuthContext from '../../contexts/AuthContext';
-import  useAuth  from '../../hooks/useAuth';
+import useAuth from '../../hooks/useAuth';
 
 import axios from 'axios';
 // use history
@@ -55,8 +55,8 @@ export default function Login() {
         login(response.data.access);
         setIsAdmin(response.data.es_administrador);
         setLoginLoading(false);
-        if(response.data.es_administrador) navigate('/listado-publicaciones');
-        
+        if (response.data.es_administrador) navigate('/listado-publicaciones');
+
         setRut('');
         setPassword('');
       })
@@ -91,7 +91,7 @@ export default function Login() {
   //     navigate('/')
   //     console.log("aaaaaaaaaaaaaaa")
   //   }
-    
+
   // }, [authToken])
 
 

@@ -60,15 +60,15 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const fetchPublicacion = (url) => {
     setLoading(true)
     axiosPrivate.get(url
-    ).then(response =>{
+    ).then(response => {
       console.log(response.data)
       setPublicacion(response.data)
       setLoading(false)
     })
-    .catch(error =>{
-      setError(error)
-      setLoading(false)
-    })
+      .catch(error => {
+        setError(error)
+        setLoading(false)
+      })
 
   }
   useEffect(() => {
@@ -372,7 +372,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                           </div>
 
                         )
-                          
+
 
 
                       )
