@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from 'axios'
 import { da } from "date-fns/locale"
+import { capitalizeFirstLetter } from "@/lib/utils"
+
 const TablaPublicaciones = ({
   currentPage,
   publicacionesPorPagina,
@@ -15,7 +17,8 @@ const TablaPublicaciones = ({
   setCurrentPage,
   url,
   setLoading,
-  loading
+  loading,
+  setDownloadIsAvailable,
 }) => {
   const [publicaciones, setPublicaciones] = useState([])
   const [nextPageUrl, setNextPageUrl] = useState(null)
@@ -38,8 +41,9 @@ const TablaPublicaciones = ({
       }
     )
       .then(response => {
- 
+
         setTotalPublicaciones(response.data.count)
+        setDownloadIsAvailable(response.data.count > 0 ? true : false)
         setPublicaciones(response?.data?.results ? response?.data?.results : [])
         console.log(response.data)
 
@@ -98,7 +102,7 @@ const TablaPublicaciones = ({
     if (currentPage === 1) {
       fetchPublicaciones(`${url ? url : baseUrl}${publicacionesPorPagina != 5 ? `?${pagesize}` : ""}`)
     } else {
-      fetchPublicaciones(`${url ? url  : baseUrl.concat("?")}page=${currentPage}&${pagesize}`)
+      fetchPublicaciones(`${url ? url : baseUrl.concat("?")}page=${currentPage}&${pagesize}`)
     }
   }, [currentPage, url, publicacionesPorPagina])
 
@@ -125,20 +129,20 @@ const TablaPublicaciones = ({
             Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
                 {
-              Array.from({ length: 6 }).map((_, index) => (
-                <TableCell key={index}>
-                  <Skeleton 
-                    className="h-[2rem] w-full"
-                  />
-                </TableCell>
-              ))
-            }
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <TableCell key={index}>
+                      <Skeleton
+                        className="h-[2rem] w-full"
+                      />
+                    </TableCell>
+                  ))
+                }
               </TableRow>
             ))
           }
 
-          
-        
+
+
         </TableBody>
 
 
@@ -161,25 +165,28 @@ const TablaPublicaciones = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          { publicaciones.length != 0 ? (
+          {publicaciones.length != 0 ? (
             publicaciones.map((pub) => (
               <TableRow key={pub.id}>
-                <TableCell onClick={()=>{navigate(`/publicacion/${pub.id}`)}} className={"hover:bg-green-50 cursor-pointer  "}>
-                      
+                <TableCell onClick={() => { navigate(`/publicacion/${pub.id}`) }} className={"hover:bg-green-50 cursor-pointer  "}>
+
                   {/* <Link className="" to={`/publicacion/${pub.id}`}> */}
-                  {pub.titulo}
+                  {capitalizeFirstLetter(pub.titulo)}
 
                   {/* </Link> */}
                 </TableCell>
-                <TableCell>{pub.descripcion}</TableCell>
-                <TableCell>{pub.situacion.nombre}</TableCell>
-                <TableCell>{pub.categoria.nombre}</TableCell>
+                <TableCell>{capitalizeFirstLetter(pub.descripcion)}</TableCell>
+                <TableCell>{capitalizeFirstLetter(pub.situacion.nombre)}</TableCell>
+                <TableCell>{capitalizeFirstLetter(pub.categoria.nombre)}</TableCell>
                 <TableCell>{
                   // i need this format "dd-MM-yyyy"
-                  format(new Date(pub.fecha_publicacion), "yyyy-MM-dd")
+                  format(new Date(pub.fecha_publicacion), "dd-MM-yyyy")
                   // new Date(pub.fecha_publicacion).toLocaleDateString()
                 }</TableCell>
-                <TableCell>{pub.junta_vecinal.nombre_calle} {pub.junta_vecinal.numero_calle}</TableCell>
+                <TableCell>
+                  {pub.junta_vecinal.nombre_calle.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")}
+                  {" " + pub.junta_vecinal.numero_calle}
+                </TableCell>
               </TableRow>
             )))
             :
@@ -195,8 +202,8 @@ const TablaPublicaciones = ({
       </Table>
 
       <div className="flex items-center justify-between mt-4">
-        <span>Página {currentPage} de 
-          <span className=""> {publicaciones.length!=0?Math.ceil(totalPublicaciones / publicacionesPorPagina) :"1"}</span>
+        <span>Página {currentPage} de
+          <span className=""> {publicaciones.length != 0 ? Math.ceil(totalPublicaciones / publicacionesPorPagina) : "1"}</span>
         </span>
 
         <div className="flex items-center space-x-2 ">
@@ -241,7 +248,7 @@ const TablaPublicaciones = ({
           }>
             <ChevronsRight className="h-4 w-4" />
           </Button>
-          
+
         </div>
       </div>
     </>

@@ -1,78 +1,75 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, set } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon } from 'lucide-react'
 
-const DatePicker = ({selectedDate, setSelectedDate, setIsValid, isValid}) => {
-  // i want this format "dd-MM-yyyy"
-  const [inputValue, setInputValue] = useState("");
-  const handleDateSelect = (date) => {
-    setSelectedDate(date)
-    setInputValue(format(date, "yyyy-MM-dd", { locale: es }))
+const DatePicker = ({ dateRange, setDateRange, setIsValid }) => {
+  const [inputValue, setInputValue] = useState("")
+
+  const handleDateSelect = (range) => {
+    setDateRange(range)
+    if (!range?.to) {
+      setInputValue(`${format(range.from, "dd-MM-yyyy", { locale: es })} -`)
+      setIsValid(true)
+    }
+    if (range?.from && range?.to) {
+      setInputValue(`${format(range.from, "dd-MM-yyyy", { locale: es })} - ${format(range.to, "dd-MM-yyyy", { locale: es })}`)
+      setIsValid(false)
+    }
   }
 
   const handleInputChange = (event) => {
-    const val = event.target.value;
-    setInputValue(val); 
+    const val = event.target.value
+    setInputValue(val)
     // validate input with regex
-    const regex = /^\d{2}-\d{2}-\d{4}$/;
-    const valid = val === "" ? true :  regex.test(val);
-    setIsValid(!valid);
-    
+    const regex = /^\d{2}-\d{2}-\d{4} - \d{2}-\d{2}-\d{4}$/
+    const valid = val === "" ? true : regex.test(val)
+    setIsValid(!valid)
+  }
 
-
-    
-  };
   useEffect(() => {
-    if(selectedDate === null){
+    if (!dateRange || (!dateRange.from && !dateRange.to)) {
       setInputValue("")
-
     }
-  }, [selectedDate])
-
-
-
-  // const fechaVal = selectedDate ? format(selectedDate,"yyyy-MM-dd", {locale: es}).toString() : ""
+  }, [dateRange])
 
   return (
-    <div className="flex  p-1 w-full">
+    <div className="flex p-1 w-full">
       <input
-      onChange={handleInputChange} 
-      value={inputValue} 
-      type="text" 
-      className="border rounded-l px-2 py-1 w-full md:w-1/2" 
-      placeholder="Ej: 31-10-2024" 
-      pattern="\d{2}-\d{2}-\d{4}"  
-
+        onChange={handleInputChange}
+        value={inputValue}
+        type="text"
+        className="border rounded-l px-2 py-1 w-full md:w-1/2"
+        placeholder="Ej: 01-01-2024 - 31-12-2024"
+        pattern="\d{2}-\d{2}-\d{4} - \d{2}-\d{2}-\d{4}"
       />
 
       <Popover>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className={`   font-normal ${!selectedDate && "text-muted-foreground"}`}
+            className={`font-normal ${!dateRange && "text-muted-foreground"}`}
           >
             <CalendarIcon className="mr-auto h-4 w-4" />
-            {/* {selectedDate ? format(selectedDate, "PPP", { locale: es }) : ""} */}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <Calendar
-            mode="single"
-            selected={selectedDate}
+            mode="range"
+            selected={dateRange}
             onSelect={handleDateSelect}
             initialFocus
-            locale = {es}
+            numberOfMonths={2}
+            locale={es}
           />
         </PopoverContent>
       </Popover>
-
     </div>
-
   )
 }
 
 export default DatePicker
+

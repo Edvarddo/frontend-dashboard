@@ -107,9 +107,14 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
 
   const confirmStatusChange = () => {
     setStatus(tempStatus)
-
+    const token = localStorage.getItem('authToken')
     const url = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/${id}/`
-    axios.patch(url, { situacion: tempStatus === 'received' ? 1 : tempStatus === 'inProcess' ? 2 : 3 })
+    axios.patch(url, { situacion: tempStatus === 'received' ? 1 : tempStatus === 'inProcess' ? 2 : 3 },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       .then(response => {
 
         console.log(response)
@@ -153,10 +158,10 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
           <CardHeader className="border-b">
             <div className="flex flex-wrap justify-between   mb-4 ">
 
-              <Button onClick={()=> navigate("/listado-publicaciones")} variant="outline" className=" mb-4 bg-white text-green-600 border-green-600 hover:bg-green-50 w-full lg:w-[unset]">
+              <Button onClick={() => navigate("/listado-publicaciones")} variant="outline" className=" mb-4 bg-white text-green-600 border-green-600 hover:bg-green-50 w-full lg:w-[unset]">
                 {/* <Link className='w-[100%] flex justify-center' to="/listado-publicaciones"> */}
-                  <ArrowLeftIcon className="mr-2 h-4 w-4" />
-                  <span>Volver al listado</span>
+                <ArrowLeftIcon className="mr-2 h-4 w-4" />
+                <span>Volver al listado</span>
                 {/* </Link> */}
               </Button>
 
@@ -263,9 +268,9 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                                       <span className="font-medium">{statusConfig[status].label}</span>
                                     </div>
                                     <Badge variant="outline">ID: {
-                                        publicacion?.id 
-                                        
-                                      } {publicacion?.situacion?.nombre}</Badge>
+                                      publicacion?.id
+
+                                    } {publicacion?.situacion?.nombre}</Badge>
                                   </div>
                                   <Select onValueChange={handleStatusChange} value={tempStatus}>
                                     <SelectTrigger className="w-full">
@@ -485,8 +490,8 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                   <CardTitle className="text-green-700">Evidencias de la publicación</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={`  p-1 ${publicacion?.evidencias?.length === 0 ? "": "grid grid-cols-1 md:grid-cols-2  gap-4"}`}>
-                    
+                  <div className={`  p-1 ${publicacion?.evidencias?.length === 0 ? "" : "grid grid-cols-1 md:grid-cols-2  gap-4"}`}>
+
                     {
                       loading ? (
                         // 3 skeleton cards
@@ -499,32 +504,32 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                           </Card>
                         ))
                       ) : (
-                        
-                          publicacion?.evidencias?.length != 0 ? (
-                            publicacion?.evidencias?.map((evidencia) => (
-                              <Card key={evidencia.id} className="w-full">
-                                <CardContent className="p-4">
-                                  <img src={ "https://res.cloudinary.com/de06451wd/"+ evidencia.archivo} alt={evidencia.nombre} className="w-full h-48 object-cover" />
-                                  <div className="flex justify-between items-center mt-2">
-                                    <p>{evidencia.nombre}</p>
-                                    <Button variant="outline" className="text-green-600" onClick={() => handleDownload(evidencia.id, evidencia.archivo)}>
-                                      <FileIcon className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))
-                          ) : (
-                              <div className="w-full flex justify-center">
-                                <p className="">No hay evidencias disponibles</p>
+
+                        publicacion?.evidencias?.length != 0 ? (
+                          publicacion?.evidencias?.map((evidencia) => (
+                            <Card key={evidencia.id} className="w-full">
+                              <CardContent className="p-4">
+                                <img src={"https://res.cloudinary.com/de06451wd/" + evidencia.archivo} alt={evidencia.nombre} className="w-full h-48 object-cover" />
+                                <div className="flex justify-between items-center mt-2">
+                                  <p>{evidencia.nombre}</p>
+                                  <Button variant="outline" className="text-green-600" onClick={() => handleDownload(evidencia.id, evidencia.archivo)}>
+                                    <FileIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        ) : (
+                          <div className="w-full flex justify-center">
+                            <p className="">No hay evidencias disponibles</p>
 
 
-                                
-                              </div>
-                              
-                          )
-                          
-                        
+
+                          </div>
+
+                        )
+
+
                       )
                     }
 
@@ -537,9 +542,9 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
         </Card>
 
       </div>
-    
+
     </>
-    
+
   )
 }
 
