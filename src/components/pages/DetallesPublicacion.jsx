@@ -125,8 +125,6 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const [activeTab, setActiveTab] = useState('info')
   const handleDownload = (id, archivo) => {
     console.log("downloading file with id: ", id)
-    // automatically download file with link. open explorer dialog. create element a
-    // format to download https://res.cloudinary.com/demo/image/upload/fl_attachment/sample.jpg
     const imageUrl = "https://res.cloudinary.com/de06451wd/" + archivo
 
     const link = document.createElement('a');
@@ -135,8 +133,6 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-
   }
   return (
     <>
@@ -145,47 +141,36 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
         <Card className="w-full max-w-4xl mx-auto bg-white">
           <CardHeader className="border-b">
             <div className="flex flex-wrap justify-between   mb-4 ">
-
               <Button onClick={() => navigate("/listado-publicaciones")} variant="outline" className=" mb-4 bg-white text-green-600 border-green-600 hover:bg-green-50 w-full lg:w-[unset]">
-                {/* <Link className='w-[100%] flex justify-center' to="/listado-publicaciones"> */}
                 <ArrowLeftIcon className="mr-2 h-4 w-4" />
                 <span>Volver al listado</span>
-                {/* </Link> */}
               </Button>
 
               <div className='flex w-full lg:w-[unset]   justify-center'>
-                {/* INFORMACIÓN TAB */}
                 <Button
                   variant={activeTab === 'info' ? 'default' : 'ghost'}
                   onClick={() => setActiveTab('info')}
                   className={`pub-detail-tab w-[32%]  ${activeTab === 'info' ? 'bg-green-600 text-white' : 'text-green-600'}`}
                 >
-                  {/* info icon */}
                   <Info className=" h-4 w-4 mr-2" />
-                  {/* hide span on mobile sizes */}
                   <span className="hidden md:inline">Información</span>
-
                 </Button>
-                {/* UBICACIÓN TAB */}
                 <Button
                   variant={activeTab === 'ubicacion' ? 'default' : 'ghost'}
                   onClick={() => setActiveTab('ubicacion')}
                   className={`pub-detail-tab w-[32%]  ${activeTab === 'ubicacion' ? 'bg-green-600 text-white' : 'text-green-600'}`}
                 >
                   <MapPinIcon className=" h-4 w-4 mr-2" />
-
                   <span className="hidden md:inline">
                     Ubicación
                   </span>
                 </Button>
-                {/* EVIDENCIAS TAB */}
                 <Button
                   variant={activeTab === 'evidencias' ? 'default' : 'ghost'}
                   onClick={() => setActiveTab('evidencias')}
                   className={`pub-detail-tab w-[32%] ${activeTab === 'evidencias' ? 'bg-green-600 text-white  ' : 'text-green-600'}`}
                 >
                   <ImageIcon className=" h-4 w-4 mr-2" />
-
                   <span className="hidden md:inline">Evidencias</span>
                 </Button>
               </div>
@@ -200,7 +185,6 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
             {activeTab === 'info' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1  gap-6">
-
                   <Card className="w-full mx-auto">
                     <CardHeader>
                       <CardTitle className="text-green-700">Información general</CardTitle>
@@ -236,7 +220,6 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                             <p className="text-sm font-medium text-green-600">Estado:</p>
                             <div className="flex items-center space-x-2">
                               <p className="flex-grow">
-                                {/* {status === 'received' ? 'Recibido' : status === 'inProcess' ? 'En curso' : 'Resuelto'} */}
                                 {loading || situationLoading ? <Skeleton className="h-[1.5rem] w-full" /> : (
                                   <Badge className="bg-green-100 text-green-800 hover:text-white">
                                     {publicacion?.situacion?.nombre}
@@ -261,10 +244,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                                       </div>
                                       <span className="font-medium">{statusConfig[status].label}</span>
                                     </div>
-                                    <Badge variant="outline">ID: {
-                                      publicacion?.id
-
-                                    } {publicacion?.situacion?.nombre}</Badge>
+                                    <Badge variant="outline">ID: {publicacion?.id} {publicacion?.situacion?.nombre}</Badge>
                                   </div>
                                   <Select onValueChange={handleStatusChange} value={tempStatus}>
                                     <SelectTrigger className="w-full">
@@ -315,15 +295,13 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                       </div>
                     </CardContent>
                   </Card>
-
                 </div>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-green-700">Respuestas Municipales</CardTitle>
+<CardTitle className="text-green-700">Respuestas Municipales</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-4">
-                      {/* static skeleton use skeleton */}
                       {
                         [1, 2, 3].map((item) => (
                           <li key={item} className="flex items-center space-x-4">
@@ -345,7 +323,6 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                   <div className=" bg-green-100 rounded-md overflow-hidden flex items-center justify-center w-full h-full">
                     {
                       loading ? <Skeleton className="h-96 w-full" /> : (
-
                         publicacion.latitud ? (
                           <MapContainer
                             center={[publicacion?.latitud, publicacion?.longitud]}
@@ -365,22 +342,12 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                             </Marker>
                           </MapContainer>
                         ) : (
-                          //no map with icon
                           <div className='bg-gray-200 h-96'>
-
-
                           </div>
-
                         )
-
-
-
                       )
                     }
-
-
                   </div>
-
                 </CardContent>
               </Card>
             )}
@@ -390,62 +357,50 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                   <CardTitle className="text-green-700">Evidencias de la publicación</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={`  p-1 ${publicacion?.evidencias?.length === 0 ? "" : "grid grid-cols-1 md:grid-cols-2  gap-4"}`}>
-
-                    {
-                      loading ? (
-                        // 3 skeleton cards
-                        [1, 2, 3].map((item) => (
-                          <Card key={item} className="w-full">
-                            <CardContent className="p-4">
-                              <Skeleton className="h-48 w-full" />
-                              <Skeleton className="h-4 w-full mt-2" />
-                            </CardContent>
-                          </Card>
-                        ))
-                      ) : (
-
-                        publicacion?.evidencias?.length != 0 ? (
-                          publicacion?.evidencias?.map((evidencia) => (
-                            <Card key={evidencia.id} className="w-full">
-                              <CardContent className="p-4">
-                                <img src={"https://res.cloudinary.com/de06451wd/" + evidencia.archivo} alt={evidencia.nombre} className="w-full h-48 object-cover" />
-                                <div className="flex justify-between items-center mt-2">
-                                  <p>{evidencia.nombre}</p>
-                                  <Button variant="outline" className="text-green-600" onClick={() => handleDownload(evidencia.id, evidencia.archivo)}>
-                                    <FileIcon className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))
-                        ) : (
-                          <div className="w-full flex justify-center">
-                            <p className="">No hay evidencias disponibles</p>
-
-
-
-                          </div>
-
-                        )
-
-
-                      )
-                    }
-
-
+                  <div className={`p-1 ${publicacion?.evidencias?.length > 0 ? "grid grid-cols-1 md:grid-cols-2 gap-4" : ""}`}>
+                    {loading ? (
+                      // 3 skeleton cards
+                      [1, 2, 3].map((item) => (
+                        <Card key={item} className="w-full">
+                          <CardContent className="p-4">
+                            <Skeleton className="h-48 w-full" />
+                            <Skeleton className="h-4 w-full mt-2" />
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : publicacion?.evidencias?.length > 0 ? (
+                      publicacion.evidencias.map((evidencia) => (
+                        <Card key={evidencia.id} className="w-full">
+                          <CardContent className="p-4">
+                            <img src={`https://res.cloudinary.com/de06451wd/${evidencia.archivo}`} alt={evidencia.nombre} className="w-full h-48 object-cover" />
+                            <div className="flex justify-between items-center mt-2">
+                              <p>{evidencia.nombre}</p>
+                              <Button variant="outline" className="text-green-600" onClick={() => handleDownload(evidencia.id, evidencia.archivo)}>
+                                <FileIcon className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 px-4 w-full">
+                        <div className="bg-gray-100 p-4 rounded-full mb-4">
+                          <ImageIcon className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">No hay evidencias disponibles</h3>
+                        <p className="text-sm text-gray-500">No se encontraron imágenes para esta publicación</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             )}
           </CardContent>
         </Card>
-
       </div>
-
     </>
-
   )
 }
 
 export default DetallesPublicacion
+
