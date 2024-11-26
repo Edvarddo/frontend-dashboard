@@ -6,14 +6,15 @@ import Descargar from './components/pages/Descargar'
 import Anuncio from './components/pages/Anuncio'
 import Reporte from './components/pages/Reporte'
 import Mapa from './components/pages/Mapa'
+import AnuncioFormulario from './components/AnuncioFormulario'
 import axios from 'axios'
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom'
 import './index.css'
 import { useEffect, useState, useContext } from 'react'
 import Login from './components/pages/Login'
 import { PrivateRoute } from './contexts/PrivateRoute'
-
 import AuthContext from './contexts/AuthContext'
+import {Toaster} from "@/components/ui/toaster"
 const PrivLayout = ({ children, isOpened, setIsOpened }) => {
   return (
     <>
@@ -52,6 +53,7 @@ function App() {
   return (
     <>
       <Router>
+        <Toaster />
         <Routes>
           <Route index path="/" element={<Login isOpened={isOpened} setIsOpened={setIsOpened} />} />
           <Route path='/'>
@@ -60,14 +62,19 @@ function App() {
               <Route element={<PrivLayout isOpened={isOpened} setIsOpened={setIsOpened} />}>
 
                 <Route path="/dashboard" element={<Dashboard isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                
                 <Route path="/publicacion/:id" element={<DetallesPublicacion isOpened={isOpened} setIsOpened={setIsOpened} />} />
                 <Route path="/listado-publicaciones" element={<PublicacionesListado isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                
                 <Route path="/descargar" element={<Descargar isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                
                 <Route path="/anuncios" element={<Anuncio isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                <Route path="/anuncio-formulario" element={<AnuncioFormulario isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                
                 <Route path="/reportes" element={<Reporte isOpened={isOpened} setIsOpened={setIsOpened} />} />
                 <Route path="/mapa" element={<Mapa isOpened={isOpened} setIsOpened={setIsOpened} />} />
 
-
+           
               </Route>
             </Route>
             {/* PUBLIC ROUTES */}

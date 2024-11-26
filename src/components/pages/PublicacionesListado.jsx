@@ -142,7 +142,8 @@ export default function PublicacionesListado({
             <div>
               <h2 className="mb-2 font-semibold">Categoría</h2>
               <div>
-              <MultiSelect clearValues = {clearValues} options={categorias} onValueChange={(val)=>{
+              <MultiSelect clearValues = {clearValues} options={categorias} 
+              onValueChange={(val)=>{
                 setFiltrosObj({ ...filtrosObj, categoria: val })
               }} />
             </div>
