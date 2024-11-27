@@ -199,6 +199,20 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
                             </p>
                           </div>
                           <div className="space-y-1">
+                            <p className="text-sm font-medium text-green-600">Rut:</p>
+                            <p>
+                              {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.usuario?.rut}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-green-600">Teléfono:</p>
+                            <p>
+                              { 
+                                loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.usuario?.numero_telefonico_movil ? publicacion?.usuario?.numero_telefonico_movil : "No disponible"
+                              }
+                            </p>
+                          </div>
+                          <div className="space-y-1">
                             <p className="text-sm font-medium text-green-600">Categoría:</p>
                             <p>
                               {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.categoria?.nombre}
