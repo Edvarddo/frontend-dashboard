@@ -82,7 +82,7 @@ const MultiSelect = forwardRef(
     const [selectedValues, setSelectedValues] = useState(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
-    // console.log(options)
+    console.log(options)
     // console.log(selectedValues)
 
     const handleInputKeyDown = (event) => {

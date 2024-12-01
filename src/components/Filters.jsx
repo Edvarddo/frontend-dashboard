@@ -5,6 +5,7 @@ import { Download } from 'lucide-react'
 import { capitalizeFirstLetter } from '@/lib/utils';
 
 const Filters = ({ clearValues, categorias, situaciones, departamentos, juntasVecinales, setFiltrosObj, filtrosObj, dateRange, setDateRange, setIsValid, isValid, loading, handleDownload, limpiarFiltros, aplicarFiltros, showDownload, isDownloadAvailable }) => {
+  console.log('situaciones!!',situaciones)
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">

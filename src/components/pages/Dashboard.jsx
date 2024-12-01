@@ -24,12 +24,13 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const [categorias, setCategorias] = useState([])
   const [juntasVecinales, setJuntasVecinales] = useState([])
   const [departamentos, setDepartamentos] = useState([])
+  const [situaciones, setSituaciones] = useState([])
 
-  const situaciones = [
-    { nombre: "Recibido", value: "recibido" },
-    { nombre: "En curso", value: "en_curso" },
-    { nombre: "Resuelto", value: "resuelto" }
-  ]
+  // const situaciones = [
+  //   { nombre: "Recibido", value: "recibido" },
+  //   { nombre: "En curso", value: "en_curso" },
+  //   { nombre: "Resuelto", value: "resuelto" }
+  // ]
 
   const [filtros, setFiltros] = useState(null)
   const [selectedCategoria, setSelectedCategoria] = useState(null)
@@ -73,6 +74,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     }))
 
     setCategorias(data[0])
+    setSituaciones(data[3])
 
     const juntas = data[1].map(junta => {
       junta.nombre = junta.nombre_calle
@@ -125,7 +127,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     fetchData([
       `${api_url}categorias/`,
       `${api_url}juntas-vecinales/`,
-      `${api_url}departamentos-municipales/`
+      `${api_url}departamentos-municipales/`,
+      `${api_url}situaciones-publicaciones/`
     ])
   }, [api_url])
 

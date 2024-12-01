@@ -33,16 +33,17 @@ export default function PublicacionesListado({
   const [categorias, setCategorias] = useState([])
   const [juntasVecinales, setJuntasVecinales] = useState([])
   const [departamentos, setDepartamentos] = useState([])
+  const [situaciones, setSituaciones] = useState([])
   // const situaciones = [
   //   "Recibido",
   //   "En curso",
   //   "Resuelto"
   // ]
-  const situaciones = [
-    { nombre: "Recibido", value: "recibido" },
-    { nombre: "En curso", value: "en_curso" },
-    { nombre: "Resuelto", value: "resuelto" }
-  ]
+  // const situaciones = [
+  //   { nombre: "Recibido", value: "recibido" },
+  //   { nombre: "En curso", value: "en_curso" },
+  //   { nombre: "Resuelto", value: "resuelto" }
+  // ]
 
   // VALORES SELECCIONADOS FILTROS
   const [selectedCategoria, setSelectedCategoria] = useState(null)
@@ -71,20 +72,27 @@ export default function PublicacionesListado({
     try {
       // add loading state
 
-      const [categorias, juntasVecinales, departamentos] = await Promise.all(urls.map(url => fetch(url, {
+      const [categorias, juntasVecinales, departamentos, osituaciones] = await Promise.all(urls.map(url => fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       }).then(res => res.json())))
       // change nombre_calle to nombre on juntasVecinales
+      console.log(situaciones)
       juntasVecinales.map(junta => {
         junta.nombre = junta.nombre_calle
         return junta
       })
-
+      console.log(juntasVecinales)
+      const oSituaciones = situaciones.map(situacion => {
+        situacion.nombre = situacion.nombre_situacion
+        return situacion
+      })
+      console.log(situaciones)
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)
       setDepartamentos(departamentos)
+      setSituaciones(osituaciones)
 
     } catch (e) {
       setFilterError(e)
@@ -96,7 +104,8 @@ export default function PublicacionesListado({
     fetchURLS([
       `${api_url}categorias/`,
       `${api_url}juntas-vecinales/`,
-      `${api_url}departamentos-municipales/`
+      `${api_url}departamentos-municipales/`,
+      `${api_url}situaciones-publicaciones/`
     ])
     console.log(BASE_URL, axiosPrivate)
 

@@ -48,14 +48,11 @@ export default function Login() {
       }
     )
       .then((response) => {
-
         console.log(response);
-        // localStorage.setItem('authToken', response.data.access);
-        // setAuthToken(response.data.access);
         login(response.data.access);
         setIsAdmin(response.data.es_administrador);
         setLoginLoading(false);
-        if (response.data.es_administrador) navigate('/listado-publicaciones');
+        if (response.data.es_administrador) navigate('/dashboard');
 
         setRut('');
         setPassword('');
@@ -68,31 +65,6 @@ export default function Login() {
 
 
   }
-
-
-
-
-  // useEffect(() => {
-  //   const verifyTokenFormat = (token) => {
-  //     const tokenArray = token?.split('.');
-  //     console.log(tokenArray)
-  //     if (tokenArray?.length !== 3) {
-  //       return false;
-  //     }
-  //     return true;
-  //   }
-  //   const isTokenValid = verifyTokenFormat(authToken);
-  //   console.log(isTokenValid)
-  //   console.log(authToken)
-  //   if (authToken && isTokenValid) {
-  //     navigate('/listado-publicaciones')
-  //     console.log("aaaaaaaaaaaaaaa2")
-  //   } else {
-  //     navigate('/')
-  //     console.log("aaaaaaaaaaaaaaa")
-  //   }
-
-  // }, [authToken])
 
 
   return (
