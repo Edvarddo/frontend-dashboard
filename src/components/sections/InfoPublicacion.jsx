@@ -19,22 +19,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Pencil, CheckCircle2, Clock, MailQuestion, AlertCircle, XCircle } from 'lucide-react'
 import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 import FlujoEstado from '../FlujoEstado'
+import FormRespuestaMunicipal from './FormRespuestaMunicipal'
+import ListaRespuestaMunicipal from './ListaRespuestaMunicipal'
 
 const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [status, setStatus] = useState('pending')
+  const [status, setStatus] = useState('Pendiente')
   const [tempStatus, setTempStatus] = useState(status)
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false)
   const [situationLoading, setSituationLoading] = useState(false)
-  
+  const [showResponseForm, setShowResponseForm] = useState(false)
+  const [responses, setResponses] = useState([])
+  const [responsesLoading, setResponsesLoading] = useState(false)
   const statusConfig = {
-    pending: { label: 'Pendiente', icon: <AlertCircle className="h-4 w-4" />, color: 'bg-orange-500' },
-    received: { label: 'Recibido', icon: <MailQuestion className="h-4 w-4" />, color: 'bg-yellow-500' },
-    inProcess: { label: 'En curso', icon: <Clock className="h-4 w-4" />, color: 'bg-blue-500' },
-    resolved: { label: 'Resuelto', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-500' },
-    notResolved: { label: 'No Resuelto', icon: <XCircle className="h-4 w-4" />, color: 'bg-red-500' },
+    "Pendiente": { label: 'Pendiente', icon: <AlertCircle className="h-4 w-4" />, color: 'bg-orange-500' },
+    "Recibido": { label: 'Recibido', icon: <MailQuestion className="h-4 w-4" />, color: 'bg-yellow-500' },
+    "En curso": { label: 'En curso', icon: <Clock className="h-4 w-4" />, color: 'bg-blue-500' },
+    "Resuelto": { label: 'Resuelto', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-500' },
+    "No Resuelto": { label: 'No Resuelto', icon: <XCircle className="h-4 w-4" />, color: 'bg-red-500' },
   }
-  
+  const situationMap = {
+    "Pendiente": 4,
+    "Recibido": 1,
+    "En curso": 2,
+    "Resuelto": 3,
+    "No Resuelto": 5
+  }
   const axiosPrivate = useAxiosPrivate()
   const openDialog = () => {
     setTempStatus(status)
@@ -51,30 +61,58 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     setTempStatus(status)
     setIsAlertDialogOpen(false)
   }
+  const changeStatus = () => {
+    const url = `publicaciones/${id}/`
+    axiosPrivate.patch(url, { situacion: situationMap[tempStatus] })
+    .then(response => {
+      console.log(response)
+      setPublicacion({ ...publicacion, situacion: { nombre: statusConfig[tempStatus].label } })
+      console.log(response.data)
+    })
+    .catch(error => {
+      console.log(error)
+    })
+  }
   const confirmStatusChange = () => {
     setStatus(tempStatus)
 
-    const url = `publicaciones/${id}/`
-    const situationMap = {
-      pending: 1,
-      received: 2,
-      inProcess: 3,
-      resolved: 4,
-      notResolved: 5
-    }
-    axiosPrivate.patch(url, { situacion: situationMap[tempStatus] })
-      .then(response => {
-        console.log(response)
-        setPublicacion({ ...publicacion, situacion: { nombre: statusConfig[tempStatus].label } })
-        console.log(response.data)
-      })
-      .catch(error => {
-        console.log(error)
-      })
+    changeStatus() 
+    
     setIsDialogOpen(false)
     setIsAlertDialogOpen(false)
   }
-  
+  const handleAddResponse = async (newResponse) => {
+    try {
+      console.log('newResponse:', newResponse)
+      const response = await axiosPrivate.post('respuestas-municipales/', {
+        ...newResponse,
+        publicacion: id
+      })
+      // Fetch the updated responses after adding a new one
+      fetchResponses()
+      setShowResponseForm(false)
+    } catch (error) {
+      console.error('Error adding municipal response:', error)
+    }
+  }
+  const fetchResponses = async () => {
+    setResponsesLoading(true)
+    try {
+      const response = await axiosPrivate.get(`https://clubdelamusica-pruebas.com/api/v1/respuestas-municipales/por-publicacion/${id}/`)
+      console.log('responses:', response.data)
+      setResponses(response.data)
+    } catch (error) {
+      console.error('Error fetching municipal responses:', error)
+    } finally {
+      setResponsesLoading(false)
+    }
+  }
+  useEffect(() => {
+    console.log('id:', id)
+    if (id) {
+      fetchResponses()
+    }
+  }, [id])
   return (
     <>
       <div className="grid grid-cols-1  gap-6">
@@ -158,11 +196,11 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                             <SelectValue placeholder="Seleccionar estado" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pendiente {publicacion?.situacion?.nombre === 'Pendiente' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
-                            <SelectItem value="received">Recibido {publicacion?.situacion?.nombre === 'Recibido' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
-                            <SelectItem value="inProcess">En curso {publicacion?.situacion?.nombre === 'En curso' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
-                            <SelectItem value="resolved">Resuelto {publicacion?.situacion?.nombre === 'Resuelto' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
-                            <SelectItem value="notResolved">No resuelto {publicacion?.situacion?.nombre === 'No resuelto' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                            <SelectItem value="Pendiente">Pendiente {publicacion?.situacion?.nombre === 'Pendiente' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                            <SelectItem value="Recibido">Recibido {publicacion?.situacion?.nombre === 'Recibido' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                            <SelectItem value="En curso">En curso {publicacion?.situacion?.nombre === 'En curso' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                            <SelectItem value="Resuelto">Resuelto {publicacion?.situacion?.nombre === 'Resuelto' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
+                            <SelectItem value="No Resuelto">No resuelto {publicacion?.situacion?.nombre === 'No resuelto' ? (<Badge>Actual</Badge>) : ""}</SelectItem>
                           </SelectContent>
                         </Select>
                         <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
@@ -206,6 +244,36 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
           </CardContent>
         </Card>
       </div>
+      <Card className="mt-6 ">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-green-700">Respuestas Municipales</CardTitle>
+          <Button
+            variant="outline"
+            className="text-green-600"
+            onClick={() => setShowResponseForm(true)}
+          >
+            Agregar Respuesta
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {showResponseForm && (
+            <FormRespuestaMunicipal
+              onSubmit={handleAddResponse}
+              previousStatus={publicacion?.situacion?.nombre}
+              currentStatus={publicacion?.situacion?.nombre}
+              statusConfig={statusConfig}
+              situationMap={situationMap}
+              publicacion={publicacion}
+              id={id}
+              setPublicacion={setPublicacion}
+             
+
+            />
+          )}
+
+          <ListaRespuestaMunicipal responses={responses} loading={responsesLoading} />
+        </CardContent>
+      </Card>
     </>
   )
 }

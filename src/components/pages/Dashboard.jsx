@@ -13,6 +13,8 @@ import TopBar from '../TopBar'
 import Filters from "../Filters"
 import EmptyState from '../EmptyState'
 import { getColorForCategory, chartColors } from '@/lib/utils'
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import  PDFDocument  from './PDFDocument';
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
   const [barData, setBarData] = useState([])
@@ -45,7 +47,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const barChartRef = useRef(null);
   const pieChartRef = useRef(null);
   const lineChartRef = useRef(null);
-  
+
   const [filtrosObj, setFiltrosObj] = useState({
     categoria: [],
     junta: [],
@@ -275,6 +277,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     return 0;
   };
 
+
+
   return (
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Dashboard Municipal" />
@@ -330,7 +334,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   <div className="flex items-center justify-between mb-4">
                     <CardTitle className="text-base font-medium text-gray-600">Publicaciones Resueltas</CardTitle>
                     <div className="p-2 bg-white rounded-full shadow-sm">
-<CheckCircle className="h-5 w-5 text-purple-600" />
+                      <CheckCircle className="h-5 w-5 text-purple-600" />
                     </div>
                   </div>
                   <div className="flex items-baseline justify-between">
@@ -483,8 +487,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             <div className="flex flex-wrap gap-4">
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    disabled={pieData.length <= 0 && barData.length <= 0 && lineChartData.length <= 0} 
+                  <Button
+                    disabled={pieData.length <= 0 && barData.length <= 0 && lineChartData.length <= 0}
                     className="bg-green-500 hover:bg-green-600 text-white"
                   >
                     Generar Reporte
@@ -504,8 +508,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   />
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                    <Button 
-                      className="bg-green-500 hover:bg-green-600 text-white" 
+                    <Button
+                      className="bg-green-500 hover:bg-green-600 text-white"
                       onClick={handleModalConfirm}
                     >
                       Descargar
@@ -516,6 +520,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </div>
           </CardContent>
         </Card>
+        
       </div>
     </>
   )

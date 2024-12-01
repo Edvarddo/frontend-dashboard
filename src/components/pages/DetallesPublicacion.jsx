@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeftIcon, MapPinIcon, ImageIcon, Info } from "lucide-react"
+import { ArrowLeftIcon, MapPinIcon, ImageIcon, Info } from 'lucide-react'
 import { Skeleton } from "@/components/ui/skeleton"
 import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -16,6 +16,8 @@ import InfoPublicacion from '../sections/InfoPublicacion'
 import MapaPublicacion from '../sections/MapaPublicacion';
 import EvidenciaPublicacion from '../sections/EvidenciaPublicacion';
 import ListaRespuestaMunicipal from '../sections/ListaRespuestaMunicipal';
+import FormRespuestaMunicipal from '../sections/FormRespuestaMunicipal';
+// import useAuth from '../../hooks/useAuth'
 
 const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const axiosPrivate = useAxiosPrivate();
@@ -24,14 +26,17 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     shadowUrl: iconShadow,
   });
 
-  // L.Marker.prototype.options.icon = DefaultIcon;
   const { id } = useParams();
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [publicacion, setPublicacion] = useState({})
-  const [responses, setResponses] = useState([])
+  
+  const [showResponseForm, setShowResponseForm] = useState(false)
   const navigate = useNavigate();
   const url = `publicaciones/${id}/`
+  // const { userId } = useAuth()
+  // console.log(userId)
+  
   const fetchPublicacion = (url) => {
     setLoading(true)
     axiosPrivate.get(url
@@ -66,21 +71,25 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     link.click();
     document.body.removeChild(link);
   }
-  useEffect(() => {
-    const fetchResponses = async () => {
-      try {
-        const response = await axiosPrivate.get(`respuestas-municipales/?publicacion=${id}`)
-        console.log('responses:', response.data)
-        setResponses(response.data)
-      } catch (error) {
-        console.error('Error fetching municipal responses:', error)
-      }
-    }
-    console.log('id:', id)
-    if (id) {
+  const handleAddResponse = async (newResponse) => {
+    try {
+      console.log('newResponse:', newResponse)
+      const response = await axiosPrivate.post('respuestas-municipales/', {
+        ...newResponse,
+        publicacion: id
+      })
+      // Fetch the updated responses after adding a new one
       fetchResponses()
+      setShowResponseForm(false)
+    } catch (error) {
+      console.error('Error adding municipal response:', error)
     }
-  }, [id])
+  }
+
+  
+
+  
+
   return (
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Detalles de la publicación" />
@@ -133,28 +142,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
               activeTab === 'info' && (
                 <>
                   <InfoPublicacion publicacion={publicacion} loading={loading} id={id} setPublicacion={setPublicacion} />
-                  <Card className="mt-6">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-green-700">Respuestas Municipales</CardTitle>
-                      <Button
-                        variant="outline"
-                        className="text-green-600"
-                        // onClick={() => setShowResponseForm(true)}
-                      >
-                        Agregar Respuesta
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      {/* {showResponseForm && (
-                        <MunicipalResponseForm
-                          onSubmit={handleAddResponse}
-                          previousStatus={publicacion?.situacion?.nombre}
-                          currentStatus={statusConfig[tempStatus]?.label}
-                        />
-                      )} */}
-                      <ListaRespuestaMunicipal responses={responses} />
-                    </CardContent>
-                  </Card>
+                  
                 </>
 
               )}

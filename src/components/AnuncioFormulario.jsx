@@ -41,6 +41,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   const [isUploading, setIsUploading] = useState(false)
 
   const handleStateChange = (checked) => {
+    console.log(checked)
     setEstado(checked)
     let festado = checked ? 'Publicado' : 'Pendiente'
     setAnuncio({ ...anuncio, estado: festado })
@@ -91,8 +92,8 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setIsUploading(true);
-
+    
+    
     try {
       const anuncioData = {
         usuario: 1,
@@ -104,31 +105,40 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         fecha: anuncio.fecha_publicacion,
         autor: anuncio.autor
       };
-
+      console.log(selectedFiles)
       const anuncioResponse = await axiosPrivate.post(
         "anuncios-municipales/",
         anuncioData
       );
+      if (selectedFiles.length !== 0) {
+        setIsUploading(true);
+        console.log("img")
+        const anuncioId = anuncioResponse?.data?.id;
+        console.log(selectedFiles)
+        for (const image of selectedFiles) {
+          const formData = new FormData();
+          formData.append("anuncio", anuncioId)
+          formData.append("anuncio_id", anuncioId);
+          formData.append("imagen", image?.file);
+          formData.append("extension", image?.file?.name?.split(".")?.pop());
 
-      const anuncioId = anuncioResponse?.data?.id;
-
-      for (const image of selectedFiles) {
-        const formData = new FormData();
-        formData.append("anuncio", anuncioId)
-        formData.append("anuncio_id", anuncioId);
-        formData.append("imagen", image?.file);
-        formData.append("extension", image?.file?.name?.split(".")?.pop());
-
-        await axiosPrivate.post("/imagenes-anuncios/", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          }
-        });
+          await axiosPrivate.post("/imagenes-anuncios/", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            }
+          });
+          toast({
+            title: "Éxito",
+            description: "El anuncio y las imágenes fueron creados correctamente.",
+            variant: "custom",
+            className: "bg-green-500 text-white",
+          });
+        }
       }
 
       toast({
         title: "Éxito",
-        description: "El anuncio y las imágenes fueron creados correctamente.",
+        description: "El anuncio fue creado correctamente.",
         variant: "custom",
         className: "bg-green-500 text-white",
       });

@@ -20,7 +20,7 @@ export default function Login() {
   const [validCredentials, setValidCredentials] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
-  const { setAuthToken, authToken, setIsAdmin, login } = useAuth();
+  const { setAuthToken, authToken, setIsAdmin, login, setUserId } = useAuth();
 
 
   // Formato de RUT mientras el usuario escribe (XX.XXX.XXX-X)
@@ -50,6 +50,7 @@ export default function Login() {
       .then((response) => {
         console.log(response);
         login(response.data.access);
+        // setUserId(response.data.id);
         setIsAdmin(response.data.es_administrador);
         setLoginLoading(false);
         if (response.data.es_administrador) navigate('/dashboard');

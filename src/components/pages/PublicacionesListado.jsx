@@ -84,10 +84,7 @@ export default function PublicacionesListado({
         return junta
       })
       console.log(juntasVecinales)
-      const oSituaciones = situaciones.map(situacion => {
-        situacion.nombre = situacion.nombre_situacion
-        return situacion
-      })
+
       console.log(situaciones)
       setCategorias(categorias)
       setJuntasVecinales(juntasVecinales)

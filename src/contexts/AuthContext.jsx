@@ -7,6 +7,7 @@ export const AuthProvider = ({ children }) => {
     console.log(localStorage.getItem('authToken'))
     const [authToken, setAuthToken] = useState(localStorage.getItem('authToken') || null);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [userId, setUserId] = useState(null);
 
 
     const login = (token) => {
@@ -27,7 +28,9 @@ export const AuthProvider = ({ children }) => {
                 logout, 
                 setAuthToken,
                 isAdmin,
-                setIsAdmin    
+                setIsAdmin,
+                userId,
+                setUserId
             }}>
             {children}
         </AuthContext.Provider>
