@@ -32,7 +32,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     received: { label: 'Recibido', icon: <MailQuestion className="h-4 w-4" />, color: 'bg-yellow-500' },
     inProcess: { label: 'En curso', icon: <Clock className="h-4 w-4" />, color: 'bg-blue-500' },
     resolved: { label: 'Resuelto', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-500' },
-    notResolved: { label: 'No resuelto', icon: <XCircle className="h-4 w-4" />, color: 'bg-red-500' },
+    notResolved: { label: 'No Resuelto', icon: <XCircle className="h-4 w-4" />, color: 'bg-red-500' },
   }
   
   const axiosPrivate = useAxiosPrivate()

@@ -10,7 +10,7 @@ const StatusFlow = ({ currentStatus }) => {
     { 
       key: 'Final', 
       icon: currentStatus === 'Resuelto' ? CheckCircle2 : XCircle, 
-      label: currentStatus === 'Resuelto' ? 'Resuelto' : 'No resuelto'
+      label: currentStatus === 'Resuelto' ? 'Resuelto' : 'No Resuelto'
     }
   ]
 
@@ -25,7 +25,7 @@ const StatusFlow = ({ currentStatus }) => {
                   "w-36 h-24 rounded-lg flex flex-col items-center justify-center gap-3 transition-all",
                   currentStatus === status.key || (status.key === 'Final' && currentStatus === 'Resuelto')
                     ? "bg-green-50 border border-green-500"
-                    : status.key === 'Final' && currentStatus === 'No resuelto'
+                    : status.key === 'Final' && currentStatus === 'No Resuelto'
                     ? "bg-red-50 border border-red-500" 
                     : "bg-white border border-gray-200 shadow-sm"
                 )}
@@ -35,7 +35,7 @@ const StatusFlow = ({ currentStatus }) => {
                     "h-6 w-6",
                     currentStatus === status.key || (status.key === 'Final' && currentStatus === 'Resuelto')
                       ? "text-green-500"
-                      : status.key === 'Final' && currentStatus === 'No resuelto'
+                      : status.key === 'Final' && currentStatus === 'No Resuelto'
                       ? "text-red-500"
                       : "text-gray-400"
                   )}
@@ -45,7 +45,7 @@ const StatusFlow = ({ currentStatus }) => {
                     "text-sm text-center",
                     currentStatus === status.key || (status.key === 'Final' && currentStatus === 'Resuelto')
                       ? "text-green-600"
-                      : status.key === 'Final' && currentStatus === 'No resuelto'
+                      : status.key === 'Final' && currentStatus === 'No Resuelto'
                       ? "text-red-600"
                       : "text-gray-500"
                   )}
