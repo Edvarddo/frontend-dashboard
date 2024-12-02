@@ -41,7 +41,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   const [isUploading, setIsUploading] = useState(false)
 
   const handleStateChange = (checked) => {
-    console.log(checked)
     setEstado(checked)
     let festado = checked ? 'Publicado' : 'Pendiente'
     setAnuncio({ ...anuncio, estado: festado })
@@ -92,8 +91,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
-    
     try {
       const anuncioData = {
         usuario: 1,
@@ -106,15 +103,17 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         autor: anuncio.autor
       };
       console.log(selectedFiles)
-      const anuncioResponse = await axiosPrivate.post(
-        "anuncios-municipales/",
-        anuncioData
-      );
+      
+      // const anuncioResponse = await axiosPrivate.post(
+      //   "anuncios-municipales/",
+      //   anuncioData
+      // );
+
       if (selectedFiles.length !== 0) {
         setIsUploading(true);
-        console.log("img")
-        const anuncioId = anuncioResponse?.data?.id;
+        // const anuncioId = anuncioResponse?.data?.id;
         console.log(selectedFiles)
+        return;
         for (const image of selectedFiles) {
           const formData = new FormData();
           formData.append("anuncio", anuncioId)

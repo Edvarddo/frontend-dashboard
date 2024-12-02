@@ -13,8 +13,7 @@ import TopBar from '../TopBar'
 import Filters from "../Filters"
 import EmptyState from '../EmptyState'
 import { getColorForCategory, chartColors } from '@/lib/utils'
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import  PDFDocument  from './PDFDocument';
+
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
   const [barData, setBarData] = useState([])
