@@ -64,20 +64,20 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const changeStatus = () => {
     const url = `publicaciones/${id}/`
     axiosPrivate.patch(url, { situacion: situationMap[tempStatus] })
-    .then(response => {
-      console.log(response)
-      setPublicacion({ ...publicacion, situacion: { nombre: statusConfig[tempStatus].label } })
-      console.log(response.data)
-    })
-    .catch(error => {
-      console.log(error)
-    })
+      .then(response => {
+        console.log(response)
+        setPublicacion({ ...publicacion, situacion: { nombre: statusConfig[tempStatus].label } })
+        console.log(response.data)
+      })
+      .catch(error => {
+        console.log(error)
+      })
   }
   const confirmStatusChange = () => {
     setStatus(tempStatus)
 
-    changeStatus() 
-    
+    changeStatus()
+
     setIsDialogOpen(false)
     setIsAlertDialogOpen(false)
   }
@@ -266,7 +266,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
               publicacion={publicacion}
               id={id}
               setPublicacion={setPublicacion}
-             
+
 
             />
           )}

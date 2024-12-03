@@ -121,10 +121,10 @@ const MultiSelect = forwardRef(
     };
 
     const toggleAll = () => {
-      if (selectedValues.length === options.length) {
+      if (selectedValues.length === options?.length) {
         handleClear();
       } else {
-        const allValues = options.map((option) => option.nombre);
+        const allValues = options?.map((option) => option.nombre);
         setSelectedValues(allValues);
         onValueChange(allValues);
       }
@@ -152,7 +152,7 @@ const MultiSelect = forwardRef(
               <div className="flex justify-between items-center w-full ">
                 <div className="flex flex-wrap items-center bg-green-50 w-full">
                   {selectedValues.slice(0, maxCount).map((value) => {
-                    const option = options.find((o) => o.nombre === value);
+                    const option = options?.find((o) => o.nombre === value);
                     // console.log(option)
                     const IconComponent = option?.icon;
                     return (
@@ -235,7 +235,7 @@ const MultiSelect = forwardRef(
                   <div
                     className={cn(
                       "mr-2 flex h-4 w-4 items-center justify-center rounded-sm",
-                      selectedValues.length === options.length
+                      selectedValues.length === options?.length
                         ? "bg-green-400 text-white"
                         : "opacity-50 [&_svg]:invisible border border-primary"
                     )}
@@ -244,7 +244,7 @@ const MultiSelect = forwardRef(
                   </div>
                   <span>(Seleccionar todo)</span>
                 </CommandItem>
-                {options.map((option) => {
+                {options?.map((option) => {
                   const isSelected = selectedValues.includes(option.nombre);
                   return (
                     <CommandItem

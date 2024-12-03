@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const StatusFlow = ({ currentStatus }) => {
   const statuses = [
     { key: 'Pendiente', icon: AlertCircle, label: 'Pendiente' },
-    { key: 'Recibido', icon: MailQuestion, label: 'Recibida' },
+    { key: 'Recibido', icon: MailQuestion, label: 'Recibido' },
     { key: 'En curso', icon: Clock, label: 'En curso' },
     { 
       key: 'Final', 

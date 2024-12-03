@@ -62,66 +62,93 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
 
   const fetchData = async (urls) => {
-    console.log(urls)
-    const requests = urls.map(url => fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    }))
-    const responses = await Promise.all(requests)
-    const data = await Promise.all(responses.map(response => {
-      console.log(response.data);
-      return response.json()
-    }))
-
-    setCategorias(data[0])
-    setSituaciones(data[3])
-
-    const juntas = data[1].map(junta => {
-      junta.nombre = junta.nombre_calle
-      return junta
-    })
-
-    setJuntasVecinales(juntas)
-    setDepartamentos(data[2])
-  }
+    const authToken = localStorage.getItem('authToken');
+  
+    if (!authToken) {
+      console.log('No se encontró un token de autenticación.');
+      setLoading(false); // Asegúrate de detener el spinner u otros indicadores de carga.
+      return;
+    }
+  
+    try {
+      const requests = urls.map((url) =>
+        fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        })
+      );
+  
+      const responses = await Promise.all(requests);
+      const data = await Promise.all(
+        responses.map(async (response) => {
+          if (!response.ok) {
+            // Manejo de errores específicos por cada solicitud.
+            console.error(`Error en la URL ${response.url}: ${response.status} ${response.statusText}`);
+            throw new Error(`Error al obtener datos de ${response.url}`);
+          }
+          return response.json();
+        })
+      );
+  
+      console.log(data);
+  
+      // Asignación de datos a los estados.
+      setCategorias(data[0] || []);
+      setSituaciones(data[3] || []);
+  
+      const juntas = data[1]?.map((junta) => ({
+        ...junta,
+        nombre: junta.nombre_calle,
+      }));
+  
+      setJuntasVecinales(juntas || []);
+      setDepartamentos(data[2] || []);
+    } catch (error) {
+      console.error('Error general:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCharData = async (urls) => {
     setLoading(true)
-    console.log(urls)
-    const requests = urls.map(url => fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
-    }))
-    const responses = await Promise.all(requests)
-    const data = await Promise.all(responses.map(response => {
-      console.log(response.data);
-      return response.json()
-    }))
+    try {
 
-    console.log(data[0])
-    console.log(data[1])
-    console.log(data[2])
-
-    let distinctValues = []
-
-    data[0].map((monthData, i) => {
-      console.log(Object.keys(monthData))
-      Object.keys(monthData).forEach((key, index) => {
-        if (!distinctValues.includes(key) && key !== 'name') {
-          distinctValues.push(key)
+      const requests = urls.map(url => fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
+      }))
+      console.log(requests)
+      const responses = await Promise.all(requests)
+      const data = await Promise.all(responses.map(response => {
+        return response.json()
+      }))
+      let distinctValues = []
+      console.log(data)
+
+      data[0]?.map((monthData, i) => {
+        console.log(Object.keys(monthData))
+        Object.keys(monthData).forEach((key, index) => {
+          if (!distinctValues.includes(key) && key !== 'name') {
+            distinctValues.push(key)
+          }
+        })
       })
-    })
 
-    setCardsData(data[2])
-    setBarKeys(distinctValues)
-    setBarData(data[0])
-    setPieData(data[1])
-    setLineChartData(data[3])
+      setCardsData(data[2] ? data[2] : {})
+      setBarKeys(distinctValues)
+      setBarData(data[0] ? data[0] : [])
+      setPieData(data[1] ? data[1] : [])
+      setLineChartData(data[3] ? data[3] : [])
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(false)
 
-    setLoading(false)
+    }
+
   }
 
   useEffect(() => {
@@ -519,7 +546,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </div>
           </CardContent>
         </Card>
-        
+
       </div>
     </>
   )
