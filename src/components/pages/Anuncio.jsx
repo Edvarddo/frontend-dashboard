@@ -20,110 +20,12 @@ import ImageCarousel from '../ImageCarousel'
 import ImageGallery from '../ImageGallery'
 import { useToast } from "../../hooks/use-toast"
 import EditAnuncioModal from '../EditAnuncioModal'
+import { format, addHours, isAfter } from 'date-fns'
 
 const estadoColors = {
   'Publicado': 'bg-green-100 text-green-800',
-  // 'Borrador': 'bg-yellow-100 text-yellow-800',
   'Pendiente': 'bg-blue-100 text-blue-800'
 }
-
-// const EditAnuncioModal = ({ anuncio, onSave, onClose, categorias }) => {
-//   const [editedAnuncio, setEditedAnuncio] = useState({
-//     id: anuncio?.id,
-//     usuario: 1,
-//     titulo: anuncio?.titulo,
-//     subtitulo: anuncio?.subtitulo,
-//     descripcion: anuncio?.descripcion,
-//     categoria: anuncio?.categoria.id,
-//     estado: anuncio?.estado
-//   })
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target
-//     setEditedAnuncio(prev => ({ ...prev, [name]: value }))
-//   }
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault()
-//     onSave(editedAnuncio)
-//   }
-
-//   return (
-//     <form onSubmit={handleSubmit} className="space-y-4">
-//       <div>
-//         <Label htmlFor="titulo">Título</Label>
-//         <Input
-//           id="titulo"
-//           name="titulo"
-//           value={editedAnuncio.titulo}
-//           onChange={handleChange}
-//           required
-//         />
-//       </div>
-//       <div>
-//         <Label htmlFor="subtitulo">Subtítulo</Label>
-//         <Input
-//           id="subtitulo"
-//           name="subtitulo"
-//           value={editedAnuncio.subtitulo}
-//           onChange={handleChange}
-//         />
-//       </div>
-//       <div>
-//         <Label htmlFor="descripcion">Descripción</Label>
-//         <Textarea
-//           id="descripcion"
-//           name="descripcion"
-//           value={editedAnuncio.descripcion}
-//           onChange={handleChange}
-//           required
-//         />
-//       </div>
-//       <div>
-//         <Label htmlFor="categoria">Categoría</Label>
-//         <Select
-//           name="categoria"
-//           value={editedAnuncio?.categoria?.toString()}
-//           onValueChange={(value) => setEditedAnuncio(prev => ({ ...prev, categoria: parseInt(value) }))}
-//         >
-//           <SelectTrigger>
-//             <SelectValue placeholder="Seleccione una categoría" />
-//           </SelectTrigger>
-//           <SelectContent>
-//             {categorias.map((categoria) => (
-//               <SelectItem
-//                 key={categoria.value}
-//                 value={categoria.value.toString()}
-//               >
-//                 {categoria.nombre}
-//               </SelectItem>
-//             ))}
-//           </SelectContent>
-//         </Select>
-//       </div>
-//       <div>
-//         <Label htmlFor="estado">Estado</Label>
-//         <Select
-//           name="estado"
-//           value={editedAnuncio.estado}
-//           onValueChange={(value) => handleChange({ target: { name: 'estado', value } })}
-//         >
-//           <SelectTrigger>
-//             <SelectValue placeholder="Seleccione un estado" />
-//           </SelectTrigger>
-//           <SelectContent>
-//             <SelectItem value="Publicado">Publicado</SelectItem>
-//             <SelectItem value="Borrador">Borrador</SelectItem>
-//             <SelectItem value="Pendiente">Pendiente</SelectItem>
-//           </SelectContent>
-//         </Select>
-//       </div>
-//       <div className="flex justify-end space-x-2">
-//         <Button className="w-full" type="submit">Guardar cambios</Button>
-//       </div>
-//     </form>
-//   )
-// }
 
 const Anuncio = ({ setIsOpened, isOpened }) => {
   const [expandedId, setExpandedId] = useState(null)
@@ -200,9 +102,6 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
           duration: 5000,
           className: "bg-green-500 text-white",
         })
-        // setListadoAnuncios(prevAnuncios =>
-        //   prevAnuncios.map(a => a.id === editedAnuncio.id ? response.data : a)
-        // )
         fetchAnuncios(currentPage)
         setEditingAnuncio(null)
       })
@@ -216,14 +115,8 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
         })
       })
   }
+
   const deleteImage = async (listIndex) => {
-    // body structure
-    // {
-    //   "anuncio": 0,
-    //   "imagen": "string",
-    //   "fecha": "2024-12-01T22:00:21.172Z",
-    //   "extension": "string"
-    // }
     console.log("Imagen a eliminar:", listIndex);
     listIndex.forEach(async (index) => {
       try {
@@ -233,9 +126,8 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
         console.error("Error deleting image:", error)
       }
     })
-
-
   }
+
   const uploadNewImages = async (images, anuncioId) => {
     for (const image of images) {
       const formData = new FormData()
@@ -253,221 +145,233 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
       } catch (error) {
         console.error("Error uploading image:", error)
       }
-
     }
   }
 
+  const handleDeleteAnuncio = (anuncioId) => {
+    const anuncio = listadoAnuncios.find(a => a.id === anuncioId);
+    const publicationDate = new Date(anuncio.fecha);
+    const deletionDeadline = addHours(publicationDate, 1);
+    const now = new Date();
+    console.log("Fecha de publicación:", publicationDate);
+    console.log("Fecha de eliminación:", deletionDeadline);
+    console.log("Fecha actual:", now);
 
-    const handleDeleteAnuncio = (anuncioId) => {
-      axiosPrivate.delete(`anuncios-municipales/${anuncioId}/`)
-        .then(() => {
-          toast({
-            title: "Anuncio eliminado",
-            description: "El anuncio ha sido eliminado exitosamente.",
-            duration: 5000,
-            className: "bg-green-500 text-white",
-          })
-          setListadoAnuncios(prevAnuncios => prevAnuncios.filter(a => a.id !== anuncioId))
-          if (listadoAnuncios.length === 1 && currentPage > 1) {
-            setCurrentPage(prev => prev - 1)
-          } else {
-            fetchAnuncios(currentPage)
-          }
-        })
-        .catch(error => {
-          console.error("Error deleting anuncio:", error)
-          toast({
-            title: "Error",
-            description: "Hubo un problema al eliminar el anuncio. Por favor, intente nuevamente.",
-            variant: "destructive",
-            duration: 5000,
-          })
-        })
+    console.log(isAfter(now, deletionDeadline ));
+    console.log(isAfter(publicationDate, deletionDeadline ));
+    
+
+    // return;
+    if (isAfter(now, deletionDeadline)) {
+      toast({
+        title: "No se puede eliminar",
+        description: "El tiempo de eliminación ha expirado. No se puede eliminar anuncios después de 1 hora de su publicación.",
+        duration: 5000,
+        className: "bg-red-500 text-white",
+      });
+      return;
     }
 
-    return (
-      <>
-        <TopBar handleOpenSidebar={handleOpenSidebar} title="Anuncios" />
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Listado de Anuncios</h1>
-            <Button
-              onClick={() => navigate('/anuncio-formulario')}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              <Plus className="mr-2 h-4 w-4" /> Crear anuncio
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {isLoading ? (
-              [...Array(5)].map((_, index) => (
-                <Skeleton key={index} className="w-full h-24" />
-              ))
-            ) : (
-              listadoAnuncios?.map((anuncio) => (
-                <Collapsible
-                  key={anuncio.id}
-                  open={expandedId === anuncio.id}
-                >
-                  <Card>
-                    <CardHeader className="p-4">
-                      <div className="flex items-center justify-between w-full">
-                        <CardTitle className="text-lg">{anuncio.titulo}</CardTitle>
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-0"
-                            onClick={() => toggleExpand(anuncio.id)}
-                          >
-                            {expandedId === anuncio.id ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                      </div>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Badge className={estadoColors[anuncio.estado]}>{anuncio.estado}</Badge>
-                        <span className="text-sm text-gray-500 flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" /> {
-                            new Date(anuncio.fecha).toLocaleDateString('es-CL', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })
-                          }
-                        </span>
-                        <span className="text-sm text-gray-500 flex items-center">
-                          <Tag className="h-4 w-4 mr-1" /> {anuncio.categoria.nombre}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CollapsibleContent>
-                      {anuncio.imagenes && anuncio.imagenes.length > 0 && (
-                        <div className="px-4 pb-4 ">
-                          <div className=' flex justify-center'>
-                            <ImageCarousel images={anuncio.imagenes} title={anuncio.titulo} />
-                          </div>
-                          {anuncio.imagenes.length > 1 && (
-                            <Dialog>
-                              <DialogTrigger asChild className=''>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="mt-2 "
-                                >
-                                  Ver todas las imágenes ({anuncio.imagenes.length})
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-4xl w-full p-2  ">
-                                <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
-                                {/* <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-4 top-4"
-                                onClick={() => document.querySelector('dialog').close()}
-                              >
-                              
-                              </Button> */}
-                              </DialogContent>
-                            </Dialog>
+    axiosPrivate.delete(`anuncios-municipales/${anuncioId}/`)
+      .then(() => {
+        toast({
+          title: "Anuncio eliminado",
+          description: "El anuncio ha sido eliminado exitosamente.",
+          duration: 5000,
+          className: "bg-green-500 text-white",
+        })
+        setListadoAnuncios(prevAnuncios => prevAnuncios.filter(a => a.id !== anuncioId))
+        if (listadoAnuncios.length === 1 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1)
+        } else {
+          fetchAnuncios(currentPage)
+        }
+      })
+      .catch(error => {
+        console.error("Error deleting anuncio:", error)
+        toast({
+          title: "Error",
+          description: "Hubo un problema al eliminar el anuncio. Por favor, intente nuevamente.",
+          variant: "destructive",
+          duration: 5000,
+        })
+      })
+  }
+
+  return (
+    <>
+      <TopBar handleOpenSidebar={handleOpenSidebar} title="Anuncios" />
+      <div className="p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Listado de Anuncios</h1>
+          <Button
+            onClick={() => navigate('/anuncio-formulario')}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Plus className="mr-2 h-4 w-4" /> Crear anuncio
+          </Button>
+        </div>
+        <div className="space-y-4">
+          {isLoading ? (
+            [...Array(5)].map((_, index) => (
+              <Skeleton key={index} className="w-full h-24" />
+            ))
+          ) : (
+            listadoAnuncios?.map((anuncio) => (
+              <Collapsible
+                key={anuncio.id}
+                open={expandedId === anuncio.id}
+              >
+                <Card>
+                  <CardHeader className="p-4">
+                    <div className="flex items-center justify-between w-full">
+                      <CardTitle className="text-lg">{anuncio.titulo}</CardTitle>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-0"
+                          onClick={() => toggleExpand(anuncio.id)}
+                        >
+                          {expandedId === anuncio.id ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
                           )}
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <Badge className={estadoColors[anuncio.estado]}>{anuncio.estado}</Badge>
+                      <span className="text-sm text-gray-500 flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" /> {
+                          new Date(anuncio.fecha).toLocaleDateString('es-CL', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                        }
+                      </span>
+                      <span className="text-sm text-gray-500 flex items-center">
+                        <Tag className="h-4 w-4 mr-1" /> {anuncio.categoria.nombre}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    {anuncio.imagenes && anuncio.imagenes.length > 0 && (
+                      <div className="px-4 pb-4 ">
+                        <div className=' flex justify-center'>
+                          <ImageCarousel images={anuncio.imagenes} title={anuncio.titulo} />
                         </div>
-                      )}
-                      <CardContent className="p-4 pt-0">
-                        <div className="mb-4">
-                          <h4 className="font-semibold mb-2">Descripción</h4>
-                          <p className="text-sm text-gray-700">
-                            {anuncio.descripcion.length > 200
-                              ? anuncio.descripcion.substring(0, 200) + '...'
-                              : anuncio.descripcion}
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <h4 className="font-semibold mb-1">Responsable</h4>
-                            <p className="text-sm text-gray-700 flex items-center">
-                              <Users className="h-4 w-4 mr-1" /> {"Municipalidad de calama"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex justify-end space-x-2">
+                        {anuncio.imagenes.length > 1 && (
                           <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" onClick={() => handleEditClick(anuncio)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
+                            <DialogTrigger asChild className=''>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 "
+                              >
+                                Ver todas las imágenes ({anuncio.imagenes.length})
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                              <EditAnuncioModal
-                                anuncio={editingAnuncio}
-                                onSave={handleSaveEdit}
-                                onClose={() => setEditingAnuncio(null)}
-                                categorias={categorias}
-                                deleteImage={deleteImage}
-                                uploadNewImages={uploadNewImages}
-                              />
+                            <DialogContent className="max-w-4xl w-full p-2  ">
+                              <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
                             </DialogContent>
                           </Dialog>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Está seguro de eliminar este anuncio?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. Esto eliminará permanentemente el anuncio
-                                  y removerá los datos de nuestros servidores.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteAnuncio(anuncio.id)}>
-                                  Eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                        )}
+                      </div>
+                    )}
+                    <CardContent className="p-4 pt-0">
+                      <div className="mb-4">
+                        <h4 className="font-semibold mb-2">Descripción</h4>
+                        <p className="text-sm text-gray-700">
+                          {anuncio.descripcion.length > 200
+                            ? anuncio.descripcion.substring(0, 200) + '...'
+                            : anuncio.descripcion}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <h4 className="font-semibold mb-1">Responsable</h4>
+                          <p className="text-sm text-gray-700 flex items-center">
+                            <Users className="h-4 w-4 mr-1" /> {"Municipalidad de calama"}
+                          </p>
                         </div>
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
-              ))
-            )}
-          </div>
-          {/* PAGINATION */}
-          <div className="mt-4 flex justify-center">
-            <Button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="mr-2 bg-emerald-600 hover:bg-emerald-700"
-            >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Anterior
-            </Button>
-            <span className="mx-2 self-center">
-              Página {currentPage} de {totalPages}
-            </span>
-            <Button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="ml-2 bg-emerald-600 hover:bg-emerald-700"
-            >
-              Siguiente
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => handleEditClick(anuncio)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <EditAnuncioModal
+                              anuncio={editingAnuncio}
+                              onSave={handleSaveEdit}
+                              onClose={() => setEditingAnuncio(null)}
+                              categorias={categorias}
+                              deleteImage={deleteImage}
+                              uploadNewImages={uploadNewImages}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Está seguro de eliminar este anuncio?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el anuncio
+                                y removerá los datos de nuestros servidores.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteAnuncio(anuncio.id)}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            ))
+          )}
         </div>
-      </>
-    )
-  }
+        <div className="mt-4 flex justify-center">
+          <Button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="mr-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Anterior
+          </Button>
+          <span className="mx-2 self-center">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="ml-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            Siguiente
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
+      </div>
+    </>
+  )
+}
 
-  export default Anuncio
+export default Anuncio
 

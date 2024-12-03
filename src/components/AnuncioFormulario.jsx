@@ -91,6 +91,9 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    // USE ISO DATE FORMAT ISODATE!!! 
+    const date = new Date().toISOString()
+    
     try {
       const anuncioData = {
         usuario: 1,
@@ -99,21 +102,20 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         estado: anuncio.estado,
         descripcion: anuncio.descripcion,
         categoria: anuncio.categoria,
-        fecha: anuncio.fecha_publicacion,
+        fecha: date,
         autor: anuncio.autor
       };
       console.log(selectedFiles)
       
-      // const anuncioResponse = await axiosPrivate.post(
-      //   "anuncios-municipales/",
-      //   anuncioData
-      // );
+      const anuncioResponse = await axiosPrivate.post(
+        "anuncios-municipales/",
+        anuncioData
+      );
 
       if (selectedFiles.length !== 0) {
         setIsUploading(true);
-        // const anuncioId = anuncioResponse?.data?.id;
+        const anuncioId = anuncioResponse?.data?.id;
         console.log(selectedFiles)
-        return;
         for (const image of selectedFiles) {
           const formData = new FormData();
           formData.append("anuncio", anuncioId)
@@ -261,6 +263,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     id="fecha_publicacion"
                     type="date"
                     required
+                    disabled
                     value={anuncio.fecha_publicacion}
                     onChange={(e) => setAnuncio({ ...anuncio, fecha_publicacion: e.target.value })}
                   />
