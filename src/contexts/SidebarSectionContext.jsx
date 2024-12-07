@@ -38,6 +38,11 @@ export const SidebarSectionProvider = ({ children }) => {
     //   icon: "bx bx-download",
     //   link: "/descargar"
     // },
+    {
+      title: "Respuestas municipales",
+      icon: <FileText className='icon' />,
+      link: "/respuestas-municipales"
+    }
   ]
   
   const [selectedSection, setSelectedSection] = useState("");

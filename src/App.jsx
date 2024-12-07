@@ -6,6 +6,7 @@ import Descargar from './components/pages/Descargar'
 import Anuncio from './components/pages/Anuncio'
 import Reporte from './components/pages/Reporte'
 import Mapa from './components/pages/Mapa'
+import RespuestasMunicipales from './components/pages/RespuestasMunicipales'
 import AnuncioFormulario from './components/AnuncioFormulario'
 import axios from 'axios'
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom'
@@ -73,6 +74,8 @@ function App() {
                 
                 <Route path="/reportes" element={<Reporte isOpened={isOpened} setIsOpened={setIsOpened} />} />
                 <Route path="/mapa" element={<Mapa isOpened={isOpened} setIsOpened={setIsOpened} />} />
+                <Route path="/respuestas-municipales" element={<RespuestasMunicipales isOpened={isOpened} setIsOpened={setIsOpened} />} />
+
 
            
               </Route>
