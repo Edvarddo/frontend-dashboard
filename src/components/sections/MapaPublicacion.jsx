@@ -14,14 +14,15 @@ const MapaPublicacion = ({loading, publicacion}) => {
   })
 
   L.Marker.prototype.options.icon = DefaultIcon
+
   return (
-    <>
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-green-700">Ubicación de la publicación</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className=" bg-green-100 rounded-md overflow-hidden flex items-center justify-center w-full h-full">
+          <div className="bg-green-100 rounded-md overflow-hidden flex items-center justify-center w-full h-full">
             {
               loading ? <Skeleton className="h-96 w-full" /> : (
                 publicacion.latitud ? (
@@ -30,6 +31,7 @@ const MapaPublicacion = ({loading, publicacion}) => {
                     zoom={16}
                     minZoom={13}
                     maxZoom={18}
+                    style={{ height: '400px', width: '100%' }}
                   >
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -38,12 +40,13 @@ const MapaPublicacion = ({loading, publicacion}) => {
                       position={[publicacion?.latitud, publicacion?.longitud]}
                     >
                       <Popup>
-                        {publicacion?.junta_vecinal?.nombre_calle}
+                        {publicacion?.junta_vecinal?.nombre_junta}
                       </Popup>
                     </Marker>
                   </MapContainer>
                 ) : (
-                  <div className='bg-gray-200 h-96'>
+                  <div className='bg-gray-200 h-96 w-full flex items-center justify-center'>
+                    <p className="text-gray-500">No hay ubicación disponible</p>
                   </div>
                 )
               )
@@ -51,8 +54,55 @@ const MapaPublicacion = ({loading, publicacion}) => {
           </div>
         </CardContent>
       </Card>
-    </>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-green-700">Información de ubicación</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-600">Junta Vecinal:</p>
+              <p>
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_junta || "No disponible"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-600">Nombre de la calle:</p>
+              <p>
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_calle || "No disponible"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-600">Comuna:</p>
+              <p>
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.comuna || "No disponible"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-600">Región:</p>
+              <p>
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.region || "No disponible"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-600">Latitud:</p>
+              <p>
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.latitud || "No disponible"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-600">Longitud:</p>
+              <p>
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.longitud || "No disponible"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
 export default MapaPublicacion
+

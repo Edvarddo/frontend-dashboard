@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowDownIcon, CheckCircle2Icon, ClockIcon, AlertCircleIcon, XCircleIcon, ArrowLeftIcon, ArrowRight, ArrowRightIcon } from 'lucide-react'
+import { ArrowDownIcon, CheckCircle2Icon, ClockIcon, AlertCircleIcon, XCircleIcon, ArrowLeftIcon, ArrowRight, ArrowRightIcon, Edit2Icon, Trash2Icon } from 'lucide-react'
 import { format } from "date-fns"
+import EditMunicipalResponseModal from '../EditMunicipalResponseModal'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 const getStateIcon = (state) => {
   switch (state) {
@@ -58,7 +61,28 @@ const ResponseSkeleton = () => (
   </div>
 )
 
-export function MunicipalResponsesList({ responses, loading }) {
+export function MunicipalResponsesList({ responses, loading, onEditResponse, onDeleteResponse }) {
+  const [editingResponse, setEditingResponse] = useState(null)
+
+  const handleEditClick = (response) => {
+    setEditingResponse(response)
+  }
+
+  const handleCloseModal = () => {
+    setEditingResponse(null)
+  }
+
+  const handleSaveEdit = (updatedResponse) => {
+    onEditResponse(updatedResponse)
+    setEditingResponse(null)
+  }
+
+  const handleDeleteLastResponse = () => {
+    if (responses.length > 0) {
+      onDeleteResponse(responses[responses.length - 1].id)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-8 relative before:absolute before:inset-0 before:left-4 before:h-full before:w-0.5 before:bg-gray-200">
@@ -84,46 +108,93 @@ export function MunicipalResponsesList({ responses, loading }) {
   }
 
   return (
-    <div className="space-y-8 relative before:absolute before:inset-0 before:left-4 before:h-full before:w-0.5 before:bg-gray-200">
-      {responses.map((response, index) => (
-        <div key={index} className="relative pl-8">
-          <span className="absolute left-0 flex items-center justify-center w-8 h-8 bg-white rounded-full ring-8 ring-white">
-            {getStateIcon(response.situacion_posterior)}
-          </span>
-          <Card className="w-full">
-            <CardContent className="p-4">
-              <div className="flex flex-col space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-500">
-                    {format(new Date(response.fecha), "dd/MM/yyyy HH:mm")}
-                  </span>
-                  <span className="text-sm font-medium text-gray-500">
-                    {response.usuario.nombre}
-                  </span>
+    <>
+      <div className="space-y-8 relative before:absolute before:inset-0 before:left-4 before:h-full before:w-0.5 before:bg-gray-200">
+        {responses.map((response, index) => (
+          <div key={index} className="relative pl-8">
+            <span className="absolute left-0 flex items-center justify-center w-8 h-8 bg-white rounded-full ring-8 ring-white">
+              {getStateIcon(response.situacion_posterior)}
+            </span>
+            <Card className="w-full">
+              <CardContent className="p-4">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-500">
+                      {format(new Date(response.fecha), "dd/MM/yyyy HH:mm")}
+                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-500">
+                        {response.usuario.nombre}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(response)}
+                        className="p-1"
+                      >
+                        <Edit2Icon className="h-4 w-4" />
+                        <span className="sr-only">Editar respuesta</span>
+                      </Button>
+                      {index === responses.length - 1 && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="p-1 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2Icon className="h-4 w-4" />
+                              <span className="sr-only">Eliminar respuesta</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente la última respuesta municipal.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteLastResponse}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={`${getStateColor(response.situacion_inicial)} px-2 py-1 text-xs font-medium border`}>
+                      {response.situacion_inicial}
+                    </Badge>
+                    <ArrowRightIcon className="h-4 w-4 text-gray-400 transform " />
+                    <Badge className={`${getStateColor(response.situacion_posterior)} px-2 py-1 text-xs font-medium border`}>
+                      {response.situacion_posterior}
+                    </Badge>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1">Descripción:</h4>
+                    <p className="text-sm text-gray-600">{response.descripcion}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1">Acciones:</h4>
+                    <p className="text-sm text-gray-600">{response.acciones}</p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={`${getStateColor(response.situacion_inicial)} px-2 py-1 text-xs font-medium border`}>
-                    {response.situacion_inicial}
-                  </Badge>
-                  <ArrowRightIcon className="h-4 w-4 text-gray-400 transform " />
-                  <Badge className={`${getStateColor(response.situacion_posterior)} px-2 py-1 text-xs font-medium border`}>
-                    {response.situacion_posterior}
-                  </Badge>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold mb-1">Descripción:</h4>
-                  <p className="text-sm text-gray-600">{response.descripcion}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold mb-1">Acciones:</h4>
-                  <p className="text-sm text-gray-600">{response.acciones}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ))}
-    </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </div>
+      <EditMunicipalResponseModal
+        isOpen={!!editingResponse}
+        onClose={handleCloseModal}
+        response={editingResponse}
+        onSave={handleSaveEdit}
+      />
+    </>
   )
 }
 

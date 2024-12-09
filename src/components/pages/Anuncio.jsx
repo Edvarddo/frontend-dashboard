@@ -21,6 +21,7 @@ import ImageGallery from '../ImageGallery'
 import { useToast } from "../../hooks/use-toast"
 import EditAnuncioModal from '../EditAnuncioModal'
 import { format, addHours, isAfter } from 'date-fns'
+import { DialogClose } from '@radix-ui/react-dialog'
 
 const estadoColors = {
   'Publicado': 'bg-green-100 text-green-800',
@@ -149,28 +150,28 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   }
 
   const handleDeleteAnuncio = (anuncioId) => {
-    const anuncio = listadoAnuncios.find(a => a.id === anuncioId);
-    const publicationDate = new Date(anuncio.fecha);
-    const deletionDeadline = addHours(publicationDate, 1);
-    const now = new Date();
-    console.log("Fecha de publicación:", publicationDate);
-    console.log("Fecha de eliminación:", deletionDeadline);
-    console.log("Fecha actual:", now);
+    // const anuncio = listadoAnuncios.find(a => a.id === anuncioId);
+    // const publicationDate = new Date(anuncio.fecha);
+    // const deletionDeadline = addHours(publicationDate, 1);
+    // const now = new Date();
+    // console.log("Fecha de publicación:", publicationDate);
+    // console.log("Fecha de eliminación:", deletionDeadline);
+    // console.log("Fecha actual:", now);
 
-    console.log(isAfter(now, deletionDeadline ));
-    console.log(isAfter(publicationDate, deletionDeadline ));
+    // console.log(isAfter(now, deletionDeadline ));
+    // console.log(isAfter(publicationDate, deletionDeadline ));
     
 
     // return;
-    if (isAfter(now, deletionDeadline)) {
-      toast({
-        title: "No se puede eliminar",
-        description: "El tiempo de eliminación ha expirado. No se puede eliminar anuncios después de 1 hora de su publicación.",
-        duration: 5000,
-        className: "bg-red-500 text-white",
-      });
-      return;
-    }
+    // if (isAfter(now, deletionDeadline)) {
+    //   toast({
+    //     title: "No se puede eliminar",
+    //     description: "El tiempo de eliminación ha expirado. No se puede eliminar anuncios después de 1 hora de su publicación.",
+    //     duration: 5000,
+    //     className: "bg-red-500 text-white",
+    //   });
+    //   return;
+    // }
 
     axiosPrivate.delete(`anuncios-municipales/${anuncioId}/`)
       .then(() => {
@@ -276,6 +277,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                             <DialogContent className="max-w-4xl w-full p-2  ">
                               <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
                             </DialogContent>
+                            
                           </Dialog>
                         )}
                       </div>

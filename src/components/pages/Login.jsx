@@ -46,8 +46,8 @@ export default function Login() {
       .then((response) => {
         console.log(response);
         
-        login(response.data.access, response.data.refresh);
-        setIsAdmin(response.data.es_administrador);
+        login(response.data.access, response.data.refresh,response.data.es_administrador);
+        
         setLoginLoading(false);
         if (response.data.es_administrador) navigate('/dashboard');
         setRut('');

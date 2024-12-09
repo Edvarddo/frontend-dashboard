@@ -194,18 +194,25 @@ const TablaPublicaciones = ({
             ) : publicaciones.length > 0 ? (
               publicaciones.map((pub) => (
                 <TableRow key={pub.id} className="hover:bg-muted/50">
+                  {/* TITULO */}
                   <TableCell className="font-medium">{capitalizeFirstLetter(pub.titulo)}</TableCell>
+                  {/* DESCRIPCION */}
                   <TableCell>{capitalizeFirstLetter(pub.descripcion)}</TableCell>
+                  {/* ESTADO */}
                   <TableCell>
                     <Badge variant={getStatusVariant(pub.situacion.nombre)}>
                       {capitalizeFirstLetter(pub.situacion.nombre)}
                     </Badge>
                   </TableCell>
+                  {/* CATEGORIA */}
                   <TableCell>{capitalizeFirstLetter(pub.categoria.nombre)}</TableCell>
+                  {/* FECHA DE PUBLICACION */}
                   <TableCell>{format(new Date(pub.fecha_publicacion), "dd-MM-yyyy")}</TableCell>
+                  {/* JUNTA VECINAL */}
                   <TableCell>
                     {`${pub.junta_vecinal.nombre_junta.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
                   </TableCell>
+                  {/* ACCIONES */}
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"

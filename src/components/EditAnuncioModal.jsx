@@ -89,9 +89,11 @@ const EditAnuncioModal = ({ anuncio, onSave, onClose, categorias, deleteImage, u
   const handleSubmit =  async (e) => {
     e.preventDefault()
     setIsUploading(true)
-    await onSave(editedAnuncio)
     await uploadNewImages(newImages,anuncio.id)
-    await deleteImage(imagesIdDelete)
+    await onSave(editedAnuncio)
+    if(imagesIdDelete.length > 0){
+      await deleteImage(imagesIdDelete)
+    }
     setIsUploading(false)
   }
 
