@@ -13,9 +13,10 @@ import TopBar from '../TopBar'
 import Filters from "../Filters"
 import EmptyState from '../EmptyState'
 import { getColorForCategory, chartColors } from '@/lib/utils'
-
+import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
+  const axiosPrivate = useAxiosPrivate()
   const [barData, setBarData] = useState([])
   const [pieData, setPieData] = useState([])
   const [cardsData, setCardsData] = useState({})
@@ -27,11 +28,6 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const [departamentos, setDepartamentos] = useState([])
   const [situaciones, setSituaciones] = useState([])
 
-  // const situaciones = [
-  //   { nombre: "Recibido", value: "recibido" },
-  //   { nombre: "En curso", value: "en_curso" },
-  //   { nombre: "Resuelto", value: "resuelto" }
-  // ]
 
   const [filtros, setFiltros] = useState(null)
   const [selectedCategoria, setSelectedCategoria] = useState(null)
@@ -71,37 +67,33 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     }
   
     try {
-      const requests = urls.map((url) =>
-        fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        })
-      );
-  
+      const requests = urls.map((url) => axiosPrivate(url));
+      console.log(requests);
+    
+      // responses será un array de objetos con la estructura de Axios (cada uno con .data, .status, etc.)
       const responses = await Promise.all(requests);
-      const data = await Promise.all(
-        responses.map(async (response) => {
-          if (!response.ok) {
-            // Manejo de errores específicos por cada solicitud.
-            console.error(`Error en la URL ${response.url}: ${response.status} ${response.statusText}`);
-            throw new Error(`Error al obtener datos de ${response.url}`);
-          }
-          return response.json();
-        })
-      );
-  
+    
+      // Como Axios ya parsea la respuesta, puedes acceder directamente a response.data
+      const data = responses.map((response) => {
+        // Validación del status: por ejemplo si no es 200, lanzar error.
+        if (response.status < 200 || response.status >= 300) {
+          console.error(`Error en la URL ${response.config.url}: ${response.status}`);
+          throw new Error(`Error al obtener datos de ${response.config.url}`);
+        }
+        return response.data; // Aquí ya tienes el JSON listo
+      });
+    
       console.log(data);
-  
+    
       // Asignación de datos a los estados.
       setCategorias(data[0] || []);
       setSituaciones(data[3] || []);
-  
+    
       const juntas = data[1]?.map((junta) => ({
         ...junta,
-        nombre: junta.nombre_calle,
+        nombre: junta.nombre_junta,
       }));
-  
+    
       setJuntasVecinales(juntas || []);
       setDepartamentos(data[2] || []);
     } catch (error) {
@@ -114,58 +106,54 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const fetchCharData = async (urls) => {
     setLoading(true)
     try {
-
-      const requests = urls.map(url => fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      }))
+      const requests = urls.map(url => axiosPrivate(url))
       console.log(requests)
       const responses = await Promise.all(requests)
-      const data = await Promise.all(responses.map(response => {
-        return response.json()
-      }))
+    
+      // En lugar de usar response.json(), en Axios accedes directamente a response.data
+      const data = responses.map(response => response.data)
+    
       let distinctValues = []
       console.log(data)
-
-      data[0]?.map((monthData, i) => {
-        console.log(Object.keys(monthData))
-        Object.keys(monthData).forEach((key, index) => {
+    
+      data[0]?.forEach((monthData) => {
+        // Object.keys obtendrá las llaves del objeto monthData
+        Object.keys(monthData).forEach((key) => {
           if (!distinctValues.includes(key) && key !== 'name') {
             distinctValues.push(key)
           }
         })
       })
-
-      setCardsData(data[2] ? data[2] : {})
+    
+      setCardsData(data[2] || {})
       setBarKeys(distinctValues)
-      setBarData(data[0] ? data[0] : [])
-      setPieData(data[1] ? data[1] : [])
-      setLineChartData(data[3] ? data[3] : [])
+      setBarData(data[0] || [])
+      setPieData(data[1] || [])
+      setLineChartData(data[3] || [])
+    
     } catch (error) {
       console.log(error)
     } finally {
       setLoading(false)
-
     }
 
   }
 
   useEffect(() => {
     fetchData([
-      `${api_url}categorias/`,
-      `${api_url}juntas-vecinales/`,
-      `${api_url}departamentos-municipales/`,
-      `${api_url}situaciones-publicaciones/`
+      `categorias/`,
+      `juntas-vecinales/`,
+      `departamentos-municipales/`,
+      `situaciones-publicaciones/`
     ])
   }, [api_url])
 
   useEffect(() => {
     fetchCharData([
-      `${api_url}publicaciones-por-mes-y-categoria/?${filtros}`,
-      `${api_url}publicaciones-por-categoria/?${filtros}`,
-      `${api_url}resumen-estadisticas/?${filtros}`,
-      `${api_url}resueltos-por-mes/?${filtros}`
+      `publicaciones-por-mes-y-categoria/?${filtros}`,
+      `publicaciones-por-categoria/?${filtros}`,
+      `resumen-estadisticas/?${filtros}`,
+      `resueltos-por-mes/?${filtros}`
     ])
   }, [filtros, api_url])
 
@@ -235,7 +223,33 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     }
     return lines;
   };
-
+  const handleExportPDFBackend = async () => {
+    try {
+      const token = localStorage.getItem("authToken"); // Obtén el token desde el almacenamiento local
+      const response = await axiosPrivate.get(`${api_url}generate-pdf-report/`, {
+        responseType: "blob", // Asegúrate de manejar la respuesta como un archivo blob
+      });
+       // Crear una URL para el archivo y desencadenar la descarga
+       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+       const link = document.createElement("a");
+       link.href = url;
+ 
+       // Usa un nombre personalizado para el archivo
+       const filename = `reporte_publicaciones_${new Date().toISOString().split("T")[0]}.pdf`;
+       link.setAttribute("download", filename);
+ 
+       document.body.appendChild(link);
+       link.click();
+ 
+       // Limpia el elemento creado
+       document.body.removeChild(link);
+      
+    
+    } catch (error) {
+      console.error("Error al descargar el archivo:", error);
+    }
+  }
+  
   const handleExportPDF = async (comments = "") => {
     const doc = new jsPDF();
 
@@ -291,7 +305,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   };
 
   const handleModalConfirm = () => {
-    handleExportPDF(additionalComments);
+    handleExportPDFBackend();
     setIsModalOpen(false);
     setAdditionalComments("");
   };

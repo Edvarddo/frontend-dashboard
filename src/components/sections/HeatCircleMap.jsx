@@ -4,147 +4,20 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Maximize2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
-import  StatsTable  from "./StatsMapTable"
-const data = [
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.459831,
-          "longitud": -68.933872,
-          "nombre": "Junta 1",
-          "total_publicaciones": 7,
-          "intensidad": 0.3333333333333333
-        },
-        "Asistencia Social": 2,
-        "Mantención de Calles": 2,
-        "Seguridad": 2,
-        "Áreas verdes": 1
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.457217,
-          "longitud": -68.919495,
-          "nombre": "Junta 2",
-          "total_publicaciones": 4,
-          "intensidad": 0.19047619047619047
-        },
-        "Áreas verdes": 2,
-        "Asistencia Social": 1,
-        "Seguridad": 1
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.458974,
-          "longitud": -68.947353,
-          "nombre": "Junta 3",
-          "total_publicaciones": 10,
-          "intensidad": 0.47619047619047616
-        },
-        "Mantención de Calles": 3,
-        "Seguridad": 3,
-        "Áreas verdes": 2,
-        "Asistencia Social": 2
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.461503,
-          "longitud": -68.925289,
-          "nombre": "Junta 4",
-          "total_publicaciones": 15,
-          "intensidad": 0.7142857142857143
-        },
-        "Seguridad": 5,
-        "Mantención de Calles": 4,
-        "Asistencia Social": 3,
-        "Áreas verdes": 3
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.455689,
-          "longitud": -68.939178,
-          "nombre": "Junta 5",
-          "total_publicaciones": 6,
-          "intensidad": 0.2857142857142857
-        },
-        "Áreas verdes": 3,
-        "Seguridad": 2,
-        "Asistencia Social": 1
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.463821,
-          "longitud": -68.941324,
-          "nombre": "Junta 6",
-          "total_publicaciones": 12,
-          "intensidad": 0.5714285714285714
-        },
-        "Mantención de Calles": 5,
-        "Seguridad": 3,
-        "Asistencia Social": 2,
-        "Áreas verdes": 2
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.456912,
-          "longitud": -68.929567,
-          "nombre": "Junta 7",
-          "total_publicaciones": 8,
-          "intensidad": 0.38095238095238093
-        },
-        "Seguridad": 4,
-        "Asistencia Social": 2,
-        "Áreas verdes": 1,
-        "Mantención de Calles": 1
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.460278,
-          "longitud": -68.936777,
-          "nombre": "Junta 8",
-          "total_publicaciones": 9,
-          "intensidad": 0.42857142857142855
-        },
-        "Mantención de Calles": 3,
-        "Áreas verdes": 3,
-        "Seguridad": 2,
-        "Asistencia Social": 1
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.454123,
-          "longitud": -68.944588,
-          "nombre": "Junta 9",
-          "total_publicaciones": 5,
-          "intensidad": 0.23809523809523808
-        },
-        "Asistencia Social": 2,
-        "Seguridad": 2,
-        "Áreas verdes": 1
-      },
-      {
-        "Junta_Vecinal": {
-          "latitud": -22.462745,
-          "longitud": -68.922070,
-          "nombre": "Junta 10",
-          "total_publicaciones": 11,
-          "intensidad": 0.5238095238095238
-        },
-        "Seguridad": 4,
-        "Mantención de Calles": 3,
-        "Asistencia Social": 2,
-        "Áreas verdes": 2
-      }
-    ];
+// import StatsTable from "./StatsMapTable"
+import { Skeleton } from "@/components/ui/skeleton"
+import MultiSelect from "../MultiSelect"
 
-const HeatmapLayer = () => {
+const HeatmapLayer = ({ data }) => {
   const map = useMap();
   const [activePoint, setActivePoint] = useState(null);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !data || data.length === 0) return;
 
     const points = data.map(item => [
       item.Junta_Vecinal.latitud,
@@ -154,11 +27,10 @@ const HeatmapLayer = () => {
 
     const heat = L.heatLayer(points, {
       radius: 30,
-      // blur: 15,
       maxZoom: 10,
+      // gradient: { 0.4: 'blue', 0.6: 'cyan', 0.7: 'lime', 0.8: 'yellow', 1.0: 'red' }
     }).addTo(map);
 
-    // Add invisible markers for tooltips
     data.forEach((item, index) => {
       const marker = L.marker([item.Junta_Vecinal.latitud, item.Junta_Vecinal.longitud], {
         opacity: 0,
@@ -195,127 +67,156 @@ const HeatmapLayer = () => {
     return () => {
       map.removeLayer(heat);
     };
-  }, [map]);
+  }, [map, data]);
 
-  return <>asd</>;
+  return null;
 };
 
-const HeatMap = () => {
+const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSelectedFilters, applyFilters }) => {
+
   const [activeJunta, setActiveJunta] = useState(null);
-  const [selectedJunta, setSelectedJunta] = useState('all');
-  const [selectedCategoria, setSelectedCategoria] = useState('all');
+  const [selectedJunta, setSelectedJunta] = useState([]);
+  const [selectedCategoria, setSelectedCategoria] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const juntas = [...new Set(data.map(item => item.Junta_Vecinal.nombre))];
-  const categorias = ['Asistencia Social', 'Mantención de Calles', 'Seguridad', 'Áreas verdes'];
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [clearValues, setClearValues] = useState(false)
+  // const juntas = [...new Set(data?.map(item => item.Junta_Vecinal.nombre) || [])];
+  // const categorias = ['Asistencia Social', 'Mantención de Calles', 'Seguridad', 'Áreas verdes'];
+
+
+
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-red-700">Error</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Hubo un error al cargar los datos: {error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
 
   return (
-    <div className="flex flex-col h-full ">
-      <Card className="flex-1 flex flex-col">
-        <CardHeader className="flex-none">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-green-700">Mapa de Calor - Juntas Vecinales</CardTitle>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Maximize2 className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[95vw] w-full h-[95vh] p-0">
-                <div className="flex flex-col h-full">
-                  <DialogHeader className="px-6 py-2 border-b bg-gray-50">
-                    <div className="space-y-4">
-                      <DialogTitle>Mapa de Calor - Vista Ampliada</DialogTitle>
-                      <div className="flex space-x-4 pb-2">
-                        <Select value={selectedJunta} onValueChange={setSelectedJunta}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Seleccionar Junta" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[1000]">
-                            <SelectItem value="all">Todas las Juntas</SelectItem>
-                            {juntas.map((junta) => (
-                              <SelectItem key={junta} value={junta}>{junta}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Seleccionar Categoría" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[1000]">
-                            <SelectItem value="all">Todas las Categorías</SelectItem>
-                            {categorias.map((categoria) => (
-                              <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </DialogHeader>
-                  <div className="flex-1">
-                    <MapContainer
-                      center={[-22.459831, -68.933872]}
-                      zoom={13}
-                      className="w-full h-full"
-                      style={{ height: 'calc(95vh - 120px)' }}
+    <div className="flex flex-col h-full">
+    <Card className="flex-1 flex flex-col">
+      <CardHeader className="flex-none">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-green-700">Mapa de Calor - Juntas Vecinales</CardTitle>
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[95vw] w-full h-[95vh] p-0">
+              <div className="flex flex-col h-full  p-1">
+                <DialogHeader className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+                  <DialogTitle>Mapa de Calor - Vista Ampliada</DialogTitle>
+                  {/* <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button> */}
+                </DialogHeader>
+                <div className="flex-1 relative">
+                  <MapContainer
+                    center={[-22.459831, -68.933872]}
+                    zoom={13}
+                    className="w-full h-full"
+                    style={{ height: 'calc(95vh - 56px)' }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <HeatmapLayer data={data} />
+                  </MapContainer>
+                  <div 
+                    className={`absolute top-0 right-0 h-full bg-background border-l border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
+                      isSidebarOpen ? 'w-[300px]' : 'w-[40px]'
+                    }`}
+                    style={{ zIndex: 1000 }}
+                  >
+                    <Button
+                      // variant="ghost"
+                      size="icon"
+                      className="absolute top-2 left-[-1rem] z-[1001]"
+                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     >
-                      <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      />
-                      <HeatmapLayer />
-                    </MapContainer>
+                      {isSidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                    </Button>
+                    {isSidebarOpen && (
+                      <div className="p-4 overflow-y-auto h-full">
+                        <h3 className="font-semibold mb-4 text-center">Filtros</h3>
+                        <div className="space-y-4">
+                          <MultiSelect
+                            options={juntas}
+                            onValueChange={(val) => { setSelectedFilters({ ...selectedFilters, junta: val }) }}
+                            clearValues={clearValues}
+                            defaultValue={selectedFilters.junta}
+                            placeholder="Seleccionar Juntas"
+                            title = "Juntas"
+                          />
+                          <MultiSelect
+                            options={categorias}
+                            onValueChange={(val) => { setSelectedFilters({ ...selectedFilters, categoria: val }) }}
+                            clearValues={clearValues}
+                            defaultValue={selectedFilters.categoria}
+                            placeholder="Seleccionar Categorías"
+                            title = "Categorías"
+                          />
+                          <Button onClick={applyFilters} className="w-full">
+                            Aplicar filtros
+                          </Button>
+                          {/* clear filters */}
+                          <Button onClick={() => { setClearValues(!clearValues), setSelectedFilters(
+                            { junta: [], categoria: [] }
+                          )}} className="w-full">
+                            Limpiar filtros
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      {isLoading || !data || data.length === 0 ? (
+        <CardContent className="p-4">
+          <div className="w-full h-[500px] bg-gray-100 animate-pulse flex items-center justify-center">
+            <div className="text-gray-400">Cargando datos del mapa...</div>
           </div>
-          <div className="flex space-x-4 mt-4">
-            <Select value={selectedJunta} onValueChange={setSelectedJunta}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Seleccionar Junta" />
-              </SelectTrigger>
-              <SelectContent className="z-[1000]">
-                <SelectItem value="all">Todas las Juntas</SelectItem>
-                {juntas.map((junta) => (
-                  <SelectItem key={junta} value={junta}>{junta}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Seleccionar Categoría" />
-              </SelectTrigger>
-              <SelectContent className="z-[1000]">
-                <SelectItem value="all">Todas las Categorías</SelectItem>
-                {categorias.map((categoria) => (
-                  <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
+        </CardContent>
+      ) : (
         <CardContent className=" ">
           {!isModalOpen && (
-            <div className=" w-full">
+            <div className="w-full h-[500px]">
               <MapContainer
                 center={[-22.459831, -68.933872]}
                 zoom={13}
                 className="w-full h-full"
-                // style={{ minHeight: 'calc(100vh - 200px)' }}
+                style= { { height: '500px' } }
               >
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                <HeatmapLayer />
+                <HeatmapLayer data={data} />
               </MapContainer>
             </div>
           )}
         </CardContent>
-      </Card>
-
-    </div>
+      )}
+    </Card>
+  </div>
   );
 };
 

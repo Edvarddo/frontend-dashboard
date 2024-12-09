@@ -1,6 +1,9 @@
 import React from 'react';
+import { Skeleton } from "@/components/ui/skeleton"
 
-const StatsTable = ({ data }) => {
+const StatsTable = ({ data, isLoading }) => {
+  // console.log(isLoading);
+  
   // Calculate totals for each category
   const categories = ['Asistencia Social', 'Mantención de Calles', 'Seguridad', 'Áreas verdes'];
   
@@ -28,6 +31,40 @@ const StatsTable = ({ data }) => {
     areasVerdes: 0,
     total: 0
   });
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b">
+          <Skeleton className="h-6 w-3/4" />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100">
+                {[...Array(6)].map((_, index) => (
+                  <th key={index} className="px-6 py-3">
+                    <Skeleton className="h-4 w-full" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {[...Array(5)].map((_, rowIndex) => (
+                <tr key={rowIndex}>
+                  {[...Array(6)].map((_, colIndex) => (
+                    <td key={colIndex} className="px-6 py-4">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-6 bg-white shadow-md rounded-lg overflow-hidden">
