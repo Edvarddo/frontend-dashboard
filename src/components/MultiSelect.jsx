@@ -85,7 +85,7 @@ const MultiSelect = forwardRef(
     const [isAnimating, setIsAnimating] = useState(false);
     // console.log(options)
     // 
-    console.log(selectedValues)
+    console.log(title,selectedValues)
     // console.log(defaultValue)
     useEffect(() => {
       if (defaultValue) {
@@ -117,8 +117,8 @@ const MultiSelect = forwardRef(
     };
 
     const handleClear = () => {
-      onValueChange([]);
-      console.log(defaultValue)
+      // onValueChange([]);
+      // console.log(defaultValue)
       if (defaultValue) return;
       setSelectedValues([]);
     };
