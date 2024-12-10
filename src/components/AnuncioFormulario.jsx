@@ -103,17 +103,17 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         autor: anuncio.autor
       };
       console.log(selectedFiles)
-      
-      // const anuncioResponse = await axiosPrivate.post(
-      //   "anuncios-municipales/",
-      //   anuncioData
-      // );
+
+      const anuncioResponse = await axiosPrivate.post(
+        "anuncios-municipales/",
+        anuncioData
+      );
 
       if (selectedFiles.length !== 0) {
         setIsUploading(true);
-        // const anuncioId = anuncioResponse?.data?.id;
+        const anuncioId = anuncioResponse?.data?.id;
         console.log(selectedFiles)
-        return;
+
         for (const image of selectedFiles) {
           const formData = new FormData();
           formData.append("anuncio", anuncioId)
@@ -355,8 +355,8 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
               </div>
 
               <div className="flex justify-end">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="bg-emerald-600 hover:bg-emerald-700"
                   disabled={isUploading}
                 >

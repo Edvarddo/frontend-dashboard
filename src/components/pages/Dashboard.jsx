@@ -1,6 +1,4 @@
 import { set, format } from 'date-fns'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,11 +6,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea"
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Skeleton } from "@/components/ui/skeleton"
-import { FileText, Users, CheckCircle, TrendingUp, CodeIcon as ChartColumnIncreasing, PieChartIcon as ChartPie, LineChartIcon as ChartLine, ArrowUpRight, PercentIcon } from 'lucide-react'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { FileText, Users, CheckCircle, TrendingUp, CodeIcon as ChartColumnIncreasing, PieChartIcon as ChartPie, LineChartIcon as ChartLine, ArrowUpRight, PercentIcon, Table } from 'lucide-react'
 import TopBar from '../TopBar'
 import Filters from "../Filters"
 import EmptyState from '../EmptyState'
+import { ResolutionRateTable } from '../sections/TablaTasaResolución'
 import { getColorForCategory, chartColors } from '@/lib/utils'
+import axios from '@/api/axios'
 
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
@@ -38,6 +39,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const [selectedSituacion, setSelectedSituacion] = useState(null)
   const [selectedJunta, setSelectedJunta] = useState(null)
   const [selectedDepto, setSelectedDepto] = useState(null)
+  const [selectedDeptoReporte, setSelectedDeptoReporte] = useState("General")
   const [dateRange, setDateRange] = useState({ from: null, to: null })
   const [clearValues, setClearValues] = useState(false)
 
@@ -58,18 +60,19 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const [loading, setLoading] = useState(false)
   const [isValid, setIsValid] = useState(false)
   const [filterError, setFilterError] = useState(null)
+  const [tasaResolucionData, setTasaResolucionData] = useState({})
 
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
 
   const fetchData = async (urls) => {
     const authToken = localStorage.getItem('authToken');
-  
+
     if (!authToken) {
       console.log('No se encontró un token de autenticación.');
       setLoading(false); // Asegúrate de detener el spinner u otros indicadores de carga.
       return;
     }
-  
+
     try {
       const requests = urls.map((url) =>
         fetch(url, {
@@ -78,7 +81,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
           }
         })
       );
-  
+
       const responses = await Promise.all(requests);
       const data = await Promise.all(
         responses.map(async (response) => {
@@ -90,18 +93,18 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
           return response.json();
         })
       );
-  
+
       console.log(data);
-  
+
       // Asignación de datos a los estados.
       setCategorias(data[0] || []);
       setSituaciones(data[3] || []);
-  
+
       const juntas = data[1]?.map((junta) => ({
         ...junta,
         nombre: junta.nombre_calle,
       }));
-  
+
       setJuntasVecinales(juntas || []);
       setDepartamentos(data[2] || []);
     } catch (error) {
@@ -142,6 +145,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       setBarData(data[0] ? data[0] : [])
       setPieData(data[1] ? data[1] : [])
       setLineChartData(data[3] ? data[3] : [])
+      setTasaResolucionData(data[4] ? data[4] : {})
     } catch (error) {
       console.log(error)
     } finally {
@@ -162,10 +166,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   useEffect(() => {
     fetchCharData([
-      `${api_url}publicaciones-por-mes-y-categoria/?${filtros}`,
-      `${api_url}publicaciones-por-categoria/?${filtros}`,
-      `${api_url}resumen-estadisticas/?${filtros}`,
-      `${api_url}resueltos-por-mes/?${filtros}`
+      `${api_url}publicaciones-por-mes-y-categoria/?${filtros || ""}`,
+      `${api_url}publicaciones-por-categoria/?${filtros || ""}`,
+      `${api_url}resumen-estadisticas/?${filtros || ""}`,
+      `${api_url}resueltos-por-mes/?${filtros || ""}`,
+      `${api_url}tasa-resolucion-departamento/?${filtros || ""}`
     ])
   }, [filtros, api_url])
 
@@ -215,83 +220,39 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     setFiltros(null)
   }
 
-  const splitTextToLines = (doc, text, maxWidth) => {
-    const lines = [];
-    let currentLine = '';
-    const words = text.split(' ');
+  const handleExportPDFBackend = async (additionalComments, selectedDeptoReporte) => {
+    try {
+      console.log({ selectedDeptoReporte });
+      const token = localStorage.getItem("authToken"); // Obtén el token desde el almacenamiento local
+      const response = await axios.get(`${api_url}generate-pdf-report/?${filtros || ""}`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+        },
+        params: { comentarios: additionalComments, departamento_reporte: selectedDeptoReporte },
+        responseType: "blob", // Asegúrate de manejar la respuesta como un archivo blob
+      });
 
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-      const width = doc.getStringUnitWidth(currentLine + ' ' + word) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-      if (width < maxWidth) {
-        currentLine += (currentLine ? ' ' : '') + word;
-      } else {
-        lines.push(currentLine);
-        currentLine = word;
-      }
+      // Crear una URL para el archivo y desencadenar la descarga
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Usa un nombre personalizado para el archivo
+      const filename = `reporte_publicaciones_${new Date().toISOString().split("T")[0]}.pdf`;
+      link.setAttribute("download", filename);
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Limpia el elemento creado
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error al descargar el archivo:", error);
     }
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-    return lines;
-  };
-
-  const handleExportPDF = async (comments = "") => {
-    const doc = new jsPDF();
-
-    doc.setFontSize(18);
-    doc.text('Dashboard Municipal', 14, 20);
-
-    doc.setFontSize(14);
-    doc.text('Resumen de Estadísticas', 14, 30);
-    doc.text(`Publicaciones Recibidas: ${cardsData?.publicaciones || 0}`, 14, 40);
-    doc.text(`Usuarios Activos: ${cardsData?.usuarios || 0}`, 14, 50);
-    doc.text(`Publicaciones Resueltas: ${cardsData?.problemas_resueltos || 0}`, 14, 60);
-    doc.text(`Tasa de Resolución: ${calculateResolutionRate()}%`, 14, 70);
-
-    if (barChartRef.current && barData.length > 0) {
-      const barCanvas = await html2canvas(barChartRef.current);
-      const barImgData = barCanvas.toDataURL('image/png');
-      doc.addPage();
-      doc.text('Publicaciones por Mes y Categoría:', 14, 20);
-      doc.addImage(barImgData, 'PNG', 14, 30, 180, 90);
-    }
-
-    if (pieChartRef.current && pieData.length > 0) {
-      const pieCanvas = await html2canvas(pieChartRef.current);
-      const pieImgData = pieCanvas.toDataURL('image/png');
-      doc.addPage();
-      doc.text('Publicaciones por Categoría:', 14, 20);
-      doc.addImage(pieImgData, 'PNG', 14, 30, 180, 90);
-    }
-
-    if (lineChartRef.current && lineChartData.length > 0) {
-      const lineCanvas = await html2canvas(lineChartRef.current);
-      const lineImgData = lineCanvas.toDataURL('image/png');
-      doc.addPage();
-      doc.text('Resueltos por Mes:', 14, 20);
-      doc.addImage(lineImgData, 'PNG', 14, 30, 180, 90);
-    }
-
-    if (comments) {
-      doc.addPage();
-      doc.setFontSize(14);
-      doc.text('Comentarios Adicionales:', 14, 20);
-
-      const pageWidth = doc.internal.pageSize.width;
-      const margin = 14;
-      const maxWidth = pageWidth - margin * 2;
-
-      doc.setFontSize(12);
-      const lines = doc.splitTextToSize(comments, maxWidth);
-      doc.text(lines, margin, 30);
-    }
-
-    doc.save('dashboard.pdf');
   };
 
   const handleModalConfirm = () => {
-    handleExportPDF(additionalComments);
+    handleExportPDFBackend(additionalComments, selectedDeptoReporte);
     setIsModalOpen(false);
     setAdditionalComments("");
   };
@@ -507,6 +468,28 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </CardContent>
           </Card>
         )}
+        {loading ? (
+          <Skeleton className="h-96 mb-8" />
+        ) : (
+          tasaResolucionData && Object.keys(tasaResolucionData).length == 0
+            ?
+            (
+              <Card className="mb-8">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Tasa de Resolución por Departamento y Mes</h3>
+                  <EmptyState Image={Table} title="No hay datos para mostrar" description="No se encontraron datos para mostrar" />
+                </CardContent>
+              </Card>
+            )
+            :
+            (<Card className="mb-8">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Tasa de Resolución por Departamento y Mes</h3>
+                <ResolutionRateTable data={tasaResolucionData} />
+              </CardContent>
+            </Card>
+            )
+        )}
         <Card>
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold mb-4">Acciones Rápidas</h3>
@@ -514,7 +497,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
                   <Button
-                    disabled={pieData.length <= 0 && barData.length <= 0 && lineChartData.length <= 0}
+                    disabled={pieData.length <= 0 && barData.length <= 0 && lineChartData.length <= 0 && Object.keys(tasaResolucionData).length == 0}
                     className="bg-green-500 hover:bg-green-600 text-white"
                   >
                     Generar Reporte
@@ -532,6 +515,25 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                     onChange={(e) => setAdditionalComments(e.target.value)}
                     placeholder="Escriba sus comentarios aquí..."
                   />
+                  {/* Seleccionar Departamento */}
+                  <div className="space-y-2">
+                    <label htmlFor="departamento" className="text-sm font-medium text-gray-700">
+                      Seleccionar Departamento Municipal
+                    </label>
+                    <Select value={selectedDeptoReporte} onValueChange={setSelectedDeptoReporte} defaultValue="General">
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleccione un departamento..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="General">General</SelectItem>
+                        {departamentos?.map((departamento) => (
+                          <SelectItem key={departamento.id} value={departamento.nombre}>
+                            {departamento.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
                     <Button
