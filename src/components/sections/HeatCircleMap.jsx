@@ -13,7 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import MultiSelect from "../MultiSelect"
 import DatePicker from '../DatePicker';
 
-const HeatmapLayer = ({ data }) => {
+const HeatmapLayer = ({ data, categorias }) => {
+  console.log(categorias)
+  console.log(data)
   const map = useMap();
   const [activePoint, setActivePoint] = useState(null);
 
@@ -42,6 +44,8 @@ const HeatmapLayer = ({ data }) => {
           <h3 class="font-bold mb-1">${item.Junta_Vecinal.nombre}</h3>
           <p class="text-sm">Seguridad: ${item.Seguridad || 'N/A'}</p>
           <p class="text-sm">Áreas verdes: ${item["Áreas verdes"] || 'N/A'}</p>
+          <p class="text-sm">Mantención de calles: ${item["Mantención de Calles"] || 'N/A'}</p>
+          <p class="text-sm">Asistencia social: ${item["Asistencia Social"] || 'N/A'}</p>
           <p class="text-sm">Total publicaciones: ${item.Junta_Vecinal.total_publicaciones}</p>
         </div>
       `;
@@ -136,7 +140,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
-                    <HeatmapLayer data={data} />
+                    <HeatmapLayer data={data} categorias={categorias} />
                   </MapContainer>
                   <div 
                     className={`absolute top-0 right-0 h-full bg-background border-l border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
