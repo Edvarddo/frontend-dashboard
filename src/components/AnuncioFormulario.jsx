@@ -42,8 +42,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
   const handleStateChange = (checked) => {
     setEstado(checked)
-    let festado = checked ? 'Publicado' : 'Pendiente'
-    setAnuncio({ ...anuncio, estado: festado })
+
   }
 
   const handleOpenSidebar = () => {
@@ -93,13 +92,13 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     event.preventDefault();
     // USE ISO DATE FORMAT ISODATE!!! 
     const date = new Date().toISOString()
-    
+    const festado = estado ? 'Publicado' : 'Pendiente'
     try {
       const anuncioData = {
         usuario: 1,
         titulo: anuncio.titulo,
         subtitulo: anuncio.subtitulo,
-        estado: anuncio.estado,
+        estado: festado,
         descripcion: anuncio.descripcion,
         categoria: anuncio.categoria,
         fecha: date,

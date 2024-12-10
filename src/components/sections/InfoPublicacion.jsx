@@ -125,11 +125,26 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const onEditResponse = async (updatedResponse, id) => {
     console.log('updatedResponse:', updatedResponse)
 
+    
     try {
       const response = await axiosPrivate.patch(`respuestas-municipales/${id}/`, updatedResponse)
       fetchResponses()
+      toast({
+        title: "Respuesta actualizada",
+        description: "La respuesta municipal ha sido actualizada exitosamente.",
+        duration: 5000,
+        className: "bg-green-500 text-white",
+      });
+
     } catch (error) {
       console.error('Error updating municipal response:', error)
+      toast({
+        title: "Error al actualizar respuesta",
+        description: "Ha ocurrido un error al intentar actualizar la respuesta municipal.",
+        duration: 5000,
+        className: "bg-red-500 text-white",
+      });
+      
     }
   }
   const onDeleteResponse = async (id) => {
@@ -209,6 +224,12 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-green-600">Código:</p>
+                <p>
+                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.codigo}
+                </p>
+              </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Nombre de usuario:</p>
                 <p>

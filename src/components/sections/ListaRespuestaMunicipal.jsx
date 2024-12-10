@@ -73,7 +73,14 @@ export function MunicipalResponsesList({ responses, loading, onEditResponse, onD
   }
 
   const handleSaveEdit = (updatedResponse) => {
-    onEditResponse(updatedResponse)
+    console.log(updatedResponse)
+    const newResponse = {
+      descripcion: updatedResponse.descripcion,
+      acciones: updatedResponse.acciones,
+    }
+    console.log(newResponse)
+    // return
+    onEditResponse(newResponse, updatedResponse.id)
     setEditingResponse(null)
   }
 
@@ -126,7 +133,9 @@ export function MunicipalResponsesList({ responses, loading, onEditResponse, onD
                       <span className="text-sm font-medium text-gray-500">
                         {response.usuario.nombre}
                       </span>
-                      <Button
+                      {
+                        index === responses.length - 1 && (
+                          <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditClick(response)}
@@ -135,6 +144,9 @@ export function MunicipalResponsesList({ responses, loading, onEditResponse, onD
                         <Edit2Icon className="h-4 w-4" />
                         <span className="sr-only">Editar respuesta</span>
                       </Button>
+                        )
+                      }
+                      
                       {index === responses.length - 1 && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

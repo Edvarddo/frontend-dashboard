@@ -300,7 +300,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2">
-                        <Dialog>
+                        <Dialog open={!!editingAnuncio} onOpenChange={() => setEditingAnuncio(anuncio)}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" onClick={() => handleEditClick(anuncio)}>
                               <Edit className="h-4 w-4 mr-2" />

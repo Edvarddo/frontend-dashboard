@@ -11,6 +11,7 @@ import 'leaflet.heat';
 // import StatsTable from "./StatsMapTable"
 import { Skeleton } from "@/components/ui/skeleton"
 import MultiSelect from "../MultiSelect"
+import DatePicker from '../DatePicker';
 
 const HeatmapLayer = ({ data }) => {
   const map = useMap();
@@ -72,7 +73,7 @@ const HeatmapLayer = ({ data }) => {
   return null;
 };
 
-const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSelectedFilters, applyFilters }) => {
+const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSelectedFilters, applyFilters, limpiarFiltros, clearValues,dateRange,setDateRange, setIsValid, isValid }) => {
 
   const [activeJunta, setActiveJunta] = useState(null);
   const [selectedJunta, setSelectedJunta] = useState([]);
@@ -82,7 +83,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
   // const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [clearValues, setClearValues] = useState(false)
+  
   // const juntas = [...new Set(data?.map(item => item.Junta_Vecinal.nombre) || [])];
   // const categorias = ['Asistencia Social', 'Mantención de Calles', 'Seguridad', 'Áreas verdes'];
 
@@ -101,6 +102,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
     );
   }
 
+  
 
 
   return (
@@ -115,7 +117,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                 <Maximize2 className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] w-full h-[95vh] p-0">
+            <DialogContent className="max-w-[95vw] w-full h-[95vh] ">
               <div className="flex flex-col h-full  p-1">
                 <DialogHeader className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
                   <DialogTitle>Mapa de Calor - Vista Ampliada</DialogTitle>
@@ -145,7 +147,8 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                     <Button
                       // variant="ghost"
                       size="icon"
-                      className="absolute top-2 left-[-1rem] z-[1001]"
+                     
+                      className="absolute top-2 left-[-1rem] z-[1001] bg-green-500 hover:bg-green-600 text-white"
                       onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     >
                       {isSidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -170,13 +173,16 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                             placeholder="Seleccionar Categorías"
                             title = "Categorías"
                           />
-                          <Button onClick={applyFilters} className="w-full">
+                          <DatePicker
+                            dateRange={dateRange}
+                            setDateRange={setDateRange}
+                            setIsValid={setIsValid}
+                          />
+                          <Button onClick={applyFilters} className="bg-green-500 hover:bg-green-600 text-white w-full">
                             Aplicar filtros
                           </Button>
                           {/* clear filters */}
-                          <Button onClick={() => { setClearValues(!clearValues), setSelectedFilters(
-                            { junta: [], categoria: [] }
-                          )}} className="w-full">
+                          <Button onClick={limpiarFiltros} className="bg-white hover:bg-green-50 text-black w-full">
                             Limpiar filtros
                           </Button>
                         </div>

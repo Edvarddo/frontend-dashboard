@@ -108,12 +108,11 @@ const TablaPublicaciones = ({
 
   const getStatusVariant = (status) => {
     switch (status.toLowerCase()) {
-      case 'resuelto':
-        return 'success'
-      case 'en curso':
-        return 'warning'
-      default:
-        return 'default'
+      case 'Recibido': return 'success'
+      case 'En curso': return 'warning' 
+      case 'Finalizado': return 'danger'
+      case 'Pendiente' : return 'info'
+      case 'No Resuelto' : return 'danger'
     }
   }
 
@@ -157,7 +156,7 @@ const TablaPublicaciones = ({
             <TableRow>
               <TableHead className="w-[300px]">
                 <Button variant="ghost" onClick={() => handleSort('titulo')}>
-                  Título {renderSortIcon('titulo')}
+                  Código {renderSortIcon('titulo')}
                 </Button>
               </TableHead>
               <TableHead>Descripción</TableHead>
@@ -175,6 +174,11 @@ const TablaPublicaciones = ({
               <TableHead>
                 <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
                   Junta vecinal {renderSortIcon('junta_vecinal__nombre_calle')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
+                  Calle {renderSortIcon('junta_vecinal__nombre_calle')}
                 </Button>
               </TableHead>
               <TableHead className="text-right">Acciones</TableHead>
@@ -195,12 +199,12 @@ const TablaPublicaciones = ({
               publicaciones.map((pub) => (
                 <TableRow key={pub.id} className="hover:bg-muted/50">
                   {/* TITULO */}
-                  <TableCell className="font-medium">{capitalizeFirstLetter(pub.titulo)}</TableCell>
+                  <TableCell className="font-medium">{(pub.codigo)}</TableCell>
                   {/* DESCRIPCION */}
                   <TableCell>{capitalizeFirstLetter(pub.descripcion)}</TableCell>
                   {/* ESTADO */}
                   <TableCell>
-                    <Badge variant={getStatusVariant(pub.situacion.nombre)}>
+                    <Badge variant={'primary'} >
                       {capitalizeFirstLetter(pub.situacion.nombre)}
                     </Badge>
                   </TableCell>
@@ -211,6 +215,10 @@ const TablaPublicaciones = ({
                   {/* JUNTA VECINAL */}
                   <TableCell>
                     {`${pub.junta_vecinal.nombre_junta.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
+                  </TableCell>
+                  {/* CALLE */}
+                  <TableCell>
+                    {`${pub.junta_vecinal.nombre_calle.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
                   </TableCell>
                   {/* ACCIONES */}
                   <TableCell className="text-right">

@@ -74,17 +74,17 @@ const MapaPublicacion = ({loading, publicacion}) => {
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-green-600">Comuna:</p>
+              <p className="text-sm font-medium text-green-600">Nro de calle:</p>
               <p>
-                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.comuna || "No disponible"}
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.numero_calle || "No disponible"}
               </p>
             </div>
-            <div className="space-y-1">
+            {/* <div className="space-y-1">
               <p className="text-sm font-medium text-green-600">Región:</p>
               <p>
                 {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.region || "No disponible"}
               </p>
-            </div>
+            </div> */}
             <div className="space-y-1">
               <p className="text-sm font-medium text-green-600">Latitud:</p>
               <p>

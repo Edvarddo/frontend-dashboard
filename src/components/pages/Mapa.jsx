@@ -11,7 +11,7 @@ import HeatCircleMap from '../sections/HeatCircleMap'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import StatsTable from '../sections/StatsMapTable'
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
-
+import { format } from "date-fns"
 // para los filtros utilizar esto: https://clubdelamusica-pruebas.com/api/v1/publicaciones-por-junta-vecinal?categoria=[Seguridad] (ejemplo)
 // para los filtros utilizar esto: https://clubdelamusica-pruebas.com/api/v1/publicaciones-por-junta-vecinal?junta_vecinal=[Junta 1] (ejemplo)
 
@@ -154,7 +154,13 @@ const Mapa = ({ isOpened, setIsOpened }) => {
   const [juntas, setJuntas] = useState([])
   const [categorias, setCategorias] = useState([])
   const [data, setData] = useState([])
-  const [selectedFilters, setSelectedFilters] = useState({ junta: [], categoria: [] });
+  const [selectedFilters, setSelectedFilters] = useState({
+    junta: [],
+    categoria: [],
+  });
+  const [isValid, setIsValid] = useState(false)
+  const [dateRange, setDateRange] = useState({ from: null, to: null })
+  const [clearValues, setClearValues] = useState(false)
   // const juntas = [...new Set(data.map(item => item.Junta_Vecinal.nombre))]
   // const categorias = ['Asistencia Social', 'Mantención de Calles', 'Seguridad', 'Áreas verdes']
   const HeatmapLayer = () => {
@@ -222,7 +228,7 @@ const Mapa = ({ isOpened, setIsOpened }) => {
     setIsLoading(true);
     const url = queryParams ? `/publicaciones-por-junta-vecinal/?${queryParams}` : '/publicaciones-por-junta-vecinal/';
     try {
-      
+
       const response = await axiosPrivate.get(url);
       console.log(response.data);
       // add datas to data
@@ -264,51 +270,70 @@ const Mapa = ({ isOpened, setIsOpened }) => {
     }
   }
   useEffect(() => {
-    fetchData();
     fetchJuntas();
-    fetchCategorias();
-  }, []);
+    fetchCategorias()
+  }, [])
+  useEffect(() => {
+    fetchData();
+
+  }, [clearValues]);
   const getQueryParams = () => {
     const juntas = selectedFilters.junta
     const categorias = selectedFilters.categoria
-    // junta_vecinal=[Junta 1],[Junta 2]
-    // categoria=[Seguridad],[Áreas verdes]
-    const juntasQuery = juntas.length > 0 ? `junta_vecinal=${juntas.join(',')}` : ''
-    const categoriasQuery = categorias.length > 0 ? `categoria=${categorias.join(',')}` : ''
-    // categoria&junta_vecinal
-    const filtrosQuery = `${categoriasQuery}&${juntasQuery}` 
-    // if juntasQuery or categoriasQuery is empty, remove the & from the query
-    if(juntasQuery || categoriasQuery) {
-      return filtrosQuery.replace('&', '')
-    }
+    const juntasQuery = juntas.length > 0 ? `junta_vecinal=${juntas.join(',')}`+'&' : ''
+    const categoriasQuery = categorias.length > 0 ? `categoria=${categorias.join(',')}`+'&' : ''
+    const iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd")+'&'  : ""
+    const endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd")+'&'  : ""
+    // const filtrosQuery = `${categoriasQuery}&${juntasQuery}&${iniDate}&${endDate}`
+    let filtrosQuery = `${categoriasQuery}${juntasQuery}${iniDate}${endDate}`
+    filtrosQuery = filtrosQuery.slice(0, -1);
+    console.log(filtrosQuery)
     return filtrosQuery;
   }
 
   const applyFilters = () => {
     console.log('aplicando filtros');
     console.log(getQueryParams())
+    console.log(dateRange)
     fetchData(getQueryParams());
-    
+
   }
 
+  const limpiarFiltros = () => {
+    setSelectedJunta([]);
+    setSelectedCategoria([]);
+    setSelectedFilters({
+      junta: [],
+      categoria: []
+    });
+    setDateRange({ from: null, to: null });
+    setClearValues(!clearValues);
+  }
 
   return (
     <>
       <TopBar title="Mapa" handleOpenSidebar={() => setIsOpened(!isOpened)} />
       <div className='p-8'>
-        <HeatCircleMap 
-          data={data} 
-          isLoading={isLoading} 
+        <HeatCircleMap
+          data={data}
+          isLoading={isLoading}
           juntas={juntas}
           categorias={categorias}
           selectedFilters={selectedFilters}
           setSelectedFilters={setSelectedFilters}
           applyFilters={applyFilters}
-          />
+          limpiarFiltros={limpiarFiltros}
+          clearValues={clearValues}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          setIsValid={setIsValid}
+          isValid={isValid}
+
+        />
         <StatsTable data={data} isLoading={isLoading} setIsLoading={setIsLoading} />
       </div>
 
-      
+
     </>
   )
 }
