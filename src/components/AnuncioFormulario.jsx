@@ -105,7 +105,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         autor: anuncio.autor
       };
       console.log(selectedFiles)
-      
+
       const anuncioResponse = await axiosPrivate.post(
         "anuncios-municipales/",
         anuncioData
@@ -357,8 +357,8 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
               </div>
 
               <div className="flex justify-end">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="bg-emerald-600 hover:bg-emerald-700"
                   disabled={isUploading}
                 >

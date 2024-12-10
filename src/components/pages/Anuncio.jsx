@@ -160,7 +160,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
 
     // console.log(isAfter(now, deletionDeadline ));
     // console.log(isAfter(publicationDate, deletionDeadline ));
-    
+
 
     // return;
     // if (isAfter(now, deletionDeadline)) {
@@ -277,7 +277,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                             <DialogContent className="max-w-4xl w-full p-2  ">
                               <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
                             </DialogContent>
-                            
+
                           </Dialog>
                         )}
                       </div>
