@@ -30,6 +30,7 @@ const TablaPublicaciones = ({
   const [searchTerm, setSearchTerm] = useState('')
   const [orderBy, setOrderBy] = useState('titulo')
   const [orderDirection, setOrderDirection] = useState('asc')
+  const [tempPublicaciones, setTempPublicaciones] = useState([])
   const navigate = useNavigate()
 
   const fetchPublicaciones = async (fetchUrl) => {
@@ -39,6 +40,7 @@ const TablaPublicaciones = ({
       setTotalPublicaciones(response.data.count)
       setDownloadIsAvailable(response.data.count > 0)
       setPublicaciones(response.data.results || [])
+      setTempPublicaciones(response.data.results || [])
     } catch (error) {
       setError(error.message || 'Ocurrió un error al cargar las publicaciones')
     } finally {
@@ -48,45 +50,69 @@ const TablaPublicaciones = ({
 
   useEffect(() => {
     const baseUrl = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/`
-    const pageSize = publicacionesPorPagina ? `pagesize=${publicacionesPorPagina}` : ""
-    const searchParam = searchTerm ? `&titulo__icontains=${searchTerm}` : ""
-    const orderParam = `&ordering=${orderDirection === 'desc' ? '-' : ''}${orderBy}`
-    const fetchUrl = currentPage === 1
-      ? `${url || baseUrl}?${pageSize}${searchParam}${orderParam}`
-      : `${url || baseUrl}?page=${currentPage}&${pageSize}${searchParam}${orderParam}`
+    const limitPerPage = publicacionesPorPagina ? `&pagesize=${publicacionesPorPagina}` : ''
+    // Si existe la url con filtros se aplica la petición con ella
+    if (url){
+      const fetchUrl = `${url}?${limitPerPage}&page=${currentPage}`
+      fetchPublicaciones(fetchUrl)
+      return;
+    }
+    // Si no hay filtros se aplica la petición con la url base
+    const fetchUrl = `${baseUrl}?${limitPerPage}&page=${currentPage}`
+    // const fetchUrl = currentPage === 1 ? `${url || baseUrl}?${limitPerPage}` : `${url || baseUrl}&page=${currentPage}`
+    console.log(fetchUrl)
     fetchPublicaciones(fetchUrl)
-  }, [currentPage, url, publicacionesPorPagina, searchTerm, orderBy, orderDirection])
+  }, [currentPage, url, publicacionesPorPagina])
 
   const handleLimitPerPage = (value) => {
+    console.log(value)
     setPublicacionesPorPagina(Number(value))
     setCurrentPage(1)
   }
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value)
-    setCurrentPage(1)
+    if (!event.target.value) {
+      setPublicaciones(tempPublicaciones)
+      return
+    }
+    const filteredPublicaciones = tempPublicaciones.filter((pub) =>
+      pub.titulo.toLowerCase().includes(event.target.value.toLowerCase())
+    )
+    setPublicaciones(filteredPublicaciones)
+    
+    // setCurrentPage(1)
   }
 
   const handleSort = (column) => {
     if (orderBy === column) {
       setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc')
+      // order publicaciones
+      const sortedPublicaciones = publicaciones.sort((a, b) => {
+        if (orderDirection === 'asc') {
+          return a[column] < b[column] ? -1 : 1
+        } else {
+          return a[column] > b[column] ? -1 : 1
+        }
+      })
+      setPublicaciones(sortedPublicaciones)
+
     } else {
       setOrderBy(column)
       setOrderDirection('asc')
     }
-    setCurrentPage(1)
+    // setCurrentPage(1)
   }
 
   const totalPages = Math.ceil(totalPublicaciones / publicacionesPorPagina)
 
   const getStatusVariant = (status) => {
     switch (status.toLowerCase()) {
-      case 'resuelto':
-        return 'success'
-      case 'en curso':
-        return 'warning'
-      default:
-        return 'default'
+      case 'Recibido': return 'success'
+      case 'En curso': return 'warning' 
+      case 'Finalizado': return 'danger'
+      case 'Pendiente' : return 'info'
+      case 'No Resuelto' : return 'danger'
     }
   }
 
@@ -107,6 +133,8 @@ const TablaPublicaciones = ({
           onChange={handleSearch}
           className="max-w-sm"
         />
+        
+
         <Select
           value={publicacionesPorPagina.toString()}
           onValueChange={handleLimitPerPage}
@@ -128,7 +156,7 @@ const TablaPublicaciones = ({
             <TableRow>
               <TableHead className="w-[300px]">
                 <Button variant="ghost" onClick={() => handleSort('titulo')}>
-                  Título {renderSortIcon('titulo')}
+                  Código {renderSortIcon('titulo')}
                 </Button>
               </TableHead>
               <TableHead>Descripción</TableHead>
@@ -148,6 +176,11 @@ const TablaPublicaciones = ({
                   Junta vecinal {renderSortIcon('junta_vecinal__nombre_calle')}
                 </Button>
               </TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
+                  Calle {renderSortIcon('junta_vecinal__nombre_calle')}
+                </Button>
+              </TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -165,18 +198,29 @@ const TablaPublicaciones = ({
             ) : publicaciones.length > 0 ? (
               publicaciones.map((pub) => (
                 <TableRow key={pub.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{capitalizeFirstLetter(pub.titulo)}</TableCell>
+                  {/* TITULO */}
+                  <TableCell className="font-medium">{(pub.codigo)}</TableCell>
+                  {/* DESCRIPCION */}
                   <TableCell>{capitalizeFirstLetter(pub.descripcion)}</TableCell>
+                  {/* ESTADO */}
                   <TableCell>
-                    <Badge variant={getStatusVariant(pub.situacion.nombre)}>
+                    <Badge variant={'primary'} >
                       {capitalizeFirstLetter(pub.situacion.nombre)}
                     </Badge>
                   </TableCell>
+                  {/* CATEGORIA */}
                   <TableCell>{capitalizeFirstLetter(pub.categoria.nombre)}</TableCell>
+                  {/* FECHA DE PUBLICACION */}
                   <TableCell>{format(new Date(pub.fecha_publicacion), "dd-MM-yyyy")}</TableCell>
+                  {/* JUNTA VECINAL */}
+                  <TableCell>
+                    {`${pub.junta_vecinal.nombre_junta.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
+                  </TableCell>
+                  {/* CALLE */}
                   <TableCell>
                     {`${pub.junta_vecinal.nombre_calle.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
                   </TableCell>
+                  {/* ACCIONES */}
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
@@ -204,7 +248,18 @@ const TablaPublicaciones = ({
         <span className="text-sm text-muted-foreground">
           Página {currentPage} de {totalPages || 1}
         </span>
-
+        <div className="flex items-center space-x-2">
+          {/* plural and singular handle */}
+          {
+            totalPublicaciones === 1 ? (
+              <span className="text-sm text-muted-foreground">{totalPublicaciones} Resultado encontrado</span>
+            ) : (
+              <span className="text-sm text-muted-foreground">{totalPublicaciones} Resultados encontrados</span>
+            )
+          }
+          {/* <span className="text-sm text-muted-foreground">{publicaciones.length} Resultados encontrados</span> */}
+          
+        </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"

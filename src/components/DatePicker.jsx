@@ -10,6 +10,7 @@ const DatePicker = ({ dateRange, setDateRange, setIsValid }) => {
   const [inputValue, setInputValue] = useState("")
 
   const handleDateSelect = (range) => {
+    
     setDateRange(range)
     if (!range?.to) {
       setInputValue(`${format(range.from, "dd-MM-yyyy", { locale: es })} -`)

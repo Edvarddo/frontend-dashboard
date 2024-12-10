@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-
-// import AuthContext from '../../contexts/AuthContext';
 import useAuth from '../../hooks/useAuth';
-
 import axios from 'axios';
-// use history
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,8 +18,6 @@ export default function Login() {
   const navigate = useNavigate();
   const { setAuthToken, authToken, setIsAdmin, login, setUserId } = useAuth();
 
-
-  // Formato de RUT mientras el usuario escribe (XX.XXX.XXX-X)
   const formatRut = (value) => {
     const cleaned = value.replace(/\D/g, '');
     if (cleaned.length <= 1) return cleaned;
@@ -36,25 +30,26 @@ export default function Login() {
     const value = e.target.value.replace(/[^\d\-kK]/g, '');
     setRut(formatRut(value));
   };
+
   const handleLogin = (e) => {
-    setLoginLoading(true);
     e.preventDefault();
+    setLoginLoading(true);
     const isValid = password && (rut && rut.length === 12);
-    if (!isValid) return;
-    axios.post(import.meta.env.VITE_URL_PROD_VERCEL + 'token/',
-      {
-        rut: rut.replace(/\./g, ''),
-        password: password
-      }
-    )
+    if (!isValid) {
+      setLoginLoading(false);
+      return;
+    }
+    axios.post(`${import.meta.env.VITE_URL_PROD_VERCEL}token/`, {
+      rut: rut.replace(/\./g, ''),
+      password: password
+    })
       .then((response) => {
         console.log(response);
-        login(response.data.access);
-        // setUserId(response.data.id);
-        setIsAdmin(response.data.es_administrador);
+        
+        login(response.data.access, response.data.refresh,response.data.es_administrador);
+        
         setLoginLoading(false);
         if (response.data.es_administrador) navigate('/dashboard');
-
         setRut('');
         setPassword('');
       })
@@ -63,11 +58,20 @@ export default function Login() {
         setValidCredentials(false);
         setLoginLoading(false);
       });
+  };
 
-
+  const handleEnterDashboard = () => {
+    navigate('/dashboard');
+  };
+  const verifyTokenFormat = (token) => {
+    
+    const tokenArray = token?.split('.');
+    console.log(tokenArray)
+    if (tokenArray?.length === 3) {
+      return true;
+    }
+    return false;
   }
-
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-orange-50 to-sky-50 p-4">
       <Card className="w-full max-w-md">
@@ -78,7 +82,6 @@ export default function Login() {
               alt="Municipalidad de Calama"
               className="object-contain w-full h-full"
             />
-
           </div>
           <h1 className="text-2xl font-bold text-center text-primary">
             Dashboard Municipal
@@ -88,86 +91,86 @@ export default function Login() {
           </p>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rut">RUT</Label>
-              <Input
-                id="rut"
-                type="text"
-                placeholder="12.345.678-9"
-                value={rut}
-                onChange={handleRutChange}
-                maxLength={12}
-                minLength={12}
-                required
-              />
+          {(authToken && verifyTokenFormat(authToken)) ? (
+            <div className="space-y-4 text-center">
+              <h2 className="text-xl font-semibold">Bienvenido</h2>
+              <p>Ya has iniciado sesión.</p>
+              <Button onClick={handleEnterDashboard} className="w-full">
+                Ingresar al Dashboard
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="rut">RUT</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  id="rut"
+                  type="text"
+                  placeholder="12.345.678-9"
+                  value={rut}
+                  onChange={handleRutChange}
+                  maxLength={12}
+                  minLength={12}
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="sr-only">
-                    {showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  </span>
-                </Button>
               </div>
-            </div>
-            {/* feedback if error */}
-            {
-              !validCredentials && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="sr-only">
+                      {showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+              {!validCredentials && (
                 <div className="text-red-500 text-sm">* Rut o contraseña incorrecta</div>
-              )
-            }
-
-            <Button
-              onClick={handleLogin}
-              disabled={
-                !password ||
-                !(rut && rut.length === 12)
-              }
-              type="submit" className={`w-full  `}
-
-            >
-
-
-              {
-                loginLoading ?
-                  (
-                    <>
-                      Cargando
-                      <Spinner size="small" className={``} />
-                    </>
-                  ) :
-                  (<span>Iniciar Sesión</span>)
-              }
-
-            </Button>
-          </form>
-          <div className="mt-4 text-center">
-            <a href="#" className="text-sm text-primary hover:underline">
-              ¿Olvidaste tu contraseña?
-            </a>
-          </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!password || !(rut && rut.length === 12) || loginLoading}
+              >
+                {loginLoading ? (
+                  <>
+                    Cargando
+                    <Spinner size="small" className="ml-2" />
+                  </>
+                ) : (
+                  <span>Iniciar Sesión</span>
+                )}
+              </Button>
+            </form>
+          )}
+          {!authToken && (
+            <div className="mt-4 text-center">
+              <a href="#" className="text-sm text-primary hover:underline">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
+

@@ -42,8 +42,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
   const handleStateChange = (checked) => {
     setEstado(checked)
-    let festado = checked ? 'Publicado' : 'Pendiente'
-    setAnuncio({ ...anuncio, estado: festado })
+
   }
 
   const handleOpenSidebar = () => {
@@ -91,15 +90,18 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    // USE ISO DATE FORMAT ISODATE!!! 
+    const date = new Date().toISOString()
+    const festado = estado ? 'Publicado' : 'Pendiente'
     try {
       const anuncioData = {
         usuario: 1,
         titulo: anuncio.titulo,
         subtitulo: anuncio.subtitulo,
-        estado: anuncio.estado,
+        estado: festado,
         descripcion: anuncio.descripcion,
         categoria: anuncio.categoria,
-        fecha: anuncio.fecha_publicacion,
+        fecha: date,
         autor: anuncio.autor
       };
       console.log(selectedFiles)
@@ -113,7 +115,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         setIsUploading(true);
         const anuncioId = anuncioResponse?.data?.id;
         console.log(selectedFiles)
-
         for (const image of selectedFiles) {
           const formData = new FormData();
           formData.append("anuncio", anuncioId)
@@ -261,6 +262,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                     id="fecha_publicacion"
                     type="date"
                     required
+                    disabled
                     value={anuncio.fecha_publicacion}
                     onChange={(e) => setAnuncio({ ...anuncio, fecha_publicacion: e.target.value })}
                   />

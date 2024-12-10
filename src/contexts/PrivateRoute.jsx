@@ -5,6 +5,8 @@ import useAuth from '../hooks/useAuth';
 
 export const PrivateRoute = ({children}) => {
     const { authToken, isAdmin } = useAuth();
+    // decode jwt token
+    
     const verifyTokenFormat = (token) => {
         const tokenArray = token?.split('.');
         console.log(tokenArray)

@@ -46,7 +46,7 @@ const Sidebar = ({ isOpened }) => {
                 onClick={() => setSelectedSection(section?.title)}
               >
                 {section?.icon}
-                <span className="text nav-text">
+                <span className="text nav-text leading-6">
                   {section?.title}
                 </span>
               </Link>

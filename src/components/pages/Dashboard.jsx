@@ -13,10 +13,12 @@ import Filters from "../Filters"
 import EmptyState from '../EmptyState'
 import { ResolutionRateTable } from '../sections/TablaTasaResolución'
 import { getColorForCategory, chartColors } from '@/lib/utils'
+import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 import axios from '@/api/axios'
 
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
+  const axiosPrivate = useAxiosPrivate()
   const [barData, setBarData] = useState([])
   const [pieData, setPieData] = useState([])
   const [cardsData, setCardsData] = useState({})
@@ -28,11 +30,6 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const [departamentos, setDepartamentos] = useState([])
   const [situaciones, setSituaciones] = useState([])
 
-  // const situaciones = [
-  //   { nombre: "Recibido", value: "recibido" },
-  //   { nombre: "En curso", value: "en_curso" },
-  //   { nombre: "Resuelto", value: "resuelto" }
-  // ]
 
   const [filtros, setFiltros] = useState(null)
   const [selectedCategoria, setSelectedCategoria] = useState(null)
@@ -74,25 +71,21 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     }
 
     try {
-      const requests = urls.map((url) =>
-        fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        })
-      );
+      const requests = urls.map((url) => axiosPrivate(url));
+      console.log(requests);
 
+      // responses será un array de objetos con la estructura de Axios (cada uno con .data, .status, etc.)
       const responses = await Promise.all(requests);
-      const data = await Promise.all(
-        responses.map(async (response) => {
-          if (!response.ok) {
-            // Manejo de errores específicos por cada solicitud.
-            console.error(`Error en la URL ${response.url}: ${response.status} ${response.statusText}`);
-            throw new Error(`Error al obtener datos de ${response.url}`);
-          }
-          return response.json();
-        })
-      );
+
+      // Como Axios ya parsea la respuesta, puedes acceder directamente a response.data
+      const data = responses.map((response) => {
+        // Validación del status: por ejemplo si no es 200, lanzar error.
+        if (response.status < 200 || response.status >= 300) {
+          console.error(`Error en la URL ${response.config.url}: ${response.status}`);
+          throw new Error(`Error al obtener datos de ${response.config.url}`);
+        }
+        return response.data; // Aquí ya tienes el JSON listo
+      });
 
       console.log(data);
 
@@ -102,7 +95,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
       const juntas = data[1]?.map((junta) => ({
         ...junta,
-        nombre: junta.nombre_calle,
+        nombre: junta.nombre_junta,
       }));
 
       setJuntasVecinales(juntas || []);
@@ -117,30 +110,26 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const fetchCharData = async (urls) => {
     setLoading(true)
     try {
-
-      const requests = urls.map(url => fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      }))
+      const requests = urls.map(url => axiosPrivate(url))
       console.log(requests)
       const responses = await Promise.all(requests)
-      const data = await Promise.all(responses.map(response => {
-        return response.json()
-      }))
+
+      // En lugar de usar response.json(), en Axios accedes directamente a response.data
+      const data = responses.map(response => response.data)
+
       let distinctValues = []
       console.log(data)
 
-      data[0]?.map((monthData, i) => {
-        console.log(Object.keys(monthData))
-        Object.keys(monthData).forEach((key, index) => {
+      data[0]?.forEach((monthData) => {
+        // Object.keys obtendrá las llaves del objeto monthData
+        Object.keys(monthData).forEach((key) => {
           if (!distinctValues.includes(key) && key !== 'name') {
             distinctValues.push(key)
           }
         })
       })
 
-      setCardsData(data[2] ? data[2] : {})
+      setCardsData(data[2] || {})
       setBarKeys(distinctValues)
       setBarData(data[0] ? data[0] : [])
       setPieData(data[1] ? data[1] : [])
@@ -150,17 +139,16 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       console.log(error)
     } finally {
       setLoading(false)
-
     }
 
   }
 
   useEffect(() => {
     fetchData([
-      `${api_url}categorias/`,
-      `${api_url}juntas-vecinales/`,
-      `${api_url}departamentos-municipales/`,
-      `${api_url}situaciones-publicaciones/`
+      `categorias/`,
+      `juntas-vecinales/`,
+      `departamentos-municipales/`,
+      `situaciones-publicaciones/`
     ])
   }, [api_url])
 

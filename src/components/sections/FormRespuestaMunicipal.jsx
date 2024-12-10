@@ -19,6 +19,7 @@ import { format } from "date-fns"
 import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 import { DialogClose } from "@radix-ui/react-dialog"
 import { AlertCircle, Info } from 'lucide-react'
+import { toast } from "@/hooks/use-toast"
 
 const stateOrder = ["Pendiente", "Recibido", "En curso", "Resuelto", "No Resuelto"];
 const finalStates = ["Resuelto", "No Resuelto"];
@@ -48,6 +49,8 @@ export function MunicipalResponseForm({ onSubmit, previousStatus, situationMap, 
       console.log(response)
       setPublicacion({ ...publicacion, situacion: { nombre: statusConfig[currentStatus].label } })
       console.log(response.data)
+      
+
     })
     .catch(error => {
       console.log(error)

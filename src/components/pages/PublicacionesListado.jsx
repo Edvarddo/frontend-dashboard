@@ -27,7 +27,7 @@ export default function PublicacionesListado({
   const [currentPage, setCurrentPage] = useState(1)
   const [url, setUrl] = useState(null)
   const [filtros, setFiltros] = useState(null)
-  const [publicacionesPorPagina, setPublicacionesPorPagina] = useState("5")
+  const [publicacionesPorPagina, setPublicacionesPorPagina] = useState(5)
 
   // OPCIONES SELECT
   const [categorias, setCategorias] = useState([])
@@ -70,54 +70,46 @@ export default function PublicacionesListado({
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
   const fetchURLS = async (urls) => {
     try {
-      // add loading state
+      const [categorias, juntasVecinales, departamentos, osituaciones] = await Promise.all(
+        urls.map(url => axiosPrivate(url).then(res => res.data))
+      );
 
-      const [categorias, juntasVecinales, departamentos, osituaciones] = await Promise.all(urls.map(url => fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      }).then(res => res.json())))
       // change nombre_calle to nombre on juntasVecinales
-      console.log(situaciones)
-      juntasVecinales.map(junta => {
-        junta.nombre = junta.nombre_calle
-        return junta
-      })
-      console.log(juntasVecinales)
+      juntasVecinales.forEach(junta => {
+        junta.nombre = junta.nombre_junta;
+      });
 
-      console.log(situaciones)
-      setCategorias(categorias)
-      setJuntasVecinales(juntasVecinales)
-      setDepartamentos(departamentos)
-      setSituaciones(osituaciones)
+      setCategorias(categorias);
+      setJuntasVecinales(juntasVecinales);
+      setDepartamentos(departamentos);
+      setSituaciones(osituaciones);
 
     } catch (e) {
-      setFilterError(e)
-
+      setFilterError(e);
     }
   }
   useEffect(() => {
 
     fetchURLS([
-      `${api_url}categorias/`,
-      `${api_url}juntas-vecinales/`,
-      `${api_url}departamentos-municipales/`,
-      `${api_url}situaciones-publicaciones/`
+      `categorias/`,
+      `juntas-vecinales/`,
+      `departamentos-municipales/`,
+      `situaciones-publicaciones/`
     ])
     console.log(BASE_URL, axiosPrivate)
 
   }, [])
-  useEffect(() => {
-    const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
-      junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
-      situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
-      departamento = selecteDepto ? "departamento=" + selecteDepto + "&" : "",
-      iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
-      endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
-      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
-    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
-    setFiltros(filtros)
-  }, [selectedCategoria, selectedJunta, selectedSituacion, dateRange, publicacionesPorPagina, selecteDepto])
+  // useEffect(() => {
+  //   const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
+  //     junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
+  //     situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
+  //     departamento = selecteDepto ? "departamento=" + selecteDepto + "&" : "",
+  //     iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
+  //     endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
+  //     limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
+  //   const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
+  //   setFiltros(filtros)
+  // }, [selectedCategoria, selectedJunta, selectedSituacion, dateRange, publicacionesPorPagina, selecteDepto])
 
   useEffect(() => {
 
@@ -153,8 +145,7 @@ export default function PublicacionesListado({
       console.error("Error al descargar el archivo:", error);
     }
   };
-
-  const aplicarFiltros = () => {
+  const getQueryParams = () => {
     // create url with filters object
     const categoriesParams = filtrosObj.categoria.join(",")
     const juntasParams = filtrosObj.junta.join(",")
@@ -169,87 +160,96 @@ export default function PublicacionesListado({
       departamento = filtrosObj.departamentos.length > 0 ? "departamento=" + departamentosParams + "&" : "",
       iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
       endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
-      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
+      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina : ""
+      
 
-
-    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
-    let url = `${api_url}publicaciones/?${category}${junta}${situation}${departamento}${iniDate}${endDate}`
-
-    console.log(filtros)
-    console.log(filtrosObj.categoria.length)
-
-    setUrl(url)
-    setFiltros(filtros)
-    setCurrentPage(1)
-  }
-  const limpiarFiltros = () => {
-    setSelectedCategoria(null)
-    setSelectedSituacion(null)
-    setSelectedJunta(null)
-    setSelectedDepto(null)
-    setDateRange({ from: null, to: null })
-    setUrl(null)
-    setFiltrosObj({
-      categoria: [],
-      junta: [],
-      situacion: [],
-      departamentos: [],
-      iniDate: null,
-      endDate: null
-    })
-    setClearValues(!clearValues)
-
+    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}${limitPerPage}`
+    // delete & from last element
+    return filtros
   }
 
-  return (
+    const aplicarFiltros = () => {
+
+      const filtros = getQueryParams()
+      // return;
+      let url = `${api_url}publicaciones/?${filtros}`
+      console.log(url)
+
+      console.log(filtros)
+      console.log(filtrosObj.categoria.length)
+
+      setUrl(url)
+      setFiltros(filtros)
+      setCurrentPage(1)
+    }
+    const limpiarFiltros = () => {
+      setSelectedCategoria(null)
+      setSelectedSituacion(null)
+      setSelectedJunta(null)
+      setSelectedDepto(null)
+      setDateRange({ from: null, to: null })
+      setUrl(null)
+      setFiltrosObj({
+        categoria: [],
+        junta: [],
+        situacion: [],
+        departamentos: [],
+        iniDate: null,
+        endDate: null
+      })
+      setClearValues(!clearValues)
+
+    }
+
+    return (
 
 
-    <>
-      <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
-      <main className=" p-4  bg-gray-100 ">
-        <div className="m-4">
-          <Filters
-            clearValues={clearValues}
-            categorias={categorias}
-            situaciones={situaciones}
-            juntasVecinales={juntasVecinales}
-            departamentos={departamentos}
-            setFiltrosObj={setFiltrosObj}
-            filtrosObj={filtrosObj}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            setIsValid={setIsValid}
-            isValid={isValid}
-            loading={loading}
-            handleDownload={handleDownload}
-            limpiarFiltros={limpiarFiltros}
-            aplicarFiltros={aplicarFiltros}
-            showDownload={true}
-            isDownloadAvailable={isDownloadAvailable}
-          />
+      <>
+        <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
+        <main className=" p-4  bg-gray-100 ">
+          <div className="m-4">
+            <Filters
+              clearValues={clearValues}
+              categorias={categorias}
+              situaciones={situaciones}
+              juntasVecinales={juntasVecinales}
+              departamentos={departamentos}
+              setFiltrosObj={setFiltrosObj}
+              filtrosObj={filtrosObj}
+              dateRange={dateRange}
+              setDateRange={setDateRange}
+              setIsValid={setIsValid}
+              isValid={isValid}
+              loading={loading}
+              handleDownload={handleDownload}
+              limpiarFiltros={limpiarFiltros}
+              aplicarFiltros={aplicarFiltros}
+              showDownload={true}
+              isDownloadAvailable={isDownloadAvailable}
+            />
 
-        </div>
-        <div className="bg-white m-4  p-6 rounded-lg shadow-md">
-          <TablaPublicaciones
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            publicacionesPorPagina={publicacionesPorPagina}
-            setPublicacionesPorPagina={setPublicacionesPorPagina}
-            loading={loading}
-            setLoading={setLoading}
-            url={url}
-            setDownloadIsAvailable={setIsDownloadAvailable}
-          />
+          </div>
+          <div className="bg-white m-4  p-6 rounded-lg shadow-md">
+            <TablaPublicaciones
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              publicacionesPorPagina={publicacionesPorPagina}
+              setPublicacionesPorPagina={setPublicacionesPorPagina}
+              loading={loading}
+              setLoading={setLoading}
+              url={url}
+              setDownloadIsAvailable={setIsDownloadAvailable}
+            />
 
-        </div>
-
-
-      </main>
-
-    </>
+          </div>
 
 
+        </main>
+
+      </>
 
 
-  )
-}
+
+
+    )
+  }
