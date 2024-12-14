@@ -32,7 +32,11 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const [situationLoading, setSituationLoading] = useState(false)
   const [showResponseForm, setShowResponseForm] = useState(false)
   const [responses, setResponses] = useState([])
+  const [departaments, setDepartaments] = useState([])
   const [responsesLoading, setResponsesLoading] = useState(false)
+  const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false)
+  const [isAlertDialogOpenDepartment, setIsAlertDialogOpenDepartment] = useState(false)
+  const [tempDepartment, setTempDepartment] = useState(null)
   const statusConfig = {
     "Pendiente": { label: 'Pendiente', icon: <AlertCircle className="h-4 w-4" />, color: 'bg-orange-500' },
     "Recibido": { label: 'Recibido', icon: <MailQuestion className="h-4 w-4" />, color: 'bg-yellow-500' },
@@ -46,6 +50,16 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     "En curso": 2,
     "Resuelto": 3,
     "No Resuelto": 5
+  }
+  const getDepartaments = () => {
+    axiosPrivate.get('departamentos-municipales/')
+      .then(response => {
+        setDepartaments(response.data)
+        console.log('Departaments:', response.data)
+      })
+      .catch(error => {
+        console.error('Error fetching departaments:', error)
+      })
   }
   const axiosPrivate = useAxiosPrivate()
   const openDialog = () => {
@@ -148,29 +162,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     }
   }
   const onDeleteResponse = async (id) => {
-    const response = responses.find(response => response.id === id)
-    console.log('responseaaa:', response.fecha)
-    const publicationDate = new Date(response.fecha)
-    const deletionDeadline = addHours(publicationDate, 1);
-    const now = new Date();
-    console.log('publicationDate:', publicationDate)
-    console.log('deletionDeadline:', deletionDeadline)
-    console.log('now:', now)
-    console.log('response:', response)
-    console.log(id)
-
-    console.log(isAfter(now, deletionDeadline ));
-    console.log(isAfter(publicationDate, deletionDeadline ));
    
-    if (isAfter(now, deletionDeadline)) {
-        toast({
-          title: "No se puede eliminar",
-          description: "El tiempo de eliminación ha expirado. No se puede eliminar anuncios después de 1 hora de su publicación.",
-          duration: 5000,
-          className: "bg-red-500 text-white",
-        });
-        return;
-      }
     
     try {
       const lastResponse = responses[responses.length - 1];
@@ -206,11 +198,50 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
       });
     }
   }
+  const formatPhoneNumber = (numero) => {
+    if (!numero) return null;
+    return `+56 9 ${numero.slice(1)}`;
+  }
+  const formatRut = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 1) return cleaned;
 
+    let formatted = cleaned.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    return formatted + '-' + cleaned.slice(-1);
+  };
+  const handleDepartmentChange = (value) => {
+    const selectedDepartment = departaments.find(dept => dept.id.toString() === value);
+    setTempDepartment(selectedDepartment);
+  };
+  const confirmDepartmentChange = async () => {
+    if (tempDepartment) {
+      try {
+        await axiosPrivate.patch(`publicaciones/${id}/`, { departamento: tempDepartment.id });
+        setPublicacion(prev => ({ ...prev, departamento: tempDepartment }));
+        toast({
+          title: "Departamento actualizado",
+          description: "El departamento ha sido actualizado exitosamente.",
+          duration: 5000,
+          className: "bg-green-500 text-white",
+        });
+      } catch (error) {
+        console.error('Error updating department:', error);
+        toast({
+          title: "Error al actualizar departamento",
+          description: "Ha ocurrido un error al intentar actualizar el departamento.",
+          duration: 5000,
+          className: "bg-red-500 text-white",
+        });
+      }
+    }
+    setIsAlertDialogOpenDepartment(false);
+    setIsDepartmentDialogOpen(false);
+  };
   useEffect(() => {
     console.log('id:', id)
     if (id) {
       fetchResponses()
+      getDepartaments()
     }
   }, [id])
 
@@ -239,22 +270,25 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Rut:</p>
                 <p>
-                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.usuario?.rut}
+                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : formatRut(publicacion?.usuario?.rut)}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Teléfono:</p>
                 <p>
                   {loading ? <Skeleton className="h-[1.5rem] w-full" /> :
-                    publicacion?.usuario?.numero_telefonico_movil || "No disponible"}
+                    formatPhoneNumber(publicacion?.usuario?.numero_telefonico_movil) || "No disponible"
+                    }
                 </p>
               </div>
+              {/* email */}
               <div className="space-y-1">
-                <p className="text-sm font-medium text-green-600">Junta Vecinal:</p>
+                <p className="text-sm font-medium text-green-600">Correo:</p>
                 <p>
-                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_calle}
+                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.usuario?.email}
                 </p>
               </div>
+              
             </div>
           </CardContent>
         </Card>
@@ -282,7 +316,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                 <p className="text-sm font-medium text-green-600">Fecha de publicación:</p>
                 <p>
                   {loading ? <Skeleton className="h-[1.5rem] w-full" /> :
-                    new Date(publicacion.fecha_publicacion).toLocaleDateString('es-CL')}
+                    format(new Date(publicacion.fecha_publicacion).toLocaleDateString('es-CL'), 'dd-MM-yyyy HH:mm')}
                 </p>
               </div>
               <div className="space-y-1">
@@ -362,8 +396,60 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Departamento:</p>
+                <div className="flex items-center space-x-2">
+                  <p className="flex-grow">
+                    {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.departamento?.nombre}
+                  </p>
+                  <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        className="h-[1.5rem] w-[1.5rem]"
+                        variant="outline"
+                        size="icon"
+                        disabled={loading}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Seleccionar Departamento</DialogTitle>
+                      </DialogHeader>
+                      <Select onValueChange={handleDepartmentChange} value={publicacion?.departamento?.id?.toString()}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccionar departamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departaments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id.toString()}>
+                              {dept.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button  className=" bg-green-500 hover:bg-green-600 text-white w-full mt-4 " onClick={() => setIsAlertDialogOpenDepartment(true)}>Aceptar</Button>
+                      <AlertDialog open={isAlertDialogOpenDepartment} onOpenChange={setIsAlertDialogOpenDepartment}>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción cambiará el departamento de la publicación. ¿Deseas continuar?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setIsAlertDialogOpenDepartment(false)}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmDepartmentChange}>Continuar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-green-600">Junta Vecinal:</p>
                 <p>
-                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.departamento?.nombre}
+                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_calle}
                 </p>
               </div>
             </div>

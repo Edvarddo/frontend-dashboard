@@ -121,15 +121,18 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                 <Maximize2 className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] w-full h-[95vh] ">
-              <div className="flex flex-col h-full  p-1">
-                <DialogHeader className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-                  <DialogTitle>Mapa de Calor - Vista Ampliada</DialogTitle>
-                  {/* <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)}>
+            
+            <DialogContent className="max-w-[95vw] w-full h-[95vh] px-1 ">
+              <div className="flex flex-col h-full  overflow-hidden p-1 ">
+                <DialogHeader className="px-6 py-4 border-b bg-gray-100 flex justify-between items-center">
+                  <DialogTitle className="flex justify-between items-center">
+                    Mapa de Calor - Vista Ampliada
+                  <Button className="ml-2 sm:hidden" variant="ghost" size="icon" onClick={() => setIsModalOpen(false)}>
                     <X className="h-4 w-4" />
-                  </Button> */}
+                  </Button>
+                  </DialogTitle>
                 </DialogHeader>
-                <div className="flex-1 relative">
+                <div className="flex-1 relative overflow-y-auto">
                   <MapContainer
                     center={[-22.459831, -68.933872]}
                     zoom={13}
@@ -143,7 +146,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                     <HeatmapLayer data={data} categorias={categorias} />
                   </MapContainer>
                   <div 
-                    className={`absolute top-0 right-0 h-full bg-background border-l border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
+                    className={`absolute top-0 right-0 h-full  p-1 bg-background border-l border-gray-200 shadow-lg transition-all duration-300 ease-in-out ${
                       isSidebarOpen ? 'w-[300px]' : 'w-[40px]'
                     }`}
                     style={{ zIndex: 1000 }}
@@ -158,7 +161,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                       {isSidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                     </Button>
                     {isSidebarOpen && (
-                      <div className="p-4 overflow-y-auto h-full">
+                      <div className="p-4 overflow-y-auto h-full ">
                         <h3 className="font-semibold mb-4 text-center">Filtros</h3>
                         <div className="space-y-4">
                           <MultiSelect
@@ -181,6 +184,7 @@ const HeatMap = ({ data, isLoading, juntas, categorias, selectedFilters, setSele
                             dateRange={dateRange}
                             setDateRange={setDateRange}
                             setIsValid={setIsValid}
+                            
                           />
                           <Button onClick={applyFilters} className="bg-green-500 hover:bg-green-600 text-white w-full">
                             Aplicar filtros

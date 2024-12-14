@@ -138,6 +138,7 @@ const TablaPublicaciones = ({
         <Select
           value={publicacionesPorPagina.toString()}
           onValueChange={handleLimitPerPage}
+          disabled={loading}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Publicaciones por página" />
@@ -146,6 +147,7 @@ const TablaPublicaciones = ({
             <SelectItem value="5">5 por página</SelectItem>
             <SelectItem value="10">10 por página</SelectItem>
             <SelectItem value="20">20 por página</SelectItem>
+            
           </SelectContent>
         </Select>
       </div>
@@ -154,34 +156,39 @@ const TablaPublicaciones = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">
-                <Button variant="ghost" onClick={() => handleSort('titulo')}>
-                  Código {renderSortIcon('titulo')}
+              <TableHead className=" text-center">
+                <Button variant="ghost" onClick={() => handleSort('codigo')}>
+                  Código {renderSortIcon('codigo')}
                 </Button>
               </TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>
+              <TableHead className=" text-center" >
+                <Button variant="ghost" onClick={() => handleSort('titulo')}>
+                  Título {renderSortIcon('titulo')}
+                </Button>
+              </TableHead>
+              {/* <TableHead>Descripción</TableHead> */}
+              <TableHead className=" text-center">Estado</TableHead>
+              <TableHead className=" text-center">
                 <Button variant="ghost" onClick={() => handleSort('categoria__nombre')}>
                   Categoría {renderSortIcon('categoria__nombre')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className=" text-center">
                 <Button variant="ghost" onClick={() => handleSort('fecha_publicacion')}>
                   Fecha de publicación {renderSortIcon('fecha_publicacion')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className=" text-center">
                 <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
                   Junta vecinal {renderSortIcon('junta_vecinal__nombre_calle')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className=" text-center">
                 <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
                   Calle {renderSortIcon('junta_vecinal__nombre_calle')}
                 </Button>
               </TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -199,29 +206,30 @@ const TablaPublicaciones = ({
               publicaciones.map((pub) => (
                 <TableRow key={pub.id} className="hover:bg-muted/50">
                   {/* TITULO */}
-                  <TableCell className="font-medium">{(pub.codigo)}</TableCell>
+                  <TableCell className="font-medium text-center">{(pub.codigo)}</TableCell>
+                  <TableCell className="font-medium text-center">{(pub.titulo)}</TableCell>
                   {/* DESCRIPCION */}
-                  <TableCell>{capitalizeFirstLetter(pub.descripcion)}</TableCell>
+                  {/* <TableCell>{capitalizeFirstLetter(pub.descripcion)}</TableCell> */}
                   {/* ESTADO */}
-                  <TableCell>
+                  <TableCell className=" text-center">
                     <Badge variant={'primary'} >
                       {capitalizeFirstLetter(pub.situacion.nombre)}
                     </Badge>
                   </TableCell>
                   {/* CATEGORIA */}
-                  <TableCell>{capitalizeFirstLetter(pub.categoria.nombre)}</TableCell>
+                  <TableCell className="text-center">{capitalizeFirstLetter(pub.categoria.nombre)}</TableCell>
                   {/* FECHA DE PUBLICACION */}
-                  <TableCell>{format(new Date(pub.fecha_publicacion), "dd-MM-yyyy")}</TableCell>
+                  <TableCell className=" text-center">{format(new Date(pub.fecha_publicacion), "dd-MM-yyyy HH:mm")}</TableCell>
                   {/* JUNTA VECINAL */}
-                  <TableCell>
+                  <TableCell className=" text-center">
                     {`${pub.junta_vecinal.nombre_junta.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
                   </TableCell>
                   {/* CALLE */}
-                  <TableCell>
+                  <TableCell className=" text-center">
                     {`${pub.junta_vecinal.nombre_calle.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
                   </TableCell>
                   {/* ACCIONES */}
-                  <TableCell className="text-right">
+                  <TableCell className="text-center">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -283,7 +291,7 @@ const TablaPublicaciones = ({
             variant="outline"
             size="icon"
             onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage >= totalPages}
+            disabled={currentPage >= totalPages || loading}
             aria-label="Página siguiente"
           >
             <ChevronRight className="h-4 w-4" />
@@ -292,7 +300,7 @@ const TablaPublicaciones = ({
             variant="outline"
             size="icon"
             onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage >= totalPages}
+            disabled={currentPage >= totalPages || loading}
             aria-label="Última página"
           >
             <ChevronsRight className="h-4 w-4" />

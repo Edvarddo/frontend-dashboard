@@ -37,6 +37,7 @@ const EvidenciaPublicacion = ({ loading, publicacion }) => {
         title: "Descarga exitosa",
         description: "La imagen se ha descargado correctamente.",
         duration: 3000,
+        className: "bg-green-500 text-white",
       })
     } catch (error) {
       console.error('Error downloading image:', error)
@@ -76,6 +77,7 @@ const EvidenciaPublicacion = ({ loading, publicacion }) => {
         title: "Descarga exitosa",
         description: "Todas las evidencias se han descargado correctamente.",
         duration: 3000,
+        className: "bg-green-500 text-white",
       })
     } catch (error) {
       console.error('Error downloading all images:', error)
@@ -222,7 +224,8 @@ const EvidenciaPublicacion = ({ loading, publicacion }) => {
 
                 <div className="pt-4">
                   <Button 
-                    className="w-full"
+                    
+                    className="w-full  bg-green-500 hover:bg-green-600 text-white "
                     onClick={() => selectedImage && handleDownload(selectedImage.id, selectedImage.archivo)}
                   >
                     <DownloadIcon className="w-4 h-4 mr-2" />

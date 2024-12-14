@@ -65,6 +65,8 @@ const DatePicker = ({ dateRange, setDateRange, setIsValid }) => {
             initialFocus
             numberOfMonths={2}
             locale={es}
+            centered
+            
           />
         </PopoverContent>
       </Popover>
