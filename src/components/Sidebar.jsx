@@ -8,7 +8,7 @@ import SidebarSectionContext from '../contexts/SidebarSectionContext'
 const Sidebar = ({ isOpened }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { authToken, setAuthToken } = useContext(AuthContext)
+  const { authToken, setAuthToken, logout } = useContext(AuthContext)
   const { sections, setSelectedSection, selectedSection } = useContext(SidebarSectionContext)
 
   useEffect(() => {
@@ -20,8 +20,7 @@ const Sidebar = ({ isOpened }) => {
 
   const handleLogout = () => {
     setTimeout(() => {
-      setAuthToken(null)
-      localStorage.removeItem('authToken')
+      logout()
       navigate('/login')
     }, 1000)
   }

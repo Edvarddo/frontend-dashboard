@@ -15,10 +15,12 @@ import { ResolutionRateTable } from '../sections/TablaTasaResolución'
 import { getColorForCategory, chartColors } from '@/lib/utils'
 import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 import axios from '@/api/axios'
-
+import useRefreshToken from '@/contexts/useRefreshToken'
+import { toast } from '@/hooks/use-toast'
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
   const axiosPrivate = useAxiosPrivate()
+  const refresh = useRefreshToken()
   const [barData, setBarData] = useState([])
   const [pieData, setPieData] = useState([])
   const [cardsData, setCardsData] = useState({})
@@ -102,15 +104,21 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       setDepartamentos(data[2] || []);
     } catch (error) {
       console.error('Error general:', error.message);
+      toast({
+        title: 'Error al cargar los datos',
+        description: 'Ocurrió un error al cargar los datos. Por favor, intenta nuevamente.',
+        status: 'error',
+      });
     } finally {
       setLoading(false);
+
     }
   };
 
   const fetchCharData = async (urls) => {
     setLoading(true)
     try {
-      const requests = urls.map(url => axiosPrivate(url))
+      const requests =await urls.map(url => axiosPrivate(url))
       console.log(requests)
       const responses = await Promise.all(requests)
 
@@ -128,7 +136,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
           }
         })
       })
-
+      
       setCardsData(data[2] || {})
       setBarKeys(distinctValues)
       setBarData(data[0] ? data[0] : [])
@@ -138,6 +146,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     } catch (error) {
       console.log(error)
     } finally {
+      console.log(cardsData)
       setLoading(false)
     }
 
@@ -258,8 +267,9 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Dashboard Municipal" />
       <div className="p-8 bg-gray-100 min-h-screen">
+        {/* <Button onClick={() => refresh()}>PRUEBA</Button> */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {loading ? (
+          {(loading) ? (
             <>
               <Skeleton className="h-32" />
               <Skeleton className="h-32" />

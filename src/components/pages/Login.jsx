@@ -16,7 +16,7 @@ export default function Login() {
   const [validCredentials, setValidCredentials] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
-  const { setAuthToken, authToken, setIsAdmin, login, setUserId } = useAuth();
+  const { setAuthToken, authToken, setIsAdmin, login, setUserId, refreshToken } = useAuth();
 
   const formatRut = (value) => {
     const cleaned = value.replace(/\D/g, '');
@@ -61,6 +61,7 @@ export default function Login() {
   };
 
   const handleEnterDashboard = () => {
+    // console.log(refreshToken)
     navigate('/dashboard');
   };
   const verifyTokenFormat = (token) => {

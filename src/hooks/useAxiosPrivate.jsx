@@ -1,18 +1,25 @@
 import { axiosPrivate } from "../api/axios";
 import { useEffect } from "react";
 import useAuth from "./useAuth";
+import useRefreshToken from "@/contexts/useRefreshToken";
 
 const useAxiosPrivate = () => {
     const { authToken, isTokenExpired, setIsTokenExpired } = useAuth();
-
+    const refreh  = useRefreshToken();
     useEffect(() => {
         const responseIntercept = axiosPrivate.interceptors.response.use(
             response => response,
-            error => {
-                if (error.response.status === 401) {
-                    console.log('Unauthorized');
-                    console.log(error.config)
-                    setIsTokenExpired(true);
+            async (error) => {
+                const originalRequest = error?.config;
+                if (error?.response?.status === 401 && !originalRequest?.sent) {
+                    originalRequest.sent = true;
+                    const newAccessToken = await refreh();
+                    originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                    console.log('New access token: ', newAccessToken);
+                    // console.log('Unauthorized');
+                    // console.log(error.config)
+                    // setIsTokenExpired(true);
+                    return axiosPrivate(originalRequest);
                 }
                 return Promise.reject(error);
             }

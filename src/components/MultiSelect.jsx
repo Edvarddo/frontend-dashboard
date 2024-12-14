@@ -85,7 +85,7 @@ const MultiSelect = forwardRef(
     const [isAnimating, setIsAnimating] = useState(false);
     // console.log(options)
     // 
-    console.log(title,selectedValues)
+    // console.log(title,selectedValues)
     // console.log(defaultValue)
     useEffect(() => {
       if (defaultValue) {
@@ -93,7 +93,7 @@ const MultiSelect = forwardRef(
         // onValueChange(defaultValue);
 
       }
-      console.log(title,defaultValue)
+      // console.log(title,defaultValue)
     }, [defaultValue]);
 
     const handleInputKeyDown = (event) => {
@@ -166,8 +166,8 @@ const MultiSelect = forwardRef(
                 <div className="flex flex-wrap items-center bg-green-50 w-full">
                   {selectedValues?.slice(0, maxCount).map((value) => {
                     const option = options?.find((o) => o.nombre === value);
-                    console.log(option)
-                    console.log(selectedValues)
+                    // console.log(option)
+                    // console.log(selectedValues)
                     const IconComponent = option?.icon;
                     return (
                       <Badge
@@ -259,7 +259,7 @@ const MultiSelect = forwardRef(
                   <span>(Seleccionar todo)</span>
                 </CommandItem>
                 {options?.map((option) => {
-                  const isSelected = selectedValues.includes(option.nombre);
+                  const isSelected = selectedValues?.includes(option.nombre);
                   // console.log(isSelected)
                   // console.log(selectedValues)
                   // console.log(options)
