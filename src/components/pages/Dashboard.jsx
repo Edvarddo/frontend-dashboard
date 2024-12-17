@@ -391,12 +391,24 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                         <EmptyState Image={ChartColumnIncreasing} title="No hay datos para mostrar" description="No se encontraron datos para mostrar" />
                       </div>
                     ) : (
-                      <BarChart data={barData}>
+                      <BarChart
+                      // change language
+                       
+                      data={barData}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip />
+                        <Tooltip 
+                          // change language to spanish
+                          label={(value) => {
+                            console.log(value)
+                          }}
+
+                        
+                        />
                         <Legend />
+                        
                         {barKeys.map((key, index) => (
                           <Bar key={index} dataKey={key} stackId="a" fill={getColorForCategory(key)} />
                         ))}

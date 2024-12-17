@@ -316,7 +316,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                 <p className="text-sm font-medium text-green-600">Fecha de publicación:</p>
                 <p>
                   {loading ? <Skeleton className="h-[1.5rem] w-full" /> :
-                    format(new Date(publicacion.fecha_publicacion).toLocaleDateString('es-CL'), 'dd-MM-yyyy HH:mm')}
+                    format(new Date(publicacion.fecha_publicacion), 'dd-MM-yyyy HH:mm')}
                 </p>
               </div>
               <div className="space-y-1">
