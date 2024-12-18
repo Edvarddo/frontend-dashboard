@@ -255,12 +255,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-green-600">Código:</p>
-                <p>
-                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.codigo}
-                </p>
-              </div>
+              
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Nombre de usuario:</p>
                 <p>
@@ -300,6 +295,12 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
+            <div className="space-y-1">
+                <p className="text-sm font-medium text-green-600">Código:</p>
+                <p>
+                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.codigo}
+                </p>
+              </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Categoría:</p>
                 <p>
@@ -319,7 +320,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                     format(new Date(publicacion.fecha_publicacion), 'dd-MM-yyyy HH:mm')}
                 </p>
               </div>
-              <div className="space-y-1">
+              {/* <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Estado:</p>
                 <div className="flex items-center space-x-2">
                   <p className="flex-grow">
@@ -387,7 +388,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </div>
+              </div> */}
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Responsable:</p>
                 <p>
@@ -449,7 +450,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Junta Vecinal:</p>
                 <p>
-                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_calle}
+                  {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_junta}
                 </p>
               </div>
             </div>

@@ -148,7 +148,7 @@ export default function Login() {
               )}
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full  bg-green-500 hover:bg-green-600 text-white "
                 disabled={!password || !(rut && rut.length === 12) || loginLoading}
               >
                 {loginLoading ? (
@@ -162,13 +162,13 @@ export default function Login() {
               </Button>
             </form>
           )}
-          {!authToken && (
+          {/* {!authToken && (
             <div className="mt-4 text-center">
               <a href="#" className="text-sm text-primary hover:underline">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
-          )}
+          )} */}
         </CardContent>
       </Card>
     </div>

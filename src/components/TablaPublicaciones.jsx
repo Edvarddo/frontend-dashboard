@@ -185,9 +185,15 @@ const TablaPublicaciones = ({
               </TableHead>
               <TableHead className=" text-center">
                 <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
-                  Calle {renderSortIcon('junta_vecinal__nombre_calle')}
+                  Ubicación {renderSortIcon('junta_vecinal__nombre_calle')}
                 </Button>
               </TableHead>
+
+              {/* <TableHead className=" text-center">
+                <Button variant="ghost" onClick={() => handleSort('junta_vecinal__nombre_calle')}>
+                  Calle {renderSortIcon('junta_vecinal__nombre_calle')}
+                </Button>
+              </TableHead> */}
               <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -225,8 +231,10 @@ const TablaPublicaciones = ({
                     {`${pub.junta_vecinal.nombre_junta.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
                   </TableCell>
                   {/* CALLE */}
+                  
+                  {/* UBICACION */}
                   <TableCell className=" text-center">
-                    {`${pub.junta_vecinal.nombre_calle.split(" ").map(nombre => capitalizeFirstLetter(nombre)).join(" ")} ${pub.junta_vecinal.numero_calle}`}
+                    {`${pub.ubicacion ? pub.ubicacion : "No disponible" } `}
                   </TableCell>
                   {/* ACCIONES */}
                   <TableCell className="text-center">

@@ -73,7 +73,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
     setIsLoading(true)
     axiosPrivate.get(`anuncios-municipales/?page=${page}`)
       .then((response) => {
-        console.log(response?.data)
+        // console.log(response?.data)
         setListadoAnuncios(response?.data?.results)
         setTotalPages(Math.ceil(response?.data?.count / 5)) // Assuming 5 items per page
         setIsLoading(false)
@@ -93,10 +93,10 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   }
 
   const handleSaveEdit = (editedAnuncio) => {
-    console.log(editedAnuncio)
+    // console.log(editedAnuncio)
     axiosPrivate.patch(`anuncios-municipales/${editedAnuncio.id}/`, editedAnuncio)
       .then(response => {
-        console.log(response)
+        // console.log(response)
         toast({
           title: "Anuncio actualizado",
           description: "El anuncio ha sido actualizado exitosamente.",
@@ -118,13 +118,13 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   }
 
   const deleteImage = async (listIndex) => {
-    console.log("Imagen a eliminar:", listIndex);
+    // console.log("Imagen a eliminar:", listIndex);
     listIndex.forEach(async (index) => {
       try {
         const res = await axiosPrivate.delete(`imagenes-anuncios/${index}/`)
-        console.log("Imagen eliminada:", res);
+        // console.log("Imagen eliminada:", res);
       } catch (error) {
-        console.error("Error deleting image:", error)
+        // console.error("Error deleting image:", error)
       }
     })
   }
@@ -142,7 +142,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
             "Content-Type": "multipart/form-data",
           }
         });
-        console.log("Imagen subida:", res);
+        // console.log("Imagen subida:", res);
       } catch (error) {
         console.error("Error uploading image:", error)
       }
@@ -189,7 +189,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
         }
       })
       .catch(error => {
-        console.error("Error deleting anuncio:", error)
+        // console.error("Error deleting anuncio:", error)
         toast({
           title: "Error",
           description: "Hubo un problema al eliminar el anuncio. Por favor, intente nuevamente.",

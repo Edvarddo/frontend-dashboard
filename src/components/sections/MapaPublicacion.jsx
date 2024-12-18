@@ -40,7 +40,7 @@ const MapaPublicacion = ({loading, publicacion}) => {
                       position={[publicacion?.latitud, publicacion?.longitud]}
                     >
                       <Popup>
-                        {publicacion?.junta_vecinal?.nombre_junta}
+                        {publicacion?.ubicacion ? publicacion?.ubicacion : "No disponible"}
                       </Popup>
                     </Marker>
                   </MapContainer>
@@ -68,9 +68,9 @@ const MapaPublicacion = ({loading, publicacion}) => {
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-green-600">Nombre de la calle:</p>
+              <p className="text-sm font-medium text-green-600">Ubicación de referencia:</p>
               <p>
-                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.junta_vecinal?.nombre_calle || "No disponible"}
+                {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.ubicacion || "No disponible"}
               </p>
             </div>
             {/* <div className="space-y-1">

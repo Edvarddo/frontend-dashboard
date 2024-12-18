@@ -67,14 +67,14 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     const authToken = localStorage.getItem('authToken');
 
     if (!authToken) {
-      console.log('No se encontró un token de autenticación.');
+      // console.log('No se encontró un token de autenticación.');
       setLoading(false); // Asegúrate de detener el spinner u otros indicadores de carga.
       return;
     }
 
     try {
       const requests = urls.map((url) => axiosPrivate(url));
-      console.log(requests);
+      // console.log(requests);
 
       // responses será un array de objetos con la estructura de Axios (cada uno con .data, .status, etc.)
       const responses = await Promise.all(requests);
@@ -89,7 +89,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
         return response.data; // Aquí ya tienes el JSON listo
       });
 
-      console.log(data);
+      // console.log(data);
 
       // Asignación de datos a los estados.
       setCategorias(data[0] || []);
@@ -119,14 +119,14 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     setLoading(true)
     try {
       const requests =await urls.map(url => axiosPrivate(url))
-      console.log(requests)
+      // console.log(requests)
       const responses = await Promise.all(requests)
 
       // En lugar de usar response.json(), en Axios accedes directamente a response.data
       const data = responses.map(response => response.data)
 
       let distinctValues = []
-      console.log(data)
+      // console.log(data)
 
       data[0]?.forEach((monthData) => {
         // Object.keys obtendrá las llaves del objeto monthData
