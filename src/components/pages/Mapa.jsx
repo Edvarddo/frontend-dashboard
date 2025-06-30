@@ -7,11 +7,14 @@ import 'leaflet.heat'
 import { Card } from '@radix-ui/themes'
 import { CardContent, CardHeader, CardTitle } from '../ui/card'
 import HeatMap from '../sections/HeatMap'
-import HeatCircleMap from '../sections/HeatCircleMap'
+import HeatCircleMap from '../sections/MapaCalorSeccion'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import StatsTable from '../sections/StatsMapTable'
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import { format } from "date-fns"
+import MapaFrioSeccion from '../sections/MapaFrioSeccion'
+import MapaCalorSeccion from '../sections/MapaCalorSeccion'
+
 // para los filtros utilizar esto: https://clubdelamusica-pruebas.com/api/v1/publicaciones-por-junta-vecinal?categoria=[Seguridad] (ejemplo)
 // para los filtros utilizar esto: https://clubdelamusica-pruebas.com/api/v1/publicaciones-por-junta-vecinal?junta_vecinal=[Junta 1] (ejemplo)
 
@@ -280,10 +283,10 @@ const Mapa = ({ isOpened, setIsOpened }) => {
   const getQueryParams = () => {
     const juntas = selectedFilters.junta
     const categorias = selectedFilters.categoria
-    const juntasQuery = juntas.length > 0 ? `junta_vecinal=${juntas.join(',')}`+'&' : ''
-    const categoriasQuery = categorias.length > 0 ? `categoria=${categorias.join(',')}`+'&' : ''
-    const iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd")+'&'  : ""
-    const endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd")+'&'  : ""
+    const juntasQuery = juntas.length > 0 ? `junta_vecinal=${juntas.join(',')}` + '&' : ''
+    const categoriasQuery = categorias.length > 0 ? `categoria=${categorias.join(',')}` + '&' : ''
+    const iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + '&' : ""
+    const endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + '&' : ""
     // const filtrosQuery = `${categoriasQuery}&${juntasQuery}&${iniDate}&${endDate}`
     let filtrosQuery = `${categoriasQuery}${juntasQuery}${iniDate}${endDate}`
     filtrosQuery = filtrosQuery.slice(0, -1);
@@ -312,9 +315,12 @@ const Mapa = ({ isOpened, setIsOpened }) => {
 
   return (
     <>
-      <TopBar title="Mapa" handleOpenSidebar={() => setIsOpened(!isOpened)} />
+
+      <TopBar optionalbg={"bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 text-white shadow-lg "} title={"Análisis Térmico Municipal" } />
+
       <div className='p-8'>
-        <HeatCircleMap
+
+        <MapaCalorSeccion
           data={data}
           isLoading={isLoading}
           juntas={juntas}
@@ -328,9 +334,24 @@ const Mapa = ({ isOpened, setIsOpened }) => {
           setDateRange={setDateRange}
           setIsValid={setIsValid}
           isValid={isValid}
-
         />
-        <StatsTable data={data} isLoading={isLoading} setIsLoading={setIsLoading} />
+
+        {/* <StatsTable data={data} isLoading={isLoading} setIsLoading={setIsLoading} /> */}
+        <MapaFrioSeccion
+          data={data}
+          isLoading={isLoading}
+          juntas={juntas}
+          categorias={categorias}
+          selectedFilters={selectedFilters}
+          setSelectedFilters={setSelectedFilters}
+          applyFilters={applyFilters}
+          limpiarFiltros={limpiarFiltros}
+          clearValues={clearValues}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          setIsValid={setIsValid}
+          isValid={isValid}
+        />
       </div>
 
 

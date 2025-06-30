@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { Flame, LogOut, Snowflake } from 'lucide-react'
 import logo from '../assets/logo_muni.png'
 import AuthContext from '../contexts/AuthContext'
 import SidebarSectionContext from '../contexts/SidebarSectionContext'
@@ -13,6 +13,7 @@ const Sidebar = ({ isOpened }) => {
 
   useEffect(() => {
     const currentSection = sections.find(section => section.link === location.pathname)
+    
     if (currentSection) {
       setSelectedSection(currentSection.title)
     }
@@ -36,18 +37,23 @@ const Sidebar = ({ isOpened }) => {
       <div className="menu">
         <ul className="menu-list">
           {sections?.map((section, index) => (
-            <li 
-              key={index} 
-              className={`nav-link ${selectedSection === section?.title ? "active" : ""}`}
+            <li
+              key={index}
+              className={`${((selectedSection === section?.title)) ? "active" : ""} ${section.isSpecial ? "special": "normal"}`}
             >
-              <Link 
-                to={section?.link} 
+              <Link
+                to={section?.link}
                 onClick={() => setSelectedSection(section?.title)}
+                // if special add bggradient
+                className={` flex items-center gap-2`}
               >
                 {section?.icon}
-                <span className="text nav-text leading-6">
-                  {section?.title}
+                <span
+                  className={`text-sm `}
+                >
+                  {section.title}
                 </span>
+                
               </Link>
             </li>
           ))}

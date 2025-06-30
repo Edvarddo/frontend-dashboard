@@ -27,6 +27,11 @@ import Login from './components/pages/Login'
 import { PrivateRoute } from './contexts/PrivateRoute'
 
 import './index.css'
+import GestionDatos from './components/pages/GestionDatos';
+import HistorialModificacionPublicaciones from './components/pages/HistorialModificacionPublicaciones';
+import TablaAuditoria from './components/pages/TablaAuditoria';
+import CuentaUsuario from './components/pages/CuentaUsuario';
+import Kanban from './components/pages/Kanban';
 
 const PrivLayout = ({ children, isOpened, setIsOpened }) => {
   const navigate = useNavigate();
@@ -105,6 +110,11 @@ function App() {
               <Route path="/reportes" element={<Reporte isOpened={isOpened} setIsOpened={setIsOpened} />} />
               <Route path="/mapa" element={<Mapa isOpened={isOpened} setIsOpened={setIsOpened} />} />
               <Route path="/respuestas-municipales" element={<RespuestasMunicipales isOpened={isOpened} setIsOpened={setIsOpened} />} />
+              <Route path='/gestion-datos' element={<GestionDatos isOpened={isOpened} setIsOpened={setIsOpened}/>}/>
+              <Route path="/historial-modificacion-publicaciones" element={<HistorialModificacionPublicaciones isOpened={isOpened} setIsOpened={setIsOpened}/>} />
+              <Route path="/auditoria" element={<TablaAuditoria isOpened={isOpened} setIsOpened={setIsOpened}/>} />
+              <Route path="/cuentas-usuario" element={<CuentaUsuario isOpened={isOpened} setIsOpened={setIsOpened} />} />
+              <Route path="/kanban" element={<Kanban isOpened={isOpened} setIsOpened={setIsOpened} />} />
             </Route>
           </Route>
           <Route path="/login" element={<Login isOpened={isOpened} setIsOpened={setIsOpened} />} />

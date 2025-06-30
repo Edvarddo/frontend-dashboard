@@ -1,8 +1,8 @@
 import React from 'react'
 
-const TopBar = ({handleOpenSidebar, title}) => {
+const TopBar = ({handleOpenSidebar, title, optionalbg}) => {
   return (
-    <header className="burger-btn p-4 flex items-center bg-[#00A86B]">
+    <header className={`burger-btn p-4 flex items-center  ${optionalbg ? optionalbg : 'bg-[#00A86B]'}`}>
       <button
         onClick={handleOpenSidebar}
         className="text-white mr-4">

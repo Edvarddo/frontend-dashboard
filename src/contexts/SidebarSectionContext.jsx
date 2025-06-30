@@ -1,5 +1,6 @@
 // src/contexts/AuthContext.jsx
-import { ChartNoAxesColumn, ChartPie, FileText, Megaphone, Map } from 'lucide-react';
+import { GearIcon } from '@radix-ui/react-icons';
+import { ChartNoAxesColumn, ChartPie, FileText, Megaphone, Map, Settings, Thermometer, Book, StickyNote, User2 } from 'lucide-react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 const SidebarSectionContext = createContext();
@@ -29,10 +30,11 @@ export const SidebarSectionProvider = ({ children }) => {
     //   link: "/reportes"
     // },
     {
-      title: "Mapa",
-      icon: <Map className='icon' />,
-      link: "/mapa"
-    },
+    title: "Mapa Térmico",
+    link: "/mapa",
+    icon: <Thermometer className='icon ' />,
+    isSpecial: true, // Marcador especial para el mapa térmico
+  },
     // {
     //   title: "Descargar",
     //   icon: "bx bx-download",
@@ -43,6 +45,37 @@ export const SidebarSectionProvider = ({ children }) => {
     //   icon: <FileText className='icon' />,
     //   link: "/respuestas-municipales"
     // }
+    {
+      title: "Gestion de datos",
+      icon: <Settings className='icon' />,
+      // gear icon para este
+      
+      link: "/gestion-datos"
+    },
+    {
+      title: "Historial de modificaciones",
+      // otro icono we que no sea filetext
+      icon: <FileText className='icon' />,
+      link: "/historial-modificacion-publicaciones"
+    },
+    // tabla de auditoria
+    {
+      title: "Auditoría",
+      icon: <Book className='icon' />,
+      link: "/auditoria"
+    },
+    {
+      // kanban board
+      title: "Kanban",
+      icon: <StickyNote className='icon' />,
+      link: "/kanban"
+    },
+    // cuentas de usuario
+    {
+      title: "Cuentas de usuario",
+      icon: <User2 className='icon' />,
+      link: "/cuentas-usuario"
+    }
   ]
   
   const [selectedSection, setSelectedSection] = useState("");
