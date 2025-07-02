@@ -47,7 +47,7 @@ import {
 } from "lucide-react"
 
 // Simulamos el rol del usuario actual - CAMBIAR AQUÍ PARA PROBAR
-const CURRENT_USER_ROLE = "a" // Cambiar a "Jefe de Departamento" para probar
+const CURRENT_USER_ROLE = "Administrador Municipal" // Cambiar a "Jefe de Departamento" para probar
 const CURRENT_USER_DEPARTMENT = "Obras Públicas" // Departamento del jefe actual
 
 const CuentaUsuario = ({ setIsOpened, isOpened }) => {
