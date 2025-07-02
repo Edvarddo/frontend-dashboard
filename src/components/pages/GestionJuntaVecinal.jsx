@@ -1,6 +1,8 @@
+"use client"
 
 import { useState } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet"
+import L from "leaflet"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Download, Filter, Plus, Edit, Trash2, MapPin, ArrowLeft } from "lucide-react"
+import { Search, Download, Filter, Plus, Edit, MapPin, ArrowLeft, Map } from "lucide-react"
 import TopBar from "../TopBar"
 
 function MapClickHandler({ onMapClick }) {
@@ -19,6 +21,7 @@ function MapClickHandler({ onMapClick }) {
   })
   return null
 }
+
 const juntasVecinalesData = [
   {
     id: 1,
@@ -29,7 +32,7 @@ const juntasVecinalesData = [
     estado: "Activa",
     categoria: "Urbana",
     fechaCreacion: "2024-01-15",
-    ubicacion: { lat: -17.7833, lng: -63.1821 },
+    ubicacion: { lat: -22.4558, lng: -68.9293 },
     tipo: "actual",
   },
   {
@@ -38,10 +41,10 @@ const juntasVecinalesData = [
     nombre: "Junta Vecinal Norte",
     calle: "Calle Los Pinos",
     numero: "456",
-    estado: "Pendiente",
+    estado: "Inactiva",
     categoria: "Residencial",
     fechaCreacion: "2024-02-20",
-    ubicacion: { lat: -17.78, lng: -63.18 },
+    ubicacion: { lat: -22.4517, lng: -68.9172 },
     tipo: "actual",
   },
   {
@@ -53,15 +56,26 @@ const juntasVecinalesData = [
     estado: "Activa",
     categoria: "Comercial",
     fechaCreacion: "2024-03-10",
-    ubicacion: { lat: -17.785, lng: -63.185 },
+    ubicacion: { lat: -22.4621, lng: -68.9338 },
     tipo: "actual",
   },
 ]
-const GestionJuntaVecinal = ({onVolver}) => {
+
+const GestionJuntaVecinal = ({ onVolver }) => {
+  const customIcon = L.icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  })
+
   const [formData, setFormData] = useState({
     nombre: "",
     calle: "",
     numero: "",
+    estado: "Inactiva", // Estado por defecto
     ubicacion: null,
   })
 
@@ -94,14 +108,14 @@ const GestionJuntaVecinal = ({onVolver}) => {
 
   // Agregar nueva junta vecinal
   const handleAgregarJunta = () => {
-    if (formData.nombre && formData.calle && formData.numero && formData.ubicacion) {
+    if (formData.nombre && formData.calle && formData.numero && formData.ubicacion && formData.estado) {
       const nuevaJunta = {
         id: Date.now(),
         codigo: `JV${String(juntasVecinales.length + nuevasUbicaciones.length + 1).padStart(3, "0")}`,
         nombre: formData.nombre,
         calle: formData.calle,
         numero: formData.numero,
-        estado: "Pendiente",
+        estado: formData.estado,
         categoria: "Nueva",
         fechaCreacion: new Date().toISOString().split("T")[0],
         ubicacion: formData.ubicacion,
@@ -113,6 +127,7 @@ const GestionJuntaVecinal = ({onVolver}) => {
         nombre: "",
         calle: "",
         numero: "",
+        estado: "Inactiva",
         ubicacion: null,
       })
     }
@@ -141,14 +156,24 @@ const GestionJuntaVecinal = ({onVolver}) => {
       busqueda: "",
     })
   }
-  return (
-   <>
-      <TopBar title="Gestión de Juntas Vecinales" icon="bx bx-map" isOpened={true} setIsOpened={() => {}} />
 
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <TopBar title={"Gestión de Juntas Vecinales"} icon={<Map className="h-6 w-6 text-blue-600" />} />
+      {/* Header */}
+      {/* <div className="bg-white shadow-sm border-b">
+        <div className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Map className="h-6 w-6 text-blue-600" />
+            <h1 className="text-2xl font-semibold text-gray-900">Gestión de Juntas Vecinales</h1>
+          </div>
+        </div>
+      </div> */}
+
+      <div className="p-6 space-y-6">
         {/* Botón para volver */}
         {onVolver && (
-          <Button variant="outline" onClick={onVolver} className="mb-4 bg-transparent">
+          <Button variant="outline" onClick={onVolver} className="mb-4 bg-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a Gestión de Datos
           </Button>
@@ -174,7 +199,6 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   placeholder="Ej: Junta Vecinal Centro"
                 />
               </div>
-
               <div>
                 <Label htmlFor="calle">Calle</Label>
                 <Input
@@ -184,7 +208,6 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   placeholder="Ej: Av. Principal"
                 />
               </div>
-
               <div>
                 <Label htmlFor="numero">Número</Label>
                 <Input
@@ -194,7 +217,18 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   placeholder="Ej: 123"
                 />
               </div>
-
+              <div>
+                <Label htmlFor="estado">Estado</Label>
+                <Select value={formData.estado} onValueChange={(value) => handleInputChange("estado", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Activa">Activa</SelectItem>
+                    <SelectItem value="Inactiva">Inactiva</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                 <MapPin className="h-4 w-4 inline mr-2" />
                 Seleccione la ubicación aproximada en el mapa
@@ -204,11 +238,12 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   </div>
                 )}
               </div>
-
               <Button
                 onClick={handleAgregarJunta}
                 className="w-full bg-green-600 hover:bg-green-700"
-                disabled={!formData.nombre || !formData.calle || !formData.numero || !formData.ubicacion}
+                disabled={
+                  !formData.nombre || !formData.calle || !formData.numero || !formData.ubicacion || !formData.estado
+                }
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Junta Vecinal
@@ -233,12 +268,18 @@ const GestionJuntaVecinal = ({onVolver}) => {
             </CardHeader>
             <CardContent>
               <div className="h-96 rounded-lg overflow-hidden">
-                <MapContainer center={[-17.7833, -63.1821]} zoom={13} style={{ height: "100%", width: "100%" }}>
+                <MapContainer
+                  center={[
+                    -22.4667,
+                    -68.9333, // Coordenadas aproximadas de Calama, Chile
+                  ]}
+                  zoom={13}
+                  style={{ height: "100%", width: "100%" }}
+                >
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
-
                   <MapClickHandler onMapClick={handleMapClick} />
 
                   {/* Marcadores de juntas existentes */}
@@ -265,8 +306,11 @@ const GestionJuntaVecinal = ({onVolver}) => {
                           <p>
                             {junta.calle} {junta.numero}
                           </p>
-                          <Badge variant="outline" className="bg-green-100">
-                            Nueva
+                          <Badge
+                            variant={junta.estado === "Activa" ? "default" : "secondary"}
+                            className="bg-green-100 text-green-800"
+                          >
+                            {junta.estado} (Nueva)
                           </Badge>
                         </div>
                       </Popup>
@@ -275,7 +319,7 @@ const GestionJuntaVecinal = ({onVolver}) => {
 
                   {/* Marcador temporal para nueva ubicación */}
                   {formData.ubicacion && (
-                    <Marker position={[formData.ubicacion.lat, formData.ubicacion.lng]}>
+                    <Marker position={[formData.ubicacion.lat, formData.ubicacion.lng]} icon={customIcon}>
                       <Popup>
                         <div>
                           <h3 className="font-semibold">Nueva Ubicación</h3>
@@ -294,27 +338,8 @@ const GestionJuntaVecinal = ({onVolver}) => {
         <Card>
           <CardHeader>
             <CardTitle>Listado de Juntas Vecinales</CardTitle>
-
             {/* Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
-              <div>
-                <Label>Categoría</Label>
-                <Select
-                  value={filtros.categoria}
-                  onValueChange={(value) => setFiltros((prev) => ({ ...prev, categoria: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar opciones" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Urbana">Urbana</SelectItem>
-                    <SelectItem value="Residencial">Residencial</SelectItem>
-                    <SelectItem value="Comercial">Comercial</SelectItem>
-                    <SelectItem value="Nueva">Nueva</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div>
                 <Label>Estado</Label>
                 <Select
@@ -326,12 +351,10 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Activa">Activa</SelectItem>
-                    <SelectItem value="Pendiente">Pendiente</SelectItem>
                     <SelectItem value="Inactiva">Inactiva</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label>Fecha Inicio</Label>
                 <Input
@@ -340,7 +363,6 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   onChange={(e) => setFiltros((prev) => ({ ...prev, fechaInicio: e.target.value }))}
                 />
               </div>
-
               <div>
                 <Label>Fecha Fin</Label>
                 <Input
@@ -349,7 +371,6 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   onChange={(e) => setFiltros((prev) => ({ ...prev, fechaFin: e.target.value }))}
                 />
               </div>
-
               <div className="flex gap-2 items-end">
                 <Button variant="outline" onClick={limpiarFiltros}>
                   Limpiar filtros
@@ -372,7 +393,6 @@ const GestionJuntaVecinal = ({onVolver}) => {
                   className="pl-10"
                 />
               </div>
-
               <div className="flex gap-2">
                 <Button variant="outline">
                   <Download className="h-4 w-4 mr-2" />
@@ -392,9 +412,7 @@ const GestionJuntaVecinal = ({onVolver}) => {
                     <TableHead>Nombre</TableHead>
                     <TableHead>Dirección</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Categoría</TableHead>
                     <TableHead>Fecha de Creación</TableHead>
-                    <TableHead>Tipo</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -420,23 +438,11 @@ const GestionJuntaVecinal = ({onVolver}) => {
                             {junta.estado}
                           </Badge>
                         </TableCell>
-                        <TableCell>{junta.categoria}</TableCell>
                         <TableCell>{junta.fechaCreacion}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={junta.tipo === "actual" ? "outline" : "default"}
-                            className={junta.tipo === "nueva" ? "bg-green-100 text-green-800" : ""}
-                          >
-                            {junta.tipo === "actual" ? "Actual" : "Nueva"}
-                          </Badge>
-                        </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -444,7 +450,7 @@ const GestionJuntaVecinal = ({onVolver}) => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                         0 Resultados encontrados
                       </TableCell>
                     </TableRow>
@@ -461,7 +467,7 @@ const GestionJuntaVecinal = ({onVolver}) => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   )
 }
 

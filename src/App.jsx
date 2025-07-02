@@ -32,6 +32,7 @@ import HistorialModificacionPublicaciones from './components/pages/HistorialModi
 import TablaAuditoria from './components/pages/TablaAuditoria';
 import CuentaUsuario from './components/pages/CuentaUsuario';
 import Kanban from './components/pages/Kanban';
+import DetalleModificacionPublicacion from './components/pages/DetalleModificacionPublicacion';
 
 const PrivLayout = ({ children, isOpened, setIsOpened }) => {
   const navigate = useNavigate();
@@ -115,6 +116,7 @@ function App() {
               <Route path="/auditoria" element={<TablaAuditoria isOpened={isOpened} setIsOpened={setIsOpened}/>} />
               <Route path="/cuentas-usuario" element={<CuentaUsuario isOpened={isOpened} setIsOpened={setIsOpened} />} />
               <Route path="/kanban" element={<Kanban isOpened={isOpened} setIsOpened={setIsOpened} />} />
+              <Route path="/detalle-modificacion-publicacion/:id" element={<DetalleModificacionPublicacion isOpened={isOpened} setIsOpened={setIsOpened} />} />
             </Route>
           </Route>
           <Route path="/login" element={<Login isOpened={isOpened} setIsOpened={setIsOpened} />} />

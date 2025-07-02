@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -94,13 +95,12 @@ const GestionDepartamento = ({ onVolver }) => {
     id: null,
     nombre: "",
     descripcion: "",
+    estado: "Activo", // Agregado el estado al formData
   })
-
   const [filtros, setFiltros] = useState({
     estado: "",
     busqueda: "",
   })
-
   const [modalAbierto, setModalAbierto] = useState(false)
   const [modoEdicion, setModoEdicion] = useState(false)
 
@@ -118,6 +118,7 @@ const GestionDepartamento = ({ onVolver }) => {
       id: null,
       nombre: "",
       descripcion: "",
+      estado: "Activo",
     })
     setModoEdicion(false)
     setModalAbierto(true)
@@ -129,6 +130,7 @@ const GestionDepartamento = ({ onVolver }) => {
       id: departamento.id,
       nombre: departamento.nombre,
       descripcion: departamento.descripcion,
+      estado: departamento.estado,
     })
     setModoEdicion(true)
     setModalAbierto(true)
@@ -136,7 +138,7 @@ const GestionDepartamento = ({ onVolver }) => {
 
   // Guardar departamento (crear o actualizar)
   const handleGuardarDepartamento = () => {
-    if (formData.nombre && formData.descripcion) {
+    if (formData.nombre && formData.descripcion && formData.estado) {
       if (modoEdicion) {
         // Actualizar departamento existente
         setDepartamentos((prev) =>
@@ -146,6 +148,7 @@ const GestionDepartamento = ({ onVolver }) => {
                   ...dept,
                   nombre: formData.nombre,
                   descripcion: formData.descripcion,
+                  estado: formData.estado,
                 }
               : dept,
           ),
@@ -156,7 +159,7 @@ const GestionDepartamento = ({ onVolver }) => {
           id: Date.now(),
           nombre: formData.nombre,
           descripcion: formData.descripcion,
-          estado: "Activo",
+          estado: formData.estado,
           fechaCreacion: new Date().toISOString().split("T")[0],
           empleados: 0,
           categorias: 0,
@@ -169,6 +172,7 @@ const GestionDepartamento = ({ onVolver }) => {
         id: null,
         nombre: "",
         descripcion: "",
+        estado: "Activo",
       })
     }
   }
@@ -178,15 +182,6 @@ const GestionDepartamento = ({ onVolver }) => {
     if (confirm("¿Estás seguro de que deseas eliminar este departamento?")) {
       setDepartamentos((prev) => prev.filter((dept) => dept.id !== id))
     }
-  }
-
-  // Cambiar estado de departamento
-  const handleCambiarEstado = (id) => {
-    setDepartamentos((prev) =>
-      prev.map((dept) =>
-        dept.id === id ? { ...dept, estado: dept.estado === "Activo" ? "Inactivo" : "Activo" } : dept,
-      ),
-    )
   }
 
   // Filtrar departamentos
@@ -218,13 +213,14 @@ const GestionDepartamento = ({ onVolver }) => {
   }
 
   return (
-    <>
-      <TopBar title="Gestión de Departamentos" icon="bx bx-buildings" isOpened={true} setIsOpened={() => {}} />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <TopBar title={"Gestión de Departamentos"} icon={<Building2 className="h-6 w-6 text-blue-600" />} />
 
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="p-6 space-y-6">
         {/* Botón para volver */}
         {onVolver && (
-          <Button variant="outline" onClick={onVolver} className="mb-4 bg-transparent">
+          <Button variant="outline" onClick={onVolver} className="mb-4 bg-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a Gestión de Datos
           </Button>
@@ -310,7 +306,6 @@ const GestionDepartamento = ({ onVolver }) => {
                         placeholder="Ej: Secretaría General"
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="descripcion">Descripción</Label>
                       <Textarea
@@ -321,12 +316,24 @@ const GestionDepartamento = ({ onVolver }) => {
                         rows={4}
                       />
                     </div>
-
+                    {/* Campo de Estado agregado al modal */}
+                    <div>
+                      <Label htmlFor="estado">Estado</Label>
+                      <Select value={formData.estado} onValueChange={(value) => handleInputChange("estado", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Activo">Activo</SelectItem>
+                          <SelectItem value="Inactivo">Inactivo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="flex gap-2 pt-4">
                       <Button
                         onClick={handleGuardarDepartamento}
                         className="flex-1 bg-green-600 hover:bg-green-700"
-                        disabled={!formData.nombre || !formData.descripcion}
+                        disabled={!formData.nombre || !formData.descripcion || !formData.estado}
                       >
                         {modoEdicion ? "Actualizar" : "Crear"} Departamento
                       </Button>
@@ -343,17 +350,19 @@ const GestionDepartamento = ({ onVolver }) => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
               <div>
                 <Label>Estado</Label>
-                <select
+                <Select
                   value={filtros.estado}
-                  onChange={(e) => setFiltros((prev) => ({ ...prev, estado: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  onValueChange={(value) => setFiltros((prev) => ({ ...prev, estado: value }))}
                 >
-                  <option value="">Todos los estados</option>
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Activo">Activo</SelectItem>
+                    <SelectItem value="Inactivo">Inactivo</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
               <div>
                 <Label>Búsqueda</Label>
                 <div className="relative">
@@ -366,7 +375,6 @@ const GestionDepartamento = ({ onVolver }) => {
                   />
                 </div>
               </div>
-
               <div className="flex gap-2 items-end">
                 <Button variant="outline" onClick={limpiarFiltros}>
                   Limpiar filtros
@@ -433,18 +441,6 @@ const GestionDepartamento = ({ onVolver }) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleCambiarEstado(departamento.id)}
-                              className={
-                                departamento.estado === "Activo"
-                                  ? "text-red-600 hover:text-red-700"
-                                  : "text-green-600 hover:text-green-700"
-                              }
-                            >
-                              {departamento.estado === "Activo" ? "Desactivar" : "Activar"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
                               onClick={() => handleEliminarDepartamento(departamento.id)}
                               className="text-red-600 hover:text-red-700"
                             >
@@ -475,7 +471,7 @@ const GestionDepartamento = ({ onVolver }) => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   )
 }
 

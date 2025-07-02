@@ -22,7 +22,7 @@ const MapaFrioComponente = ({ data, isModal = false }) => {
     if (!mapRef.current || mapInstanceRef.current) return
 
     // Inicializar el mapa
-    mapInstanceRef.current = L.map(mapRef.current).setView([-22.459831, -68.933872], 13)
+    mapInstanceRef.current = L.map(mapRef.current).setView([-22.459831, -68.933872], 15)
 
     // Agregar capa de OpenStreetMap
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -60,17 +60,17 @@ const MapaFrioComponente = ({ data, isModal = false }) => {
     // Crear capa de calor con gradiente frío
     if (window.L && window.L.heatLayer) {
       heatLayerRef.current = L.heatLayer(points, {
-        radius: 40,
-        blur: 20,
+        radius: 60, // 🔼 Aumentado para cubrir más área
+        blur: 25,   // 🔼 Más suave y amplio
         maxZoom: 17,
         // Gradiente de colores fríos (azul a cyan)
         gradient: {
-          0.0: "rgba(0, 0, 255, 0)",
-          0.2: "rgba(0, 100, 255, 0.3)",
-          0.4: "rgba(0, 150, 255, 0.5)",
-          0.6: "rgba(0, 200, 255, 0.7)",
-          0.8: "rgba(100, 220, 255, 0.8)",
-          1.0: "rgba(150, 240, 255, 1.0)",
+          // 0.0: "rgba(0, 0, 180, 0.4)",       // azul oscuro visible
+          0.2: "rgba(0, 60, 220, 0.6)",      // azul eléctrico
+          0.4: "rgba(0, 120, 255, 0.75)",    // azul saturado
+          0.6: "rgba(0, 200, 255, 0.9)",     // cyan puro
+          0.8: "rgba(180, 240, 255, 0.95)",  // celeste muy claro
+          1.0: "rgba(255, 255, 255, 1.0)",   // blanco hielo para máximo
         },
       }).addTo(mapInstanceRef.current)
     }

@@ -47,7 +47,7 @@ import {
 } from "lucide-react"
 
 // Simulamos el rol del usuario actual - CAMBIAR AQUÍ PARA PROBAR
-const CURRENT_USER_ROLE = "Administrador Municipal" // Cambiar a "Jefe de Departamento" para probar
+const CURRENT_USER_ROLE = "a" // Cambiar a "Jefe de Departamento" para probar
 const CURRENT_USER_DEPARTMENT = "Obras Públicas" // Departamento del jefe actual
 
 const CuentaUsuario = ({ setIsOpened, isOpened }) => {
@@ -182,13 +182,13 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           color: "text-blue-600 bg-blue-50",
           descripcion: "Configurar roles y niveles de acceso del sistema",
         },
-        {
-          nombre: "Configuración Avanzada",
-          elementos: 8,
-          icono: Settings,
-          color: "text-purple-600 bg-purple-50",
-          descripcion: "Ajustes de seguridad y configuración del sistema",
-        },
+        // {
+        //   nombre: "Configuración Avanzada",
+        //   elementos: 8,
+        //   icono: Settings,
+        //   color: "text-purple-600 bg-purple-50",
+        //   descripcion: "Ajustes de seguridad y configuración del sistema",
+        // },
       ]
     } else {
       return [
@@ -200,20 +200,20 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           color: "text-blue-600 bg-blue-50",
           descripcion: "Usuarios bajo mi supervisión directa",
         },
-        {
-          nombre: "Reportes Departamentales",
-          elementos: 8,
-          icono: FileText,
-          color: "text-purple-600 bg-purple-50",
-          descripcion: "Reportes y métricas de mi departamento",
-        },
-        {
-          nombre: "Solicitudes Pendientes",
-          elementos: 3,
-          icono: Clock,
-          color: "text-yellow-600 bg-yellow-50",
-          descripcion: "Solicitudes que requieren mi aprobación",
-        },
+        // {
+        //   nombre: "Reportes Departamentales",
+        //   elementos: 8,
+        //   icono: FileText,
+        //   color: "text-purple-600 bg-purple-50",
+        //   descripcion: "Reportes y métricas de mi departamento",
+        // },
+        // {
+        //   nombre: "Solicitudes Pendientes",
+        //   elementos: 3,
+        //   icono: Clock,
+        //   color: "text-yellow-600 bg-yellow-50",
+        //   descripcion: "Solicitudes que requieren mi aprobación",
+        // },
       ]
     }
   }
@@ -458,10 +458,10 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
               )}
             </CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              {/* <Button variant="outline" size="sm">
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
-              </Button>
+              </Button> */}
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-green-600 hover:bg-green-700">

@@ -278,7 +278,7 @@ const GestionDatos = ({onNavigate}) => {
                 </div>
 
                 {/* Acciones rápidas */}
-                <div>
+                {/* <div>
                   <h3 className="text-lg font-semibold mb-4">Acciones Rápidas</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {seccionActual.acciones.map((accion, index) => {
@@ -298,7 +298,7 @@ const GestionDatos = ({onNavigate}) => {
                       )
                     })}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Información adicional */}
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">

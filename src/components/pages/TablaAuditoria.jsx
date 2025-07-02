@@ -71,7 +71,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       navegador: "Chrome 120.0",
       resultado: "EXITOSO",
       duracion_ms: 245,
-      riesgo: "BAJO",
+      // riesgo: "BAJO",
     },
     {
       id: "AUD002",
@@ -93,7 +93,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       navegador: "Safari 17.0",
       resultado: "EXITOSO",
       duracion_ms: 156,
-      riesgo: "MEDIO",
+      // riesgo: "MEDIO",
     },
     {
       id: "AUD003",
@@ -115,7 +115,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       navegador: "Chrome 120.0",
       resultado: "EXITOSO",
       duracion_ms: 89,
-      riesgo: "ALTO",
+      // riesgo: "ALTO",
     },
     {
       id: "AUD004",
@@ -137,7 +137,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       navegador: "Chrome 120.0",
       resultado: "EXITOSO",
       duracion_ms: 1234,
-      riesgo: "BAJO",
+      // riesgo: "BAJO",
     },
     {
       id: "AUD005",
@@ -157,33 +157,34 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       ip_address: "192.168.1.103",
       dispositivo: "Desktop",
       navegador: "Firefox 121.0",
-      resultado: "EXITOSO",
-      duracion_ms: 567,
-      riesgo: "BAJO",
-    },
-    {
-      id: "AUD006",
-      timestamp: "2024-01-26T15:30:22.678Z",
-      usuario: {
-        id: "USR005",
-        nombre: "Roberto Silva",
-        email: "roberto.silva@municipio.gov",
-        rol: "Técnico",
-        avatar: "/placeholder.svg?height=32&width=32",
-      },
-      accion: "UPDATE",
-      modulo: "Configuración",
-      entidad: "Configuración",
-      entidad_id: "CFG001",
-      descripcion: "Modificó configuración de notificaciones por email",
-      ip_address: "192.168.1.104",
-      dispositivo: "Desktop",
-      navegador: "Firefox 121.0",
       resultado: "FALLIDO",
-      duracion_ms: 2345,
-      riesgo: "MEDIO",
-      error: "Permisos insuficientes para modificar configuración",
+      duracion_ms: 567,
+      // riesgo: "BAJO",
+      error: "Credenciales incorrectas",
     },
+      // {
+      //   id: "AUD006",
+      //   timestamp: "2024-01-26T15:30:22.678Z",
+      //   usuario: {
+      //     id: "USR005",
+      //     nombre: "Roberto Silva",
+      //     email: "roberto.silva@municipio.gov",
+      //     rol: "Técnico",
+      //     avatar: "/placeholder.svg?height=32&width=32",
+      //   },
+      //   accion: "UPDATE",
+      //   modulo: "Configuración",
+      //   entidad: "Configuración",
+      //   entidad_id: "CFG001",
+      //   descripcion: "Modificó configuración de notificaciones por email",
+      //   ip_address: "192.168.1.104",
+      //   dispositivo: "Desktop",
+      //   navegador: "Firefox 121.0",
+      //   resultado: "FALLIDO",
+      //   duracion_ms: 2345,
+      //   // riesgo: "MEDIO",
+      //   error: "Permisos insuficientes para modificar configuración",
+      // },
   ]
 
   const usuarios = [
@@ -355,7 +356,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
 
           <div className="bg-gray-50">
             {/* Resumen de estadísticas */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <Card className="bg-white shadow-sm">
                 <CardContent className="p-4 text-center">
                   <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
@@ -396,42 +397,29 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-sm">
+              {/* <Card className="bg-white shadow-sm">
                 <CardContent className="p-4 text-center">
                   <AlertTriangle className="w-6 h-6 text-orange-600 mx-auto mb-2" />
                   <div className="text-xl font-bold text-gray-900">{estadisticas.riesgoAlto}</div>
                   <div className="text-sm text-gray-600">Riesgo Alto</div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
 
             {/* Pestañas principales */}
             <Tabs defaultValue="registros" className="space-y-6">
               <div className="flex items-center justify-between">
-                <TabsList className="bg-white shadow-sm">
-                  <TabsTrigger value="registros" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Registros
-                  </TabsTrigger>
-                  <TabsTrigger value="estadisticas" className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    Estadísticas
-                  </TabsTrigger>
-                  <TabsTrigger value="configuracion" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Configuración
-                  </TabsTrigger>
-                </TabsList>
+                
 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
+                  {/* <Button variant="outline" size="sm">
                     <Download className="w-4 h-4 mr-2" />
                     Exportar
-                  </Button>
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                  </Button> */}
+                  {/* <Button size="sm" className="bg-green-600 hover:bg-green-700">
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Actualizar
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
 
@@ -537,14 +525,14 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                             <TableHead className="font-semibold">Descripción</TableHead>
                             <TableHead className="font-semibold">IP / Dispositivo</TableHead>
                             <TableHead className="font-semibold">Resultado</TableHead>
-                            <TableHead className="font-semibold">Riesgo</TableHead>
+                            {/* <TableHead className="font-semibold">Riesgo</TableHead> */}
                             <TableHead className="font-semibold">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {loading ? (
                             <TableRow>
-                              <TableCell colSpan={9} className="text-center py-8">
+                              <TableCell colSpan={8} className="text-center py-8">
                                 <div className="flex justify-center items-center">
                                   <RefreshCw className="w-6 h-6 animate-spin text-green-600 mr-2" />
                                   Cargando registros de auditoría...
@@ -553,7 +541,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                             </TableRow>
                           ) : auditLogs.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={9} className="text-center py-8">
+                              <TableCell colSpan={8} className="text-center py-8">
                                 <div className="flex flex-col items-center">
                                   <Shield className="w-12 h-12 text-gray-400 mb-4" />
                                   <h3 className="text-lg font-semibold text-gray-700">No hay registros</h3>
@@ -629,9 +617,9 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                                     </div>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                {/* <TableCell>
                                   <Badge className={`text-xs ${getRiesgoBadge(log.riesgo)}`}>{log.riesgo}</Badge>
-                                </TableCell>
+                                </TableCell> */}
                                 <TableCell>
                                   <Dialog>
                                     <DialogTrigger asChild>

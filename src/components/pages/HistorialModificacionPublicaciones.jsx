@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,10 +26,11 @@ import {
   Shield,
   TrendingUp,
   Activity,
-  Target,
   Crown,
+  History,
 } from "lucide-react"
-import TopBar from '../TopBar'
+import TopBar from "../TopBar"
+import { useNavigate } from "react-router-dom"
 
 const HistorialModificacionPublicaciones = () => {
   // Usuario actual simulado - AQUÍ SE DETERMINA EL ROL
@@ -43,6 +46,8 @@ const HistorialModificacionPublicaciones = () => {
   })
 
   // Estados unificados
+  // usemos useNavigate
+  const navigate = useNavigate()
   const [publicaciones, setPublicaciones] = useState([])
   const [publicacionesOriginales, setPublicacionesOriginales] = useState([])
   const [modificacionesFlat, setModificacionesFlat] = useState([])
@@ -63,6 +68,10 @@ const HistorialModificacionPublicaciones = () => {
   const esJefe =
     usuarioActual.rol === "supervisor" || usuarioActual.rol === "admin" || usuarioActual.rol === "coordinador"
   const esPersonal = !esJefe
+  const onVolver = () => {
+    console.log("Volviendo al listado de publicaciones")
+  }
+  // Datos de ejemplo para publicaciones y modificaciones
 
   // Datos de ejemplo completos
   const publicacionesEjemplo = [
@@ -255,8 +264,8 @@ const HistorialModificacionPublicaciones = () => {
           }
         })
       })
-      setMiembrosEquipo(Array.from(miembros.values()))
 
+      setMiembrosEquipo(Array.from(miembros.values()))
       setLoading(false)
     }, 1000)
   }, [usuarioActual])
@@ -276,6 +285,24 @@ const HistorialModificacionPublicaciones = () => {
       ...prev,
       [campo]: valor,
     }))
+  }
+
+  // Función para manejar clic en modificación
+  const handleModificacionClick = (modificacion, publicacion = null) => {
+    const datosCompletos = {
+      modificacion,
+      publicacion: publicacion || {
+        publicacion_id: modificacion.publicacion_id,
+        titulo: modificacion.publicacion_titulo,
+        ubicacion: modificacion.publicacion_ubicacion,
+        estado_actual: modificacion.publicacion_estado,
+      },
+      todasLasModificaciones: publicacion ? publicacion.modificaciones : [],
+    }
+    // onVerDetalle(datosCompletos)
+    navigate(`/detalle-modificacion-publicacion/${modificacion.id}`, {
+      state: { datosCompletos  },
+    })
   }
 
   const aplicarFiltros = () => {
@@ -412,36 +439,46 @@ const HistorialModificacionPublicaciones = () => {
   // Estadísticas dinámicas según el rol
   const estadisticas = esJefe
     ? {
-      totalModificaciones: publicaciones.reduce((total, pub) => total + pub.total_modificaciones, 0),
-      modificacionesHoy: publicaciones
-        .flatMap((pub) => pub.modificaciones)
-        .filter((mod) => {
-          const hoy = new Date().toDateString()
-          const fechaMod = new Date(mod.fecha).toDateString()
-          return hoy === fechaMod
-        }).length,
-      miembroMasActivo: miembrosEquipo.reduce(
-        (masActivo, miembro) => {
-          const modificaciones = publicaciones
-            .flatMap((pub) => pub.modificaciones)
-            .filter((mod) => mod.usuario_info.id === miembro.id).length
-          return modificaciones > masActivo.modificaciones ? { miembro, modificaciones } : masActivo
-        },
-        { miembro: null, modificaciones: 0 },
-      ),
-      miembrosEquipo: miembrosEquipo.length,
-    }
+        totalModificaciones: publicaciones.reduce((total, pub) => total + pub.total_modificaciones, 0),
+        modificacionesHoy: publicaciones
+          .flatMap((pub) => pub.modificaciones)
+          .filter((mod) => {
+            const hoy = new Date().toDateString()
+            const fechaMod = new Date(mod.fecha).toDateString()
+            return hoy === fechaMod
+          }).length,
+        miembroMasActivo: miembrosEquipo.reduce(
+          (masActivo, miembro) => {
+            const modificaciones = publicaciones
+              .flatMap((pub) => pub.modificaciones)
+              .filter((mod) => mod.usuario_info.id === miembro.id).length
+            return modificaciones > masActivo.modificaciones ? { miembro, modificaciones } : masActivo
+          },
+          { miembro: null, modificaciones: 0 },
+        ),
+        miembrosEquipo: miembrosEquipo.length,
+      }
     : {
-      totalModificaciones: modificacionesFlat.length,
-      misModificaciones: modificacionesFlat.filter((mod) => mod.es_propia).length,
-      modificacionesEquipo: modificacionesFlat.filter((mod) => !mod.es_propia).length,
-      modificacionesAprobadas: modificacionesFlat.filter((mod) => mod.aprobada_por !== "Pendiente de aprobación")
-        .length,
-    }
+        totalModificaciones: modificacionesFlat.length,
+        misModificaciones: modificacionesFlat.filter((mod) => mod.es_propia).length,
+        modificacionesEquipo: modificacionesFlat.filter((mod) => !mod.es_propia).length,
+        modificacionesAprobadas: modificacionesFlat.filter((mod) => mod.aprobada_por !== "Pendiente de aprobación")
+          .length,
+      }
+
   return (
-    <>
-      <TopBar title="Historial de modificación de publicaciones" icon="bx bx-database" isOpened={true} setIsOpened={() => { }} />
-      <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      {/* <div className="bg-white shadow-sm border-b">
+        <div className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <History className="h-6 w-6 text-blue-600" />
+            <h1 className="text-2xl font-semibold text-gray-900">Historial de modificación de publicaciones</h1>
+          </div>
+        </div>
+      </div> */}
+      <TopBar title={"Historial de modificación de publicaciones"} icon={<History className="h-6 w-6 text-blue-600" />} />
+      <div className="p-6">
         <SidebarInset>
           <div className="">
             <Card className="bg-white shadow-lg">
@@ -486,7 +523,7 @@ const HistorialModificacionPublicaciones = () => {
 
               <CardContent className="p-6">
                 {/* Dashboard dinámico según el rol */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {esJefe ? (
                     <>
                       <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
@@ -543,13 +580,6 @@ const HistorialModificacionPublicaciones = () => {
                           <div className="text-sm text-purple-600">Del equipo</div>
                         </CardContent>
                       </Card>
-                      <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-                        <CardContent className="p-4 text-center">
-                          <Target className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-orange-700">{estadisticas.modificacionesAprobadas}</div>
-                          <div className="text-sm text-orange-600">Aprobadas</div>
-                        </CardContent>
-                      </Card>
                     </>
                   )}
                 </div>
@@ -595,7 +625,6 @@ const HistorialModificacionPublicaciones = () => {
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Tipo de modificación</label>
                         <Select
@@ -615,22 +644,6 @@ const HistorialModificacionPublicaciones = () => {
                           </SelectContent>
                         </Select>
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Nivel de impacto</label>
-                        <Select value={filtros.impacto} onValueChange={(value) => handleFiltroChange("impacto", value)}>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder="Seleccionar impacto" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Todos los niveles">Todos los niveles</SelectItem>
-                            <SelectItem value="Alto">Alto impacto</SelectItem>
-                            <SelectItem value="Medio">Medio impacto</SelectItem>
-                            <SelectItem value="Bajo">Bajo impacto</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Publicación</label>
                         <Input
@@ -640,7 +653,6 @@ const HistorialModificacionPublicaciones = () => {
                           className="h-10"
                         />
                       </div>
-
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Fecha desde</label>
                         <Input
@@ -650,7 +662,6 @@ const HistorialModificacionPublicaciones = () => {
                           className="h-10"
                         />
                       </div>
-
                       {esPersonal && (
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">Fecha hasta</label>
@@ -663,7 +674,6 @@ const HistorialModificacionPublicaciones = () => {
                         </div>
                       )}
                     </div>
-
                     <div className="flex gap-3">
                       <Button onClick={aplicarFiltros} className="bg-green-600 hover:bg-green-700">
                         <Search className="w-4 h-4 mr-2" />
@@ -748,7 +758,11 @@ const HistorialModificacionPublicaciones = () => {
                                       </TableHeader>
                                       <TableBody>
                                         {publicacion.modificaciones.map((modificacion) => (
-                                          <TableRow key={modificacion.id} className="hover:bg-white">
+                                          <TableRow
+                                            key={modificacion.id}
+                                            className="hover:bg-white cursor-pointer transition-colors"
+                                            onClick={() => handleModificacionClick(modificacion, publicacion)}
+                                          >
                                             <TableCell className="font-mono text-xs">
                                               {formatearFecha(modificacion.fecha)}
                                             </TableCell>
@@ -806,7 +820,10 @@ const HistorialModificacionPublicaciones = () => {
                                             </TableCell>
                                             <TableCell>
                                               <div className="max-w-xs">
-                                                <p className="text-sm text-gray-600 truncate" title={modificacion.motivo}>
+                                                <p
+                                                  className="text-sm text-gray-600 truncate"
+                                                  title={modificacion.motivo}
+                                                >
                                                   {modificacion.motivo}
                                                 </p>
                                               </div>
@@ -838,7 +855,6 @@ const HistorialModificacionPublicaciones = () => {
                             const modificacionesMiembro = publicaciones
                               .flatMap((pub) => pub.modificaciones)
                               .filter((mod) => mod.usuario_info.id === miembro.id).length
-
                             return (
                               <Card key={miembro.id} className="bg-white">
                                 <CardContent className="p-4">
@@ -891,15 +907,17 @@ const HistorialModificacionPublicaciones = () => {
                                 <TableHead>Publicación</TableHead>
                                 <TableHead>Campo modificado</TableHead>
                                 <TableHead>Cambio realizado</TableHead>
-                                <TableHead>Impacto</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead>Realizada por</TableHead>
-                                <TableHead>Aprobación</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {modificacionesFlat.map((modificacion) => (
-                                <TableRow key={modificacion.id} className="hover:bg-gray-50">
+                                <TableRow
+                                  key={modificacion.id}
+                                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                  onClick={() => handleModificacionClick(modificacion)}
+                                >
                                   <TableCell className="font-mono text-xs">
                                     {formatearFecha(modificacion.fecha)}
                                   </TableCell>
@@ -944,11 +962,6 @@ const HistorialModificacionPublicaciones = () => {
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge className={`text-xs ${getImpactoBadge(modificacion.impacto)}`}>
-                                      {modificacion.impacto}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
                                     <Badge className={`text-xs ${getEstadoBadge(modificacion.publicacion_estado)}`}>
                                       {modificacion.publicacion_estado}
                                     </Badge>
@@ -966,7 +979,9 @@ const HistorialModificacionPublicaciones = () => {
                                       </Avatar>
                                       <div>
                                         <div
-                                          className={`font-medium text-sm ${modificacion.es_propia ? "text-green-700 font-bold" : ""}`}
+                                          className={`font-medium text-sm ${
+                                            modificacion.es_propia ? "text-green-700 font-bold" : ""
+                                          }`}
                                         >
                                           {modificacion.usuario_info.nombre}
                                           {modificacion.es_propia && " (Yo)"}
@@ -975,35 +990,12 @@ const HistorialModificacionPublicaciones = () => {
                                       </div>
                                     </div>
                                   </TableCell>
-                                  <TableCell>
-                                    <div className="text-xs">
-                                      {modificacion.aprobada_por === "Pendiente de aprobación" ? (
-                                        <Badge
-                                          variant="outline"
-                                          className="bg-yellow-50 text-yellow-700 border-yellow-200"
-                                        >
-                                          Pendiente
-                                        </Badge>
-                                      ) : (
-                                        <div>
-                                          <Badge
-                                            variant="outline"
-                                            className="bg-green-50 text-green-700 border-green-200"
-                                          >
-                                            Aprobada
-                                          </Badge>
-                                          <div className="text-gray-500 mt-1">{modificacion.aprobada_por}</div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                           </Table>
                         </div>
                       )}
-
                       {!loading && modificacionesFlat.length === 0 && (
                         <div className="text-center py-12">
                           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -1019,8 +1011,7 @@ const HistorialModificacionPublicaciones = () => {
           </div>
         </SidebarInset>
       </div>
-    </>
-
+    </div>
   )
 }
 

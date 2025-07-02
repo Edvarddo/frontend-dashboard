@@ -22,7 +22,7 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
     if (!mapRef.current || mapInstanceRef.current) return
 
     // Inicializar el mapa
-    mapInstanceRef.current = L.map(mapRef.current).setView([-22.459831, -68.933872], 13)
+    mapInstanceRef.current = L.map(mapRef.current).setView([-22.459831, -68.933872], 15)
 
     // Agregar capa de OpenStreetMap
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -57,22 +57,25 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
       item.Junta_Vecinal.intensidad, // Intensidad de calor (más alto = más rojo)
     ])
 
-    // Crear capa de calor con gradiente cálido
     if (window.L && window.L.heatLayer) {
-      heatLayerRef.current = L.heatLayer(points, {
-        radius: 40,
-        blur: 20,
+      const map = mapInstanceRef.current;
+
+      // Multiplica puntos para simular mayor densidad
+      const amplifiedPoints = points.flatMap(p => Array(2).fill(p)); // 🔥 5x cada punto
+
+      heatLayerRef.current = L.heatLayer(amplifiedPoints, {
+        radius: 60, // 🔼 Aumentado para cubrir más área
+        blur: 25,   // 🔼 Más suave y amplio
         maxZoom: 17,
-        // Gradiente de colores cálidos (amarillo a rojo)
         gradient: {
-          0.0: "rgba(255, 255, 0, 0)",
-          0.2: "rgba(255, 200, 0, 0.3)",
-          0.4: "rgba(255, 150, 0, 0.5)",
-          0.6: "rgba(255, 100, 0, 0.7)",
-          0.8: "rgba(255, 50, 0, 0.8)",
-          1.0: "rgba(255, 0, 0, 1.0)",
+          // 0.0: "rgba(255, 140, 0, 0.6)",    // naranja fuerte
+          0.2: "rgba(255, 100, 0, 0.7)",    // naranja oscuro
+          0.4: "rgba(255, 60, 0, 0.8)",     // rojo-naranja
+          0.6: "rgba(220, 0, 0, 0.9)",      // rojo intenso
+          0.8: "rgba(160, 0, 0, 1.0)",      // rojo oscuro
+          1.0: "rgba(90, 0, 0, 1.0)",       // casi negro con rojo
         },
-      }).addTo(mapInstanceRef.current)
+      }).addTo(map);
     }
 
     // Agregar marcadores invisibles para tooltips

@@ -1,4 +1,4 @@
-
+"use client"
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -81,14 +81,13 @@ const GestionCategoria = ({ onVolver }) => {
     nombre: "",
     descripcion: "",
     departamento_id: "",
+    estado: "Activa", // Agregado el estado al formData
   })
-
   const [filtros, setFiltros] = useState({
     departamento: "",
     estado: "",
     busqueda: "",
   })
-
   const [modalAbierto, setModalAbierto] = useState(false)
   const [modoEdicion, setModoEdicion] = useState(false)
 
@@ -107,6 +106,7 @@ const GestionCategoria = ({ onVolver }) => {
       nombre: "",
       descripcion: "",
       departamento_id: "",
+      estado: "Activa",
     })
     setModoEdicion(false)
     setModalAbierto(true)
@@ -119,6 +119,7 @@ const GestionCategoria = ({ onVolver }) => {
       nombre: categoria.nombre,
       descripcion: categoria.descripcion,
       departamento_id: categoria.departamento_id,
+      estado: categoria.estado,
     })
     setModoEdicion(true)
     setModalAbierto(true)
@@ -126,7 +127,7 @@ const GestionCategoria = ({ onVolver }) => {
 
   // Guardar categoría (crear o actualizar)
   const handleGuardarCategoria = () => {
-    if (formData.nombre && formData.descripcion && formData.departamento_id) {
+    if (formData.nombre && formData.descripcion && formData.departamento_id && formData.estado) {
       if (modoEdicion) {
         // Actualizar categoría existente
         setCategorias((prev) =>
@@ -137,6 +138,7 @@ const GestionCategoria = ({ onVolver }) => {
                   nombre: formData.nombre,
                   descripcion: formData.descripcion,
                   departamento_id: Number.parseInt(formData.departamento_id),
+                  estado: formData.estado,
                 }
               : cat,
           ),
@@ -148,7 +150,7 @@ const GestionCategoria = ({ onVolver }) => {
           nombre: formData.nombre,
           descripcion: formData.descripcion,
           departamento_id: Number.parseInt(formData.departamento_id),
-          estado: "Activa",
+          estado: formData.estado,
           fechaCreacion: new Date().toISOString().split("T")[0],
           publicaciones: 0,
         }
@@ -161,6 +163,7 @@ const GestionCategoria = ({ onVolver }) => {
         nombre: "",
         descripcion: "",
         departamento_id: "",
+        estado: "Activa",
       })
     }
   }
@@ -170,13 +173,6 @@ const GestionCategoria = ({ onVolver }) => {
     if (confirm("¿Estás seguro de que deseas eliminar esta categoría?")) {
       setCategorias((prev) => prev.filter((cat) => cat.id !== id))
     }
-  }
-
-  // Cambiar estado de categoría
-  const handleCambiarEstado = (id) => {
-    setCategorias((prev) =>
-      prev.map((cat) => (cat.id === id ? { ...cat, estado: cat.estado === "Activa" ? "Inactiva" : "Activa" } : cat)),
-    )
   }
 
   // Obtener nombre del departamento
@@ -216,13 +212,14 @@ const GestionCategoria = ({ onVolver }) => {
   }
 
   return (
-    <>
-      <TopBar title="Gestión de Categorías" icon="bx bx-tag" isOpened={true} setIsOpened={() => {}} />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <TopBar title={"Gestión de Categorías"} icon={<Tag className="h-6 w-6 text-blue-600" />} />
 
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="p-6 space-y-6">
         {/* Botón para volver */}
         {onVolver && (
-          <Button variant="outline" onClick={onVolver} className="mb-4 bg-transparent">
+          <Button variant="outline" onClick={onVolver} className="mb-4 bg-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a Gestión de Datos
           </Button>
@@ -308,7 +305,6 @@ const GestionCategoria = ({ onVolver }) => {
                         placeholder="Ej: Ordenanzas Municipales"
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="descripcion">Descripción</Label>
                       <Textarea
@@ -319,7 +315,6 @@ const GestionCategoria = ({ onVolver }) => {
                         rows={3}
                       />
                     </div>
-
                     <div>
                       <Label htmlFor="departamento">Departamento</Label>
                       <Select
@@ -338,12 +333,26 @@ const GestionCategoria = ({ onVolver }) => {
                         </SelectContent>
                       </Select>
                     </div>
-
+                    {/* Campo de Estado agregado al modal */}
+                    <div>
+                      <Label htmlFor="estado">Estado</Label>
+                      <Select value={formData.estado} onValueChange={(value) => handleInputChange("estado", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Activa">Activa</SelectItem>
+                          <SelectItem value="Inactiva">Inactiva</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="flex gap-2 pt-4">
                       <Button
                         onClick={handleGuardarCategoria}
                         className="flex-1 bg-green-600 hover:bg-green-700"
-                        disabled={!formData.nombre || !formData.descripcion || !formData.departamento_id}
+                        disabled={
+                          !formData.nombre || !formData.descripcion || !formData.departamento_id || !formData.estado
+                        }
                       >
                         {modoEdicion ? "Actualizar" : "Crear"} Categoría
                       </Button>
@@ -376,7 +385,6 @@ const GestionCategoria = ({ onVolver }) => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label>Estado</Label>
                 <Select
@@ -392,7 +400,6 @@ const GestionCategoria = ({ onVolver }) => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label>Búsqueda</Label>
                 <div className="relative">
@@ -405,7 +412,6 @@ const GestionCategoria = ({ onVolver }) => {
                   />
                 </div>
               </div>
-
               <div className="flex gap-2 items-end">
                 <Button variant="outline" onClick={limpiarFiltros}>
                   Limpiar filtros
@@ -466,18 +472,6 @@ const GestionCategoria = ({ onVolver }) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleCambiarEstado(categoria.id)}
-                              className={
-                                categoria.estado === "Activa"
-                                  ? "text-red-600 hover:text-red-700"
-                                  : "text-green-600 hover:text-green-700"
-                              }
-                            >
-                              {categoria.estado === "Activa" ? "Desactivar" : "Activar"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
                               onClick={() => handleEliminarCategoria(categoria.id)}
                               className="text-red-600 hover:text-red-700"
                             >
@@ -508,7 +502,7 @@ const GestionCategoria = ({ onVolver }) => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   )
 }
 
