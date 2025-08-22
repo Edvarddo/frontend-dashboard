@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, Download, Plus, Edit, Trash2, ArrowLeft, Building2, Users, Eye } from "lucide-react"
+import { Search, Plus, Edit, Trash2, ArrowLeft, Building2, Users, Eye } from "lucide-react"
 import TopBar from "../TopBar"
+import { useToast } from "../../hooks/use-toast"
+import useAxiosPrivate from "../../hooks/useAxiosPrivate"
 
 // Datos de ejemplo para departamentos
 const departamentosData = [
@@ -90,7 +92,10 @@ const departamentosData = [
 ]
 
 const GestionDepartamento = ({ onVolver }) => {
-  const [departamentos, setDepartamentos] = useState(departamentosData)
+  const axiosPrivate = useAxiosPrivate()
+  const { toast } = useToast()
+  const [departamentos, setDepartamentos] = useState([])
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     id: null,
     nombre: "",
@@ -103,6 +108,8 @@ const GestionDepartamento = ({ onVolver }) => {
   })
   const [modalAbierto, setModalAbierto] = useState(false)
   const [modoEdicion, setModoEdicion] = useState(false)
+  const [modalEliminar, setModalEliminar] = useState(false)
+  const [departamentoAEliminar, setDepartamentoAEliminar] = useState(null)
 
   // Manejar cambios en el formulario
   const handleInputChange = (field, value) => {
@@ -118,7 +125,7 @@ const GestionDepartamento = ({ onVolver }) => {
       id: null,
       nombre: "",
       descripcion: "",
-      estado: "Activo",
+      estado: "habilitado",
     })
     setModoEdicion(false)
     setModalAbierto(true)
@@ -137,34 +144,50 @@ const GestionDepartamento = ({ onVolver }) => {
   }
 
   // Guardar departamento (crear o actualizar)
-  const handleGuardarDepartamento = () => {
+  const handleGuardarDepartamento = async () => {
     if (formData.nombre && formData.descripcion && formData.estado) {
       if (modoEdicion) {
-        // Actualizar departamento existente
-        setDepartamentos((prev) =>
-          prev.map((dept) =>
-            dept.id === formData.id
-              ? {
-                  ...dept,
-                  nombre: formData.nombre,
-                  descripcion: formData.descripcion,
-                  estado: formData.estado,
-                }
-              : dept,
-          ),
-        )
-      } else {
-        // Crear nuevo departamento
-        const nuevoDepartamento = {
-          id: Date.now(),
-          nombre: formData.nombre,
-          descripcion: formData.descripcion,
-          estado: formData.estado,
-          fechaCreacion: new Date().toISOString().split("T")[0],
-          empleados: 0,
-          categorias: 0,
+        // try-catch format
+        try {
+          await axiosPrivate.put(`/departamentos-municipales/${formData.id}/`, formData)
+          setDepartamentos((prev) =>
+            prev.map((dept) =>
+              dept.id === formData.id
+                ? {
+                    ...dept,
+                    nombre: formData.nombre,
+                    descripcion: formData.descripcion,
+                    estado: formData.estado,
+                  }
+                : dept,
+            ),
+          )
+        } catch (error) {
+          console.error("Error al actualizar departamento:", error)
+          toast({
+            title: "Error al actualizar departamento",
+            description: "Ha ocurrido un error al intentar actualizar el departamento.",
+            status: "error",
+          })
         }
-        setDepartamentos((prev) => [...prev, nuevoDepartamento])
+      } else {
+        // try-catch format
+        try {
+          const response = await axiosPrivate.post("/departamentos-municipales/", formData)
+          setDepartamentos((prev) => [...prev, response.data])
+          toast({
+            title: "Departamento creado",
+            description: "El departamento ha sido creado correctamente.",
+            status: "success",
+          })
+        } catch (error) {
+          console.error("Error al crear departamento:", error)
+          toast({
+            title: "Error al crear departamento",
+            description: "Ha ocurrido un error al intentar crear el departamento.",
+            status: "error",
+          })
+        }
       }
 
       setModalAbierto(false)
@@ -177,11 +200,41 @@ const GestionDepartamento = ({ onVolver }) => {
     }
   }
 
-  // Eliminar departamento
-  const handleEliminarDepartamento = (id) => {
-    if (confirm("¿Estás seguro de que deseas eliminar este departamento?")) {
-      setDepartamentos((prev) => prev.filter((dept) => dept.id !== id))
+  const handleEliminarDepartamento = (departamento) => {
+    
+    setDepartamentoAEliminar(departamento)
+    setModalEliminar(true)
+  }
+
+  const confirmarEliminacion = async() => {
+    // try-catch
+    try {
+      if (departamentoAEliminar) {
+        // backend
+        const response = await axiosPrivate.delete(`/departamentos-municipales/${departamentoAEliminar.id}/`)
+        console.log("Response from backend:", response)
+        setDepartamentos((prev) => prev.filter((dept) => dept.id !== departamentoAEliminar.id))
+        setModalEliminar(false)
+        setDepartamentoAEliminar(null)
+        toast({
+          title: "Departamento eliminado",
+          description: "El departamento ha sido eliminado correctamente.",
+          status: "success",
+        })
+      }
+    } catch (error) {
+      console.error("Error al eliminar departamento:", error)
+      toast({
+        title: "Error al eliminar departamento",
+        description: "Ha ocurrido un error al intentar eliminar el departamento.",
+        status: "error",
+      })
     }
+  }
+
+  const cancelarEliminacion = () => {
+    setModalEliminar(false)
+    setDepartamentoAEliminar(null)
   }
 
   // Filtrar departamentos
@@ -210,6 +263,35 @@ const GestionDepartamento = ({ onVolver }) => {
     activos: departamentos.filter((dept) => dept.estado === "Activo").length,
     inactivos: departamentos.filter((dept) => dept.estado === "Inactivo").length,
     totalEmpleados: departamentos.reduce((sum, dept) => sum + dept.empleados, 0),
+  }
+  const fetchDepartamentos = async () => {
+    setLoading(true)
+    try {
+      console.log("Cargando departamentos...")
+
+      const response = await axiosPrivate.get("/departamentos-municipales/")
+      console.log("Departamentos cargados:", response.data)
+      setDepartamentos(response.data)
+    } catch (error) {
+      console.error("Error al obtener departamentos:", error)
+      toast({
+        title: "Error al obtener departamentos",
+        description: "Ha ocurrido un error al intentar obtener los departamentos.",
+        status: "error",
+        variants: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDepartamentos()
+  }, [])
+  const formatDate = (dateString) => {
+    // incluye la hora para el formato y mas abreviado
+    const options = { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric" }
+    return new Date(dateString).toLocaleDateString("es-CL", options)
   }
 
   return (
@@ -324,8 +406,8 @@ const GestionDepartamento = ({ onVolver }) => {
                           <SelectValue placeholder="Seleccionar estado" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Activo">Activo</SelectItem>
-                          <SelectItem value="Inactivo">Inactivo</SelectItem>
+                          <SelectItem value="habilitado">Habilitado</SelectItem>
+                          <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -379,10 +461,6 @@ const GestionDepartamento = ({ onVolver }) => {
                 <Button variant="outline" onClick={limpiarFiltros}>
                   Limpiar filtros
                 </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar
-                </Button>
               </div>
             </div>
           </CardHeader>
@@ -398,7 +476,7 @@ const GestionDepartamento = ({ onVolver }) => {
                     <TableHead>Descripción</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Empleados</TableHead>
-                    <TableHead>Categorías</TableHead>
+                    {/* <TableHead>Categorías</TableHead> */}
                     <TableHead>Fecha Creación</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
@@ -409,7 +487,9 @@ const GestionDepartamento = ({ onVolver }) => {
                       <TableRow key={departamento.id}>
                         <TableCell className="font-medium">{departamento.id}</TableCell>
                         <TableCell className="font-medium">{departamento.nombre}</TableCell>
-                        <TableCell className="max-w-xs truncate">{departamento.descripcion}</TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {departamento.descripcion ? departamento.descripcion : "Sin descripción"}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={departamento.estado === "Activo" ? "default" : "secondary"}
@@ -424,15 +504,15 @@ const GestionDepartamento = ({ onVolver }) => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                            {departamento.empleados}
+                            {departamento.funcionarios_count}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           <Badge variant="outline" className="bg-purple-50 text-purple-700">
                             {departamento.categorias}
                           </Badge>
-                        </TableCell>
-                        <TableCell>{departamento.fechaCreacion}</TableCell>
+                        </TableCell> */}
+                        <TableCell>{formatDate(departamento.fecha_creacion)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditarDepartamento(departamento)}>
@@ -441,7 +521,7 @@ const GestionDepartamento = ({ onVolver }) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleEliminarDepartamento(departamento.id)}
+                              onClick={() => handleEliminarDepartamento(departamento)}
                               className="text-red-600 hover:text-red-700"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -470,6 +550,31 @@ const GestionDepartamento = ({ onVolver }) => {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={modalEliminar} onOpenChange={setModalEliminar}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">Confirmar Eliminación</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-gray-700">
+                ¿Estás seguro de que deseas eliminar el departamento{" "}
+                <span className="font-semibold">"{departamentoAEliminar?.nombre}"</span>?
+              </p>
+              <p className="text-sm text-gray-500">
+                Esta acción no se puede deshacer y se eliminará toda la información asociada.
+              </p>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={confirmarEliminacion} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
+                  Sí, eliminar
+                </Button>
+                <Button variant="outline" onClick={cancelarEliminacion} className="flex-1 bg-transparent">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

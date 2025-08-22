@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,8 +10,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Download, Filter, Plus, Edit, MapPin, ArrowLeft, Map } from "lucide-react"
+import { Search, Download, Filter, Plus, Edit, MapPin, ArrowLeft, Map, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import TopBar from "../TopBar"
+import useAxiosPrivate from "@/hooks/useAxiosPrivate"
+import { set } from "date-fns"
+import { useToast } from "../../hooks/use-toast"
 
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
@@ -26,42 +30,49 @@ const juntasVecinalesData = [
   {
     id: 1,
     codigo: "JV001",
-    nombre: "Junta Vecinal Centro",
-    calle: "Av. Principal",
-    numero: "123",
-    estado: "Activa",
+    nombre_junta: "Junta Vecinal Centro",
+    nombre_calle: "Av. Principal",
+    numero_calle: "123",
+    estado: "habilitado",
     categoria: "Urbana",
-    fechaCreacion: "2024-01-15",
-    ubicacion: { lat: -22.4558, lng: -68.9293 },
+    fecha_creacion: "2024-01-15T10:30:00Z",
+    latitud: -22.4558,
+    longitud: -68.9293,
     tipo: "actual",
   },
   {
     id: 2,
     codigo: "JV002",
-    nombre: "Junta Vecinal Norte",
-    calle: "Calle Los Pinos",
-    numero: "456",
-    estado: "Inactiva",
+    nombre_junta: "Junta Vecinal Norte",
+    nombre_calle: "Calle Los Pinos",
+    numero_calle: "456",
+    estado: "deshabilitado",
     categoria: "Residencial",
-    fechaCreacion: "2024-02-20",
-    ubicacion: { lat: -22.4517, lng: -68.9172 },
+    fecha_creacion: "2024-02-20T14:15:00Z",
+    latitud: -22.4517,
+    longitud: -68.9172,
     tipo: "actual",
   },
   {
     id: 3,
     codigo: "JV003",
-    nombre: "Junta Vecinal Sur",
-    calle: "Av. Granaderos",
-    numero: "789",
-    estado: "Activa",
+    nombre_junta: "Junta Vecinal Sur",
+    nombre_calle: "Av. Granaderos",
+    numero_calle: "789",
+    estado: "habilitado",
     categoria: "Comercial",
-    fechaCreacion: "2024-03-10",
-    ubicacion: { lat: -22.4621, lng: -68.9338 },
+    fecha_creacion: "2024-03-10T09:45:00Z",
+    latitud: -22.4621,
+    longitud: -68.9338,
     tipo: "actual",
   },
 ]
 
 const GestionJuntaVecinal = ({ onVolver }) => {
+  const [juntasVecinales, setJuntasVecinales] = useState([])
+  const [nuevasUbicaciones, setNuevasUbicaciones] = useState([])
+  const axiosPrivate = useAxiosPrivate()
+  const { toast } = useToast()
   const customIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -71,12 +82,27 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     shadowSize: [41, 41],
   })
 
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingJunta, setEditingJunta] = useState(null)
+  const [editFormData, setEditFormData] = useState({
+
+    nombre: "",
+    calle: "",
+    numero: "",
+    estado: "",
+    ubicacion: null,
+    latitud: "",
+    longitud: "",
+  })
+
   const [formData, setFormData] = useState({
     nombre: "",
     calle: "",
     numero: "",
-    estado: "Inactiva", // Estado por defecto
+    estado: "deshabilitado", // Estado por defecto
     ubicacion: null,
+    latitud: "",
+    longitud: "",
   })
 
   const [filtros, setFiltros] = useState({
@@ -87,58 +113,230 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     busqueda: "",
   })
 
-  const [juntasVecinales, setJuntasVecinales] = useState(juntasVecinalesData)
-  const [nuevasUbicaciones, setNuevasUbicaciones] = useState([])
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [juntaToDelete, setJuntaToDelete] = useState(null)
 
-  // Manejar cambios en el formulario
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setFormData((prev) => {
+      const prevState = prev
+      return {
+        ...prevState,
+        [field]: value,
+      }
+    })
+
+    if (field === "latitud" || field === "longitud") {
+      const lat = field === "latitud" ? Number.parseFloat(value) : Number.parseFloat(formData.latitud)
+      const lng = field === "longitud" ? Number.parseFloat(value) : Number.parseFloat(formData.longitud)
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setFormData((current) => ({
+          ...current,
+          ubicacion: { lat, lng },
+        }))
+      }
+    }
   }
 
-  // Manejar clic en el mapa
   const handleMapClick = (latlng) => {
     setFormData((prev) => ({
       ...prev,
       ubicacion: latlng,
+      latitud: latlng.lat.toFixed(8),
+      longitud: latlng.lng.toFixed(8),
     }))
   }
 
-  // Agregar nueva junta vecinal
-  const handleAgregarJunta = () => {
-    if (formData.nombre && formData.calle && formData.numero && formData.ubicacion && formData.estado) {
-      const nuevaJunta = {
-        id: Date.now(),
-        codigo: `JV${String(juntasVecinales.length + nuevasUbicaciones.length + 1).padStart(3, "0")}`,
-        nombre: formData.nombre,
-        calle: formData.calle,
-        numero: formData.numero,
-        estado: formData.estado,
-        categoria: "Nueva",
-        fechaCreacion: new Date().toISOString().split("T")[0],
-        ubicacion: formData.ubicacion,
-        tipo: "nueva",
-      }
+  const handleAgregarJunta = async () => {
+    try {
+      if (formData.nombre && formData.calle && formData.numero && formData.ubicacion && formData.estado) {
+        console.log("Nueva junta vecinal:", formData)
+        const nuevaJunta = {
+          id: Date.now(), // Generate unique ID for demo
+          nombre_junta: formData.nombre,
+          nombre_calle: formData.calle,
+          numero_calle: formData.numero,
+          estado: formData.estado,
+          categoria: "Nueva",
+          fecha_creacion: new Date().toISOString(),
+          latitud: Number.parseFloat(formData.ubicacion.lat.toFixed(6)),
+          longitud: Number.parseFloat(formData.ubicacion.lng.toFixed(6)),
+          tipo: "nueva",
+        }
+        console.log("Nueva junta vecinal:", nuevaJunta)
 
-      setNuevasUbicaciones((prev) => [...prev, nuevaJunta])
-      setFormData({
-        nombre: "",
-        calle: "",
-        numero: "",
-        estado: "Inactiva",
-        ubicacion: null,
+        setNuevasUbicaciones((prev) => [...prev, nuevaJunta])
+
+        setFormData({
+          nombre: "",
+          calle: "",
+          numero: "",
+          estado: "deshabilitado",
+          ubicacion: null,
+          latitud: "",
+          longitud: "",
+        })
+        // with green bg bro
+        toast({
+          title: "Junta vecinal agregada",
+          description: "La nueva junta vecinal ha sido agregada exitosamente.",
+          duration: 5000,
+          className: "bg-green-500 text-white border-none",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error al agregar junta vecinal",
+        description: "Ha ocurrido un error al agregar la nueva junta vecinal.",
+        duration: 5000,
+        className: "bg-red-500 text-white border-none",
       })
+      console.error("Error al agregar nueva junta vecinal:", error)
     }
   }
 
-  // Filtrar datos
+  const handleEditClick = (junta) => {
+    console.log("Editing junta:", junta)
+    setEditingJunta(junta)
+    setEditFormData({
+      id: junta.id,
+      nombre: junta.nombre_junta,
+      calle: junta.nombre_calle,
+      numero: junta.numero_calle,
+      estado: junta.estado,
+      ubicacion: { lat: junta.latitud, lng: junta.longitud },
+      latitud: junta.latitud.toString(),
+      longitud: junta.longitud.toString(),
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleEditInputChange = (field, value) => {
+    setEditFormData((prev) => {
+      const prevState = prev
+      return {
+        ...prevState,
+        [field]: value,
+      }
+    })
+
+    if (field === "latitud" || field === "longitud") {
+      const lat = field === "latitud" ? Number.parseFloat(value) : Number.parseFloat(editFormData.latitud)
+      const lng = field === "longitud" ? Number.parseFloat(value) : Number.parseFloat(editFormData.longitud)
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setEditFormData((current) => ({
+          ...current,
+          ubicacion: { lat, lng },
+        }))
+      }
+    }
+  }
+
+  const handleEditMapClick = (latlng) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      ubicacion: latlng,
+      latitud: latlng.lat.toFixed(8),
+      longitud: latlng.lng.toFixed(8),
+    }))
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      if (
+        editFormData.nombre &&
+        editFormData.calle &&
+        editFormData.numero &&
+        editFormData.latitud &&
+        editFormData.longitud &&
+        editFormData.estado
+      ) {
+        const updatedJunta = {
+          ...editingJunta,
+          nombre_junta: editFormData.nombre,
+          nombre_calle: editFormData.calle,
+          numero_calle: editFormData.numero,
+          estado: editFormData.estado,
+          latitud: Number.parseFloat(editFormData.latitud).toFixed(6),
+          longitud: Number.parseFloat(editFormData.longitud).toFixed(6),
+        }
+        console.log("Updated junta:", editFormData)
+        // backend connection
+        const response = await axiosPrivate.patch(`/juntas-vecinales/${editFormData.id}/`, updatedJunta)
+        console.log("Response from backend:", response)
+        setJuntasVecinales((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
+
+        // Also update nuevasUbicaciones if the item is there
+        setNuevasUbicaciones((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
+
+        setEditModalOpen(false)
+        setEditingJunta(null)
+
+        toast({
+          title: "Departamento actualizado",
+          description: "El departamento ha sido actualizado exitosamente.",
+          duration: 5000,
+          className: "bg-green-500 text-white",
+        });
+      }
+    } catch (error) {
+      toast({
+          title: "Error al actualizar departamento",
+          description: "Ha ocurrido un error al intentar actualizar el departamento.",
+          duration: 5000,
+          // without white borders
+          className: "bg-red-500 text-white border-none",
+        });
+      console.error("Error al actualizar junta vecinal:", error)
+    }
+  }
+
+  const handleDeleteClick = (junta) => {
+    setJuntaToDelete(junta)
+    setDeleteModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!juntaToDelete) return
+
+    try {
+      const response = await axiosPrivate.delete(`juntas-vecinales/${juntaToDelete.id}/`)
+      console.log("Delete response:", response)
+      if (response.status === 200 || response.status === 204) {
+        if (juntaToDelete.tipo === "nueva") {
+          // Remove from nuevasUbicaciones
+          setNuevasUbicaciones((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
+        } else {
+          // Remove from juntasVecinales
+          setJuntasVecinales((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
+        }
+        toast({
+          title: "Junta vecinal eliminada",
+          description: "La junta vecinal ha sido eliminada exitosamente.",
+          duration: 5000,
+          className: "bg-green-500 text-white border-none",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error al eliminar junta vecinal",
+        description: "Ha ocurrido un error al intentar eliminar la junta vecinal.",
+        duration: 5000,
+        className: "bg-red-500 text-white border-none",
+      })
+      console.error("Error al eliminar junta vecinal:", error)
+    } finally {
+      setDeleteModalOpen(false)
+      setJuntaToDelete(null)
+    }
+  }
+
   const datosFiltrados = [...juntasVecinales, ...nuevasUbicaciones].filter((item) => {
     const cumpleBusqueda =
       !filtros.busqueda ||
-      item.nombre.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
-      item.calle.toLowerCase().includes(filtros.busqueda.toLowerCase())
+      item.nombre_junta.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+      item.nombre_calle.toLowerCase().includes(filtros.busqueda.toLowerCase())
 
     const cumpleCategoria = !filtros.categoria || item.categoria === filtros.categoria
     const cumpleEstado = !filtros.estado || item.estado === filtros.estado
@@ -146,7 +344,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     return cumpleBusqueda && cumpleCategoria && cumpleEstado
   })
 
-  // Limpiar filtros
   const limpiarFiltros = () => {
     setFiltros({
       categoria: "",
@@ -157,21 +354,29 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     })
   }
 
+  const fetchJuntas = async () => {
+    try {
+      const response = await axiosPrivate.get("juntas-vecinales/")
+      console.log("Fetch juntas vecinales response:", response)
+      setJuntasVecinales(response.data)
+    } catch (error) {
+      console.error("Error loading juntas vecinales:", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchJuntas()
+  }, [])
+
+  const formatDate = (dateString) => {
+    const options = { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric" }
+    return new Date(dateString).toLocaleDateString("es-CL", options)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <TopBar title={"Gestión de Juntas Vecinales"} icon={<Map className="h-6 w-6 text-blue-600" />} />
-      {/* Header */}
-      {/* <div className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Map className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-semibold text-gray-900">Gestión de Juntas Vecinales</h1>
-          </div>
-        </div>
-      </div> */}
-
       <div className="p-6 space-y-6">
-        {/* Botón para volver */}
         {onVolver && (
           <Button variant="outline" onClick={onVolver} className="mb-4 bg-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -179,9 +384,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           </Button>
         )}
 
-        {/* Sección de Formulario y Mapa */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Formulario */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -224,17 +427,41 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Activa">Activa</SelectItem>
-                    <SelectItem value="Inactiva">Inactiva</SelectItem>
+                    <SelectItem value="habilitado">Habilitado</SelectItem>
+                    <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="latitud">Latitud</Label>
+                  <Input
+                    id="latitud"
+                    type="number"
+                    step="any"
+                    value={formData.latitud}
+                    onChange={(e) => handleInputChange("latitud", e.target.value)}
+                    placeholder="Ej: -22.4558"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="longitud">Longitud</Label>
+                  <Input
+                    id="longitud"
+                    type="number"
+                    step="any"
+                    value={formData.longitud}
+                    onChange={(e) => handleInputChange("longitud", e.target.value)}
+                    placeholder="Ej: -68.9293"
+                  />
+                </div>
+              </div>
               <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                 <MapPin className="h-4 w-4 inline mr-2" />
-                Seleccione la ubicación aproximada en el mapa
+                Seleccione la ubicación en el mapa o ingrese las coordenadas manualmente
                 {formData.ubicacion && (
                   <div className="mt-2 text-xs">
-                    Coordenadas: {formData.ubicacion.lat.toFixed(4)}, {formData.ubicacion.lng.toFixed(4)}
+                    Coordenadas: {formData.ubicacion.lat.toFixed(6)}, {formData.ubicacion.lng.toFixed(6)}
                   </div>
                 )}
               </div>
@@ -251,7 +478,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
             </CardContent>
           </Card>
 
-          {/* Mapa */}
           <Card>
             <CardHeader>
               <CardTitle>Mapa de Ubicaciones</CardTitle>
@@ -267,78 +493,82 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-96 rounded-lg overflow-hidden">
-                <MapContainer
-                  center={[
-                    -22.4667,
-                    -68.9333, // Coordenadas aproximadas de Calama, Chile
-                  ]}
-                  zoom={13}
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  <MapClickHandler onMapClick={handleMapClick} />
+              {/* meanwhile delete modal open hide the map too */}
+              {!(editModalOpen || deleteModalOpen) ? (
+                <div className="h-96 rounded-lg overflow-hidden">
+                  <MapContainer
+                    center={[
+                      -22.4667,
+                      -68.9333, // Coordenadas aproximadas de Calama, Chile
+                    ]}
+                    zoom={13}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <MapClickHandler onMapClick={handleMapClick} />
 
-                  {/* Marcadores de juntas existentes */}
-                  {juntasVecinales.map((junta) => (
-                    <Marker key={junta.id} position={[junta.ubicacion.lat, junta.ubicacion.lng]}>
-                      <Popup>
-                        <div>
-                          <h3 className="font-semibold">{junta.nombre}</h3>
-                          <p>
-                            {junta.calle} {junta.numero}
-                          </p>
-                          <Badge variant={junta.estado === "Activa" ? "default" : "secondary"}>{junta.estado}</Badge>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
+                    {juntasVecinales.map((junta) => (
+                      <Marker key={junta.id} position={[junta.latitud, junta.longitud]}>
+                        <Popup>
+                          <div>
+                            <h3 className="font-semibold">{junta.nombre_junta}</h3>
+                            <p>
+                              {junta.nombre_calle} {junta.numero_calle}
+                            </p>
+                            <Badge variant={junta.estado === "habilitado" ? "default" : "secondary"}>
+                              {junta.estado}
+                            </Badge>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
 
-                  {/* Marcadores de nuevas ubicaciones */}
-                  {nuevasUbicaciones.map((junta) => (
-                    <Marker key={junta.id} position={[junta.ubicacion.lat, junta.ubicacion.lng]}>
-                      <Popup>
-                        <div>
-                          <h3 className="font-semibold">{junta.nombre}</h3>
-                          <p>
-                            {junta.calle} {junta.numero}
-                          </p>
-                          <Badge
-                            variant={junta.estado === "Activa" ? "default" : "secondary"}
-                            className="bg-green-100 text-green-800"
-                          >
-                            {junta.estado} (Nueva)
-                          </Badge>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
+                    {nuevasUbicaciones.map((junta) => (
+                      <Marker key={junta.id} position={[junta.latitud, junta.longitud]}>
+                        <Popup>
+                          <div>
+                            <h3 className="font-semibold">{junta.nombre_junta}</h3>
+                            <p>
+                              {junta.nombre_calle} {junta.numero_calle}
+                            </p>
+                            <Badge
+                              variant={junta.estado === "habilitado" ? "default" : "secondary"}
+                              className="bg-green-100 text-green-800"
+                            >
+                              {junta.estado} (Nueva)
+                            </Badge>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
 
-                  {/* Marcador temporal para nueva ubicación */}
-                  {formData.ubicacion && (
-                    <Marker position={[formData.ubicacion.lat, formData.ubicacion.lng]} icon={customIcon}>
-                      <Popup>
-                        <div>
-                          <h3 className="font-semibold">Nueva Ubicación</h3>
-                          <p>Clic para confirmar</p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )}
-                </MapContainer>
-              </div>
+                    {formData.ubicacion && (
+                      <Marker position={[formData.ubicacion.lat, formData.ubicacion.lng]} icon={customIcon}>
+                        <Popup>
+                          <div>
+                            <h3 className="font-semibold">Nueva Ubicación</h3>
+                            <p>Clic para confirmar</p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    )}
+                  </MapContainer>
+                </div>
+              ) : (
+                <div className="h-96 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                  <p className="text-gray-500">Mapa desactivado durante la edición</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Sección de Filtros y Tabla */}
         <Card>
           <CardHeader>
             <CardTitle>Listado de Juntas Vecinales</CardTitle>
-            {/* Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
               <div>
                 <Label>Estado</Label>
@@ -350,8 +580,8 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                     <SelectValue placeholder="Seleccionar opciones" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Activa">Activa</SelectItem>
-                    <SelectItem value="Inactiva">Inactiva</SelectItem>
+                    <SelectItem value="habilitado">Habilitado</SelectItem>
+                    <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -382,7 +612,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </div>
             </div>
 
-            {/* Barra de búsqueda y acciones */}
             <div className="flex justify-between items-center mt-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -403,12 +632,10 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           </CardHeader>
 
           <CardContent>
-            {/* Tabla */}
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Código</TableHead>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Dirección</TableHead>
                     <TableHead>Estado</TableHead>
@@ -420,15 +647,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   {datosFiltrados.length > 0 ? (
                     datosFiltrados.map((junta) => (
                       <TableRow key={junta.id}>
-                        <TableCell className="font-medium">{junta.codigo}</TableCell>
-                        <TableCell>{junta.nombre}</TableCell>
+                        <TableCell>{junta.nombre_junta}</TableCell>
                         <TableCell>
-                          {junta.calle} {junta.numero}
+                          {junta.nombre_calle} {junta.numero_calle}
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant={
-                              junta.estado === "Activa"
+                              junta.estado === "habilitado"
                                 ? "default"
                                 : junta.estado === "Pendiente"
                                   ? "secondary"
@@ -438,11 +664,19 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                             {junta.estado}
                           </Badge>
                         </TableCell>
-                        <TableCell>{junta.fechaCreacion}</TableCell>
+                        <TableCell>{formatDate(junta.fecha_creacion)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleEditClick(junta)}>
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteClick(junta)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -459,7 +693,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </Table>
             </div>
 
-            {/* Paginación */}
             <div className="flex justify-between items-center mt-4">
               <div className="text-sm text-gray-500">Página 1 de 1</div>
               <div className="text-sm text-gray-500">{datosFiltrados.length} Resultados encontrados</div>
@@ -467,6 +700,159 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Junta Vecinal</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-nombre">Nombre</Label>
+                <Input
+                  id="edit-nombre"
+                  value={editFormData.nombre}
+                  onChange={(e) => handleEditInputChange("nombre", e.target.value)}
+                  placeholder="Ej: Junta Vecinal Centro"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-calle">Calle</Label>
+                <Input
+                  id="edit-calle"
+                  value={editFormData.calle}
+                  onChange={(e) => handleEditInputChange("calle", e.target.value)}
+                  placeholder="Ej: Av. Principal"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-numero">Número</Label>
+                <Input
+                  id="edit-numero"
+                  value={editFormData.numero}
+                  onChange={(e) => handleEditInputChange("numero", e.target.value)}
+                  placeholder="Ej: 123"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-estado">Estado</Label>
+                <Select value={editFormData.estado} onValueChange={(value) => handleEditInputChange("estado", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="habilitado">Habilitado</SelectItem>
+                    <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-latitud">Latitud</Label>
+                  <Input
+                    id="edit-latitud"
+                    type="number"
+                    step="any"
+                    value={editFormData.latitud}
+                    onChange={(e) => handleEditInputChange("latitud", e.target.value)}
+                    placeholder="Ej: -22.4558"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-longitud">Longitud</Label>
+                  <Input
+                    id="edit-longitud"
+                    type="number"
+                    step="any"
+                    value={editFormData.longitud}
+                    onChange={(e) => handleEditInputChange("longitud", e.target.value)}
+                    placeholder="Ej: -68.9293"
+                  />
+                </div>
+              </div>
+              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <MapPin className="h-4 w-4 inline mr-2" />
+                Seleccione la nueva ubicación en el mapa o ingrese las coordenadas manualmente
+                {editFormData.ubicacion && (
+                  <div className="mt-2 text-xs">
+                    Coordenadas: {editFormData.latitud}, {editFormData.longitud}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveEdit}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  disabled={
+                    !editFormData.nombre ||
+                    !editFormData.calle ||
+                    !editFormData.numero ||
+                    !editFormData.ubicacion ||
+                    !editFormData.estado
+                  }
+                >
+                  Guardar Cambios
+                </Button>
+                <Button variant="outline" onClick={() => setEditModalOpen(false)} className="flex-1">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Ubicación en el Mapa</h3>
+              <div className="h-96 rounded-lg overflow-hidden border">
+                <MapContainer
+                  center={editFormData.ubicacion ? [editFormData.latitud, editFormData.longitud] : [-22.4667, -68.9333]}
+                  zoom={15}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <MapClickHandler onMapClick={handleEditMapClick} />
+
+                  {editFormData.ubicacion && (
+                    <Marker position={[editFormData.latitud, editFormData.longitud]} icon={customIcon}>
+                      <Popup>
+                        <div>
+                          <h3 className="font-semibold">Ubicación Actual</h3>
+                          <p>{editFormData.nombre}</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )}
+                </MapContainer>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              ¿Estás seguro de que quieres eliminar la junta vecinal "{juntaToDelete?.nombre_junta}"?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">Esta acción no se puede deshacer.</p>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
