@@ -1,17 +1,19 @@
-import React from 'react'
 import TopBar from '../TopBar'
 
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
+import useAxiosPrivate from '@/hooks/useAxiosPrivate'
+import useAuth from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Users,
   UserPlus,
@@ -44,118 +46,135 @@ import {
   CheckCircle2,
   Ban,
   UserCog,
+  RefreshCw,
 } from "lucide-react"
 
-// Simulamos el rol del usuario actual - CAMBIAR AQUÍ PARA PROBAR
-const CURRENT_USER_ROLE = "Administrador Municipal" // Cambiar a "Jefe de Departamento" para probar
-const CURRENT_USER_DEPARTMENT = "Obras Públicas" // Departamento del jefe actual
-
 const CuentaUsuario = ({ setIsOpened, isOpened }) => {
-  const [activeSection, setActiveSection] = useState("gestion")
+  const [activeSection, setActiveSection] = useState("gestiondeusuarios")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterRol, setFilterRol] = useState("todos")
   const [filterEstado, setFilterEstado] = useState("todos")
   const [selectedUser, setSelectedUser] = useState(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const { isAdmin } = useAuth()
+
+  // Determinar el rol del usuario actual basado en el token
+  const CURRENT_USER_ROLE = isAdmin ? "Administrador Municipal" : "Jefe de departamento"
+  const CURRENT_USER_DEPARTMENT = "Obras Públicas" // Departamento del jefe actual
   const [newUser, setNewUser] = useState({
     nombre: "",
     email: "",
-    telefono: "",
-    rol: "",
-    departamento: "",
+    rut: "",
+    numero_telefonico_movil: "",
+    tipo_usuario: "",
+    departamento_id: "",
     password: "",
     confirmPassword: "",
     enviarCredenciales: true,
     requiereCambioPassword: true,
   })
 
-  const usuarios = [
-    {
-      id: 1,
-      nombre: "María González",
-      email: "maria.gonzalez@municipio.gov",
-      telefono: "+54 11 4567-8901",
-      rol: "Administrador Municipal",
-      departamento: "Administración General",
-      estado: "Activo",
-      fechaCreacion: "2024-01-15",
-      ultimoAcceso: "2024-12-29 14:30",
-      permisos: ["Crear", "Editar", "Eliminar", "Configurar", "Gestionar usuarios", "Acceso total"],
-      intentosFallidos: 0,
-      requiereCambioPassword: false,
-    },
-    {
-      id: 2,
-      nombre: "Juan Pérez",
-      email: "juan.perez@municipio.gov",
-      telefono: "+54 11 4567-8902",
-      rol: "Jefe de Departamento",
-      departamento: "Obras Públicas",
-      estado: "Activo",
-      fechaCreacion: "2024-02-20",
-      ultimoAcceso: "2024-12-29 13:15",
-      permisos: ["Crear", "Editar", "Ver reportes", "Gestionar equipo"],
-      intentosFallidos: 0,
-      requiereCambioPassword: false,
-    },
-    {
-      id: 3,
-      nombre: "Ana Rodríguez",
-      email: "ana.rodriguez@municipio.gov",
-      telefono: "+54 11 4567-8903",
-      rol: "Editor",
-      departamento: "Obras Públicas",
-      estado: "Pendiente",
-      fechaCreacion: "2024-12-25",
-      ultimoAcceso: "Nunca",
-      permisos: ["Crear", "Editar", "Ver reportes"],
-      intentosFallidos: 0,
-      requiereCambioPassword: true,
-    },
-    {
-      id: 4,
-      nombre: "Carlos López",
-      email: "carlos.lopez@municipio.gov",
-      telefono: "+54 11 4567-8904",
-      rol: "Visualizador",
-      departamento: "Obras Públicas",
-      estado: "Bloqueado",
-      fechaCreacion: "2024-03-10",
-      ultimoAcceso: "2024-11-15 09:20",
-      permisos: ["Ver", "Generar reportes"],
-      intentosFallidos: 3,
-      requiereCambioPassword: true,
-    },
-    {
-      id: 5,
-      nombre: "Laura Martínez",
-      email: "laura.martinez@municipio.gov",
-      telefono: "+54 11 4567-8905",
-      rol: "Editor",
-      departamento: "Servicios Ciudadanos",
-      estado: "Activo",
-      fechaCreacion: "2024-03-15",
-      ultimoAcceso: "2024-12-28 16:45",
-      permisos: ["Crear", "Editar", "Ver reportes"],
-      intentosFallidos: 0,
-      requiereCambioPassword: false,
-    },
-    {
-      id: 6,
-      nombre: "Roberto Silva",
-      email: "roberto.silva@municipio.gov",
-      telefono: "+54 11 4567-8906",
-      rol: "Jefe de Departamento",
-      departamento: "Medio Ambiente",
-      estado: "Activo",
-      fechaCreacion: "2024-01-20",
-      ultimoAcceso: "2024-12-29 11:30",
-      permisos: ["Crear", "Editar", "Ver reportes", "Gestionar equipo"],
-      intentosFallidos: 0,
-      requiereCambioPassword: false,
-    },
-  ]
+  // Estado para editar usuario
+  const [editUser, setEditUser] = useState({
+    id: "",
+    nombre: "",
+    email: "",
+    rut: "",
+    numero_telefonico_movil: "",
+    tipo_usuario: "",
+    departamento_id: "",
+    esta_activo: true,
+    requiereCambioPassword: false,
+  })
+
+  const [usuarios, setUsuarios] = useState([])
+  const [departamentos, setDepartamentos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
+  const [error, setError] = useState(null)
+  const axiosPrivate = useAxiosPrivate()
+
+  const getPermisosForRole = useCallback((rol) => {
+    switch (rol) {
+      case "Administrador Municipal":
+        return ["Crear", "Editar", "Eliminar", "Configurar", "Gestionar usuarios", "Acceso total"]
+      case "Jefe de departamento":
+        return ["Crear", "Editar", "Ver reportes", "Gestionar equipo", "Aprobar solicitudes"]
+      case "Personal Municipal":
+        return ["Crear", "Editar", "Ver reportes"]
+      case "Vecino":
+        return ["Ver", "Generar reportes"]
+      default:
+        return ["Ver"]
+    }
+  }, [])
+
+  // Función para mapear datos de la API al formato esperado por la interfaz
+  const mapApiUserToUIUser = useCallback((apiUser) => {
+    const rolMapping = {
+      'vecino': 'Vecino',
+      'personal': 'Personal Municipal',
+      'jefe_departamento': 'Jefe de departamento',
+      'administrador': 'Administrador Municipal'
+    }
+
+    const estadoMapping = {
+      true: 'Activo',
+      false: 'Inactivo'
+    }
+
+    return {
+      id: apiUser.id,
+      nombre: apiUser.nombre,
+      email: apiUser.email,
+      telefono: apiUser.numero_telefonico_movil || 'No especificado',
+      rut: apiUser.rut,
+      rol: apiUser.es_administrador ? 'Administrador Municipal' : (rolMapping[apiUser.tipo_usuario] || 'Vecino'),
+      departamento: apiUser.departamento_asignado.nombre || 'No aplica',
+      estado: estadoMapping[apiUser.esta_activo],
+      fechaCreacion: new Date(apiUser.fecha_registro).toLocaleDateString('es-ES'),
+      ultimoAcceso: apiUser.ultimo_acceso ? new Date(apiUser.ultimo_acceso).toLocaleString('es-ES') : 'Nunca',
+      permisos: getPermisosForRole(apiUser.es_administrador ? 'Administrador Municipal' : (rolMapping[apiUser.tipo_usuario] || 'Vecino')),
+      intentosFallidos: 0, // No disponible en la API
+      requiereCambioPassword: false, // Se puede ajustar según necesidades
+      esAdministrador: apiUser.es_administrador,
+      tipoUsuario: apiUser.tipo_usuario,
+      tipoUsuarioDisplay: apiUser.tipo_usuario_display
+    }
+  }, [getPermisosForRole])
+
+  // Función para obtener departamentos de la API
+  const fetchDepartamentos = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get('/departamentos-municipales/')
+      setDepartamentos(response.data.filter(dept => dept.estado === 'habilitado'))
+    } catch (err) {
+      console.error('Error al obtener departamentos:', err)
+    }
+  }, [axiosPrivate])
+
+  // Función para obtener usuarios de la API
+  const fetchUsuarios = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await axiosPrivate.get('/usuarios/')
+      const mappedUsers = response.data.map(mapApiUserToUIUser)
+      setUsuarios(mappedUsers)
+    } catch (err) {
+      console.error('Error al obtener usuarios:', err)
+      setError('Error al cargar los usuarios. Por favor, intente nuevamente.')
+    } finally {
+      setLoading(false)
+    }
+  }, [axiosPrivate, mapApiUserToUIUser])
+
+  // Cargar usuarios y departamentos al montar el componente
+  useEffect(() => {
+    fetchUsuarios()
+    fetchDepartamentos()
+  }, [fetchUsuarios, fetchDepartamentos])
 
   // Filtrar secciones según el rol del usuario actual
   const getSeccionesUsuarios = () => {
@@ -226,14 +245,14 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       return usuarios.filter(
         (user) =>
           user.departamento === CURRENT_USER_DEPARTMENT ||
-          (user.rol === "Jefe de Departamento" && user.departamento === CURRENT_USER_DEPARTMENT),
+          (user.rol === "Jefe de departamento" && user.departamento === CURRENT_USER_DEPARTMENT),
       )
     }
   }
 
   const getMyTeamUsers = () => {
     return usuarios.filter(
-      (user) => user.departamento === CURRENT_USER_DEPARTMENT && user.rol !== "Jefe de Departamento",
+      (user) => user.departamento === CURRENT_USER_DEPARTMENT && user.rol !== "Jefe de departamento",
     )
   }
 
@@ -249,40 +268,312 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     return matchesSearch && matchesRolFilter && matchesEstadoFilter
   })
 
-  const handleCreateUser = () => {
+  // Función para validar si ya existe un usuario con el mismo RUT o email
+  const validateUniqueUser = (rut, email) => {
+    const existingUserByRut = usuarios.find(user => user.rut === rut)
+    const existingUserByEmail = usuarios.find(user => user.email.toLowerCase() === email.toLowerCase())
+
+    if (existingUserByRut) {
+      return { isValid: false, message: `Ya existe un usuario registrado con el RUT: ${rut}` }
+    }
+
+    if (existingUserByEmail) {
+      return { isValid: false, message: `Ya existe un usuario registrado con el email: ${email}` }
+    }
+
+    return { isValid: true, message: "" }
+  }
+
+  // Función para validar si el departamento ya tiene un jefe asignado
+  const validateDepartmentChief = (departamentoId, tipoUsuario) => {
+    if (tipoUsuario !== 'jefe_departamento') {
+      return { isValid: true, message: "" }
+    }
+
+    const departamento = departamentos.find(dept => dept.id.toString() === departamentoId)
+
+    if (departamento && departamento.jefe_departamento) {
+      return {
+        isValid: false,
+        message: `El departamento "${departamento.nombre}" ya tiene un jefe asignado: ${departamento.jefe_departamento.nombre}`
+      }
+    }
+
+    return { isValid: true, message: "" }
+  }
+
+  // Función para validar jefe de departamento en edición (excluye al usuario actual)
+  const validateDepartmentChiefForEdit = (departamentoId, tipoUsuario, usuarioId) => {
+    if (tipoUsuario !== 'jefe_departamento') {
+      return { isValid: true, message: "" }
+    }
+
+    const departamento = departamentos.find(dept => dept.id.toString() === departamentoId)
+
+    if (departamento && departamento.jefe_departamento && departamento.jefe_departamento.id !== usuarioId) {
+      return {
+        isValid: false,
+        message: `El departamento "${departamento.nombre}" ya tiene un jefe asignado: ${departamento.jefe_departamento.nombre}`
+      }
+    }
+
+    return { isValid: true, message: "" }
+  }
+
+  // Función para verificar RUT en tiempo real
+  const checkRutExists = (rut) => {
+    if (!rut) return null
+    const existingUser = usuarios.find(user => user.rut === rut)
+    return existingUser ? `⚠️ Este RUT ya está registrado por: ${existingUser.nombre}` : null
+  }
+
+  // Función para verificar email en tiempo real
+  const checkEmailExists = (email) => {
+    if (!email) return null
+    const existingUser = usuarios.find(user => user.email.toLowerCase() === email.toLowerCase())
+    return existingUser ? `⚠️ Este email ya está registrado por: ${existingUser.nombre}` : null
+  }
+
+  // Función para verificar si el departamento ya tiene jefe
+  const checkDepartmentHasChief = (departamentoId, tipoUsuario) => {
+    if (tipoUsuario !== 'jefe_departamento' || !departamentoId) return null
+    const departamento = departamentos.find(dept => dept.id.toString() === departamentoId)
+    return (departamento && departamento.jefe_departamento) ?
+      `⚠️ ${departamento.nombre} ya tiene jefe: ${departamento.jefe_departamento.nombre}` : null
+  }
+
+  // Función para formatear el RUT automáticamente para visualización
+  const formatRut = (value) => {
+    // Limpiar solo dígitos (el filtrado de kK ya se hace en el handler)
+    const cleaned = value.replace(/\D/g, '');
+
+    // Si tiene 1 o menos dígitos, retornarlo tal como está
+    if (cleaned.length <= 1) return cleaned;
+
+    // Formatear: tomar todos menos el último dígito, agregar puntos, y agregar guión + último dígito
+    let formatted = cleaned.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    return formatted + '-' + cleaned.slice(-1);
+  };
+
+  // Función para obtener RUT sin formato para envío al backend
+  const getRutForBackend = (formattedRut) => {
+    if (!formattedRut) return '';
+    // Remover puntos pero mantener guión y dígito verificador
+    return formattedRut.replace(/\./g, '').toLowerCase();
+  };
+
+  // Función para manejar el cambio del RUT con formateo
+  const handleRutChange = (e) => {
+    const value = e.target.value.replace(/[^\d\-kK]/g, '');
+    const formattedRut = formatRut(value);
+    setNewUser({ ...newUser, rut: formattedRut });
+  };
+
+  // Función para verificar si las contraseñas coinciden
+  const checkPasswordMatch = () => {
+    if (!newUser.password || !newUser.confirmPassword) return null;
+    return newUser.password !== newUser.confirmPassword ?
+      "❌ Las contraseñas no coinciden" : null;
+  };
+
+  // Función para validar formato de email
+  const validateEmail = (email) => {
+    if (!email) return null;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return !emailRegex.test(email) ? "❌ Formato de email inválido" : null;
+  };
+
+  // Función para validar longitud de campos según modelo backend
+  const validateFieldLength = (field, value, maxLength) => {
+    if (!value) return null;
+    return value.length > maxLength ? `❌ Máximo ${maxLength} caracteres` : null;
+  };
+
+  // Función para validar RUT (formato básico)
+  const validateRutFormat = (rut) => {
+    if (!rut) return null;
+    const rutPattern = /^\d{1,8}-[\dkK]$/;
+    const cleanRut = getRutForBackend(rut);
+    return !rutPattern.test(cleanRut) ? "❌ Formato de RUT inválido" : null;
+  };
+
+  // Función para obtener el motivo por el cual el botón está desactivado
+  const getDisabledButtonReason = () => {
+    if (updating) return "Creando usuario...";
+    if (!newUser.nombre) return "Falta completar el nombre";
+    if (validateFieldLength('nombre', newUser.nombre, 120)) return "Nombre demasiado largo";
+    if (!newUser.email) return "Falta completar el email";
+    if (validateEmail(newUser.email)) return "Formato de email inválido";
+    if (validateFieldLength('email', newUser.email, 200)) return "Email demasiado largo";
+    if (!newUser.rut) return "Falta completar el RUT";
+    if (validateRutFormat(newUser.rut)) return "Formato de RUT inválido";
+    if (!newUser.tipo_usuario) return "Falta seleccionar el tipo de usuario";
+    if (!newUser.departamento_id) return "Falta seleccionar un departamento";
+    if (!newUser.password) return "Falta completar la contraseña";
+    if (!newUser.confirmPassword) return "Falta confirmar la contraseña";
+    if (validateFieldLength('telefono', newUser.numero_telefonico_movil, 9)) return "Teléfono demasiado largo";
+    if (checkRutExists(newUser.rut)) return "El RUT ya está registrado";
+    if (checkEmailExists(newUser.email)) return "El email ya está registrado";
+    if (checkDepartmentHasChief(newUser.departamento_id, newUser.tipo_usuario)) return "El departamento ya tiene jefe asignado";
+    if (newUser.password !== newUser.confirmPassword) return "Las contraseñas no coinciden";
+    if (newUser.password.length < 6) return "La contraseña debe tener al menos 6 caracteres";
+    return "Listo para crear usuario";
+  };
+
+  // Función para obtener el motivo por el cual el botón de editar está desactivado
+  const getDisabledEditButtonReason = () => {
+    if (updating) return "Actualizando usuario...";
+    if (!editUser.nombre) return "Falta completar el nombre";
+    if (validateFieldLength('nombre', editUser.nombre, 120)) return "Nombre demasiado largo";
+    if (!editUser.email) return "Falta completar el email";
+    if (validateEmail(editUser.email)) return "Formato de email inválido";
+    if (validateFieldLength('email', editUser.email, 200)) return "Email demasiado largo";
+    if (editUser.rut && validateRutFormat(editUser.rut)) return "Formato de RUT inválido";
+    if (validateFieldLength('telefono', editUser.numero_telefonico_movil, 9)) return "Teléfono demasiado largo";
+    if (editUser.departamento_id && !validateDepartmentChiefForEdit(editUser.departamento_id, editUser.tipo_usuario, editUser.id).isValid) {
+      return validateDepartmentChiefForEdit(editUser.departamento_id, editUser.tipo_usuario, editUser.id).message;
+    }
+    return "Listo para guardar cambios";
+  }; const handleCreateUser = async () => {
+    // Validaciones básicas
+    if (!newUser.nombre || !newUser.email || !newUser.rut || !newUser.tipo_usuario) {
+      alert("Por favor, complete todos los campos obligatorios")
+      return
+    }
+
+    if (!newUser.departamento_id) {
+      alert("Por favor, seleccione un departamento")
+      return
+    }
+
     if (newUser.password !== newUser.confirmPassword) {
       alert("Las contraseñas no coinciden")
       return
     }
 
-    if (!newUser.nombre || !newUser.email || !newUser.rol || !newUser.departamento) {
-      alert("Por favor complete todos los campos obligatorios")
+    if (newUser.password.length < 6) {
+      alert("La contraseña debe tener al menos 6 caracteres")
       return
     }
 
-    // Simular creación del usuario
-    console.log("Creando usuario:", {
-      ...newUser,
-      id: usuarios.length + 1,
-      estado: "Pendiente",
-      fechaCreacion: new Date().toISOString().split("T")[0],
-      ultimoAcceso: "Nunca",
-      permisos: getPermisosForRole(newUser.rol),
-      intentosFallidos: 0,
-    })
+    // Validación de RUT formato básico (opcional)
+    const rutPattern = /^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/
+    if (!rutPattern.test(newUser.rut)) {
+      alert("Por favor, ingrese el RUT en formato válido (ej: 12.345.678-9)")
+      return
+    }
 
-    alert("Usuario creado exitosamente. Se han enviado las credenciales por email.")
-    setIsCreateDialogOpen(false)
-    resetNewUserForm()
+    // Validación de email formato
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailPattern.test(newUser.email)) {
+      alert("Por favor, ingrese un email válido")
+      return
+    }
+
+    // Validar si el usuario ya existe
+    const uniqueUserValidation = validateUniqueUser(newUser.rut, newUser.email)
+    if (!uniqueUserValidation.isValid) {
+      alert(uniqueUserValidation.message)
+      return
+    }
+
+    // Validar si el departamento ya tiene jefe asignado
+    const departmentChiefValidation = validateDepartmentChief(newUser.departamento_id, newUser.tipo_usuario)
+    if (!departmentChiefValidation.isValid) {
+      alert(departmentChiefValidation.message)
+      return
+    }
+
+    try {
+      setUpdating(true) // Iniciar estado de actualización
+
+      // Preparar datos para enviar a la API
+      const userData = {
+        nombre: newUser.nombre,
+        email: newUser.email,
+        rut: getRutForBackend(newUser.rut), // Enviar RUT sin puntos
+        numero_telefonico_movil: newUser.numero_telefonico_movil || "",
+        tipo_usuario: newUser.tipo_usuario,
+        password: newUser.password,
+        es_administrador: false,
+        esta_activo: true
+      }
+
+      // Crear usuario
+      const response = await axiosPrivate.post('/usuarios/', userData)
+
+      // Asignar usuario al departamento
+      if (response.data.id) {
+        await axiosPrivate.post('/usuario-departamento/', {
+          usuario: response.data.id,
+          departamento: newUser.departamento_id,
+          estado: 'activo'
+        })
+      }
+
+      // Si el usuario es jefe de departamento, asignarlo como jefe
+      if (newUser.tipo_usuario === 'jefe_departamento') {
+        await axiosPrivate.patch(`/departamentos-municipales/${newUser.departamento_id}/`, {
+          jefe_departamento: response.data.id
+        })
+      }
+
+      alert("Usuario creado exitosamente")
+      setIsCreateDialogOpen(false)
+      resetNewUserForm()
+
+      // Recargar tanto usuarios como departamentos para reflejar cambios
+      await Promise.all([
+        fetchUsuarios(),
+        fetchDepartamentos()
+      ])
+
+    } catch (error) {
+      console.error('Error al crear usuario:', error)
+
+      // Manejo específico de errores del backend
+      if (error.response?.status === 400) {
+        const errorData = error.response.data
+
+        // Verificar errores específicos de campos únicos
+        if (errorData.rut && Array.isArray(errorData.rut)) {
+          alert(`Error con el RUT: ${errorData.rut.join(', ')}`)
+          return
+        }
+
+        if (errorData.email && Array.isArray(errorData.email)) {
+          alert(`Error con el email: ${errorData.email.join(', ')}`)
+          return
+        }
+
+        // Error general de validación
+        const errorMessages = Object.entries(errorData)
+          .map(([field, messages]) => {
+            const fieldName = field === 'rut' ? 'RUT' :
+              field === 'email' ? 'Email' :
+                field === 'numero_telefonico_movil' ? 'Teléfono' :
+                  field.charAt(0).toUpperCase() + field.slice(1)
+            return `${fieldName}: ${Array.isArray(messages) ? messages.join(', ') : messages}`
+          })
+          .join('\n')
+
+        alert(`Error al crear usuario:\n${errorMessages}`)
+      } else {
+        alert("Error al crear usuario. Por favor, intente nuevamente.")
+      }
+    } finally {
+      setUpdating(false) // Finalizar estado de actualización
+    }
   }
 
   const resetNewUserForm = () => {
     setNewUser({
       nombre: "",
       email: "",
-      telefono: "",
-      rol: "",
-      departamento: "",
+      rut: "",
+      numero_telefonico_movil: "",
+      tipo_usuario: "",
+      departamento_id: "",
       password: "",
       confirmPassword: "",
       enviarCredenciales: true,
@@ -290,30 +581,258 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     })
   }
 
-  const getPermisosForRole = (rol) => {
-    switch (rol) {
-      case "Administrador Municipal":
-        return ["Crear", "Editar", "Eliminar", "Configurar", "Gestionar usuarios", "Acceso total"]
-      case "Jefe de Departamento":
-        return ["Crear", "Editar", "Ver reportes", "Gestionar equipo", "Aprobar solicitudes"]
-      case "Editor":
-        return ["Crear", "Editar", "Ver reportes"]
-      case "Visualizador":
-        return ["Ver", "Generar reportes"]
-      default:
-        return ["Ver"]
+  // Funciones para editar usuario
+  const openEditDialog = (usuario) => {
+    // Buscar el departamento asignado por nombre
+    const departamentoAsignado = departamentos.find(dept => dept.nombre === usuario.departamento)
+
+    setEditUser({
+      id: usuario.id,
+      nombre: usuario.nombre,
+      email: usuario.email,
+      rut: formatRut(usuario.rut) || "",
+      numero_telefonico_movil: usuario.telefono === "No especificado" ? "" : usuario.telefono,
+      tipo_usuario: usuario.rol === "Administrador Municipal" ? "administrador" :
+        usuario.rol === "Jefe de departamento" ? "jefe_departamento" :
+          usuario.rol === "Personal Municipal" ? "personal" : "vecino",
+      departamento_id: departamentoAsignado?.id?.toString() || "",
+      esta_activo: usuario.estado === "Activo",
+      requiereCambioPassword: usuario.requiereCambioPassword || false,
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateUser = async () => {
+    // Validaciones básicas
+    if (!editUser.nombre || !editUser.email) {
+      alert("Por favor, complete todos los campos obligatorios")
+      return
     }
+
+    // Validar formato de email
+    if (validateEmail(editUser.email)) {
+      alert("El formato del email es inválido")
+      return
+    }
+
+    // Validar formato de RUT si se proporciona
+    if (editUser.rut && validateRutFormat(editUser.rut)) {
+      alert("El formato del RUT es inválido")
+      return
+    }
+
+    // Validar longitudes de campos
+    if (validateFieldLength('nombre', editUser.nombre, 120)) {
+      alert("El nombre es demasiado largo (máximo 120 caracteres)")
+      return
+    }
+
+    if (validateFieldLength('email', editUser.email, 200)) {
+      alert("El email es demasiado largo (máximo 200 caracteres)")
+      return
+    }
+
+    if (validateFieldLength('telefono', editUser.numero_telefonico_movil, 9)) {
+      alert("El teléfono es demasiado largo (máximo 9 dígitos)")
+      return
+    }
+
+    // Validar si el departamento ya tiene jefe asignado (excluyendo al usuario actual)
+    if (editUser.departamento_id) {
+      const departmentChiefValidation = validateDepartmentChiefForEdit(
+        editUser.departamento_id,
+        editUser.tipo_usuario,
+        editUser.id
+      )
+      if (!departmentChiefValidation.isValid) {
+        alert(departmentChiefValidation.message)
+        return
+      }
+    }
+
+    try {
+      setUpdating(true) // Iniciar estado de actualización
+
+      // Preparar datos para actualizar
+      const updateData = {
+        nombre: editUser.nombre,
+        email: editUser.email,
+        numero_telefonico_movil: editUser.numero_telefonico_movil || "",
+        tipo_usuario: editUser.tipo_usuario,
+        esta_activo: editUser.esta_activo,
+      }
+
+      // Solo incluir RUT si se proporcionó
+      if (editUser.rut) {
+        updateData.rut = getRutForBackend(editUser.rut)
+      }
+
+      // Actualizar usuario
+      await axiosPrivate.patch(`/usuarios/${editUser.id}/`, updateData)
+
+      // Si cambió el departamento, actualizar asignación
+      if (editUser.departamento_id) {
+        try {
+          // Obtener información actual del usuario desde la UI
+          const currentUserData = usuarios.find(u => u.id === editUser.id)
+          const currentDepartmentName = currentUserData?.departamento || null
+          const currentDepartment = departamentos.find(dept => dept.nombre === currentDepartmentName)
+          const currentDepartmentId = currentDepartment?.id.toString()
+          const newDepartmentId = editUser.departamento_id.toString()
+
+          console.log('Departamento actual:', currentDepartmentId, 'Nuevo departamento:', newDepartmentId)
+          console.log('Tipo de usuario:', editUser.tipo_usuario)
+
+          // Solo proceder si el departamento realmente cambió
+          if (currentDepartmentId !== newDepartmentId) {
+
+            // Si el usuario era jefe de departamento anteriormente, remover la asignación
+            if (currentUserData?.rol === 'Jefe de departamento' && currentDepartment) {
+              await axiosPrivate.patch(`/departamentos-municipales/${currentDepartment.id}/`, {
+                jefe_departamento: null
+              })
+              console.log('Removida asignación anterior como jefe de departamento')
+            }
+
+            // Manejar según el tipo de usuario
+            if (editUser.tipo_usuario === 'jefe_departamento') {
+              // Para jefe de departamento: actualizar directamente en la tabla departamentos
+              await axiosPrivate.patch(`/departamentos-municipales/${editUser.departamento_id}/`, {
+                jefe_departamento: editUser.id
+              })
+              console.log('Usuario asignado como jefe de departamento')
+
+              // También mantener registro en usuario-departamento para consistencia
+              // Buscar asignación actual en usuario-departamento
+              const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+              const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
+                (currentAssignment.data.results || [])
+
+              if (assignments.length > 0) {
+                // Finalizar asignación actual
+                await axiosPrivate.patch(`/usuario-departamento/${assignments[0].id}/`, {
+                  estado: 'inactivo',
+                  fecha_fin_asignacion: new Date().toISOString()
+                })
+              }
+
+              // Crear nueva asignación
+              await axiosPrivate.post('/usuario-departamento/', {
+                usuario: editUser.id,
+                departamento: editUser.departamento_id,
+                estado: 'activo'
+              })
+
+            } else {
+              // Para personal municipal: usar solo usuario-departamento
+              const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+              const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
+                (currentAssignment.data.results || [])
+
+              console.log('Asignaciones actuales:', assignments)
+
+              if (assignments.length > 0) {
+                // Finalizar asignación actual
+                await axiosPrivate.patch(`/usuario-departamento/${assignments[0].id}/`, {
+                  estado: 'inactivo',
+                  fecha_fin_asignacion: new Date().toISOString()
+                })
+              }
+
+              // Crear nueva asignación
+              await axiosPrivate.post('/usuario-departamento/', {
+                usuario: editUser.id,
+                departamento: editUser.departamento_id,
+                estado: 'activo'
+              })
+              console.log('Asignación de departamento actualizada para personal municipal')
+            }
+          } else {
+            console.log('El departamento no cambió, no se actualiza la asignación')
+          }
+        } catch (assignmentError) {
+          console.error('Error al actualizar asignación de departamento:', assignmentError)
+          // No interrumpir el proceso por errores de asignación
+        }
+      }
+
+      alert("Usuario actualizado exitosamente")
+      setIsEditDialogOpen(false)
+      resetEditUserForm()
+
+      // Recargar tanto usuarios como departamentos para reflejar cambios
+      await Promise.all([
+        fetchUsuarios(),
+        fetchDepartamentos()
+      ])
+
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error)
+
+      if (error.response?.data) {
+        const errorData = error.response.data
+
+        // Manejar errores específicos
+        if (errorData.rut) {
+          alert(`Error con el RUT: ${Array.isArray(errorData.rut) ? errorData.rut.join(', ') : errorData.rut}`)
+          return
+        }
+
+        if (errorData.email) {
+          alert(`Error con el email: ${Array.isArray(errorData.email) ? errorData.email.join(', ') : errorData.email}`)
+          return
+        }
+
+        // Error general de validación
+        const errorMessages = Object.entries(errorData)
+          .map(([field, messages]) => {
+            const fieldName = field === 'rut' ? 'RUT' :
+              field === 'email' ? 'Email' :
+                field === 'numero_telefonico_movil' ? 'Teléfono' :
+                  field.charAt(0).toUpperCase() + field.slice(1)
+            return `${fieldName}: ${Array.isArray(messages) ? messages.join(', ') : messages}`
+          })
+          .join('\n')
+
+        alert(`Error al actualizar usuario:\n${errorMessages}`)
+      } else {
+        alert("Error al actualizar usuario. Por favor, intente nuevamente.")
+      }
+    } finally {
+      setUpdating(false) // Finalizar estado de actualización
+    }
+  }
+
+  const resetEditUserForm = () => {
+    setEditUser({
+      id: "",
+      nombre: "",
+      email: "",
+      rut: "",
+      numero_telefonico_movil: "",
+      tipo_usuario: "",
+      departamento_id: "",
+      esta_activo: true,
+      requiereCambioPassword: false,
+    })
+  }
+
+  // Función para manejar el cambio del RUT en edición
+  const handleEditRutChange = (e) => {
+    const value = e.target.value.replace(/[^\d\-kK]/g, '');
+    const formattedRut = formatRut(value)
+    setEditUser({ ...editUser, rut: formattedRut })
   }
 
   const getRolIcon = (rol) => {
     switch (rol) {
       case "Administrador Municipal":
         return <Shield className="w-4 h-4" />
-      case "Jefe de Departamento":
+      case "Jefe de departamento":
         return <ShieldCheck className="w-4 h-4" />
-      case "Editor":
+      case "Personal Municipal":
         return <Edit className="w-4 h-4" />
-      case "Visualizador":
+      case "Vecino":
         return <Eye className="w-4 h-4" />
       default:
         return <Users className="w-4 h-4" />
@@ -339,11 +858,11 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     switch (rol) {
       case "Administrador Municipal":
         return "bg-red-100 text-red-800 border-red-200"
-      case "Jefe de Departamento":
+      case "Jefe de departamento":
         return "bg-purple-100 text-purple-800 border-purple-200"
-      case "Editor":
+      case "Personal Municipal":
         return "bg-blue-100 text-blue-800 border-blue-200"
-      case "Visualizador":
+      case "Vecino":
         return "bg-green-100 text-green-800 border-green-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
@@ -365,606 +884,1077 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     }
   }
 
-  const renderGestionUsuarios = () => (
-    <div className="space-y-6">
-      {/* Card explicativa */}
-      <Card className="bg-gradient-to-r from-pink-50 to-pink-100 border-pink-200">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="bg-pink-200 rounded-full p-3 flex-shrink-0">
-              <span className="text-2xl font-bold text-pink-800">1</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">
-                {CURRENT_USER_ROLE === "Administrador Municipal"
-                  ? "Gestión Completa de Usuarios del Sistema"
-                  : "Gestión de Usuarios de Mi Departamento"}
-              </h3>
-              <p className="text-pink-800">
-                {CURRENT_USER_ROLE === "Administrador Municipal"
-                  ? "Permite crear, editar y gestionar todas las cuentas de usuarios del sistema municipal con control total sobre roles y permisos."
-                  : "Gestiona los usuarios de tu departamento, asigna tareas y supervisa el rendimiento de tu equipo de trabajo."}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  const renderGestionUsuarios = () => {
+    // Mostrar loading
+    if (loading) {
+      return (
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Cargando usuarios...</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
 
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
+    // Mostrar error
+    if (error) {
+      return (
+        <div className="space-y-6">
+          <Card className="bg-red-50 border-red-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-red-200 rounded-full p-3 flex-shrink-0">
+                  <AlertCircle className="w-6 h-6 text-red-800" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">Error al cargar usuarios</h3>
+                  <p className="text-red-800 mb-4">{error}</p>
+                  <Button
+                    onClick={fetchUsuarios}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Reintentar
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Card explicativa */}
+        <Card className="bg-gradient-to-r from-pink-50 to-pink-100 border-pink-200">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
               <div>
-                <p className="text-2xl font-bold text-green-600">
-                  {filteredUsers.filter((u) => u.estado === "Activo").length}
+                <h3 className="text-lg font-semibold text-pink-900 mb-2">
+                  {CURRENT_USER_ROLE === "Administrador Municipal"
+                    ? "Gestión Completa de Usuarios del Sistema"
+                    : "Gestión de Usuarios de Mi Departamento"}
+                </h3>
+                <p className="text-pink-800">
+                  {CURRENT_USER_ROLE === "Administrador Municipal"
+                    ? "Permite crear, editar y gestionar todas las cuentas de usuarios del sistema municipal con control total sobre roles y permisos."
+                    : "Gestiona los usuarios de tu departamento, asigna tareas y supervisa el rendimiento de tu equipo de trabajo."}
                 </p>
-                <p className="text-sm text-gray-600">Usuarios Activos</p>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Estadísticas rápidas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold text-green-600">
+                    {filteredUsers.filter((u) => u.estado === "Activo").length}
+                  </p>
+                  <p className="text-sm text-gray-600">Usuarios Activos</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-yellow-600" />
+                <div>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {filteredUsers.filter((u) => u.estado === "Pendiente").length}
+                  </p>
+                  <p className="text-sm text-gray-600">Pendientes</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Ban className="w-5 h-5 text-red-600" />
+                <div>
+                  <p className="text-2xl font-bold text-red-600">
+                    {filteredUsers.filter((u) => u.estado === "Bloqueado").length}
+                  </p>
+                  <p className="text-sm text-gray-600">Bloqueados</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-2xl font-bold text-blue-600">{filteredUsers.length}</p>
+                  <p className="text-sm text-gray-600">Total Usuarios</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Controles de búsqueda y filtros */}
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-yellow-600" />
-              <div>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {filteredUsers.filter((u) => u.estado === "Pendiente").length}
-                </p>
-                <p className="text-sm text-gray-600">Pendientes</p>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Lista de Usuarios ({filteredUsers.length})
+                {CURRENT_USER_ROLE === "Jefe de Departamento" && (
+                  <Badge variant="outline" className="ml-2">
+                    Departamento: {CURRENT_USER_DEPARTMENT}
+                  </Badge>
+                )}
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchUsuarios}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  {loading ? 'Cargando...' : 'Refrescar'}
+                </Button>
+                {/* <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button> */}
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-green-600 hover:bg-green-700">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Nuevo Usuario
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <UserPlus className="w-5 h-5" />
+                        Crear Nuevo Usuario
+                      </DialogTitle>
+                      <DialogDescription>
+                        Complete los datos del nuevo usuario municipal. Los campos marcados con asterisco (*) son obligatorios.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      {/* Información Personal */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Users className="w-5 h-5" />
+                          Información Personal
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="nombre">Nombre Completo *</Label>
+                            <Input
+                              id="nombre"
+                              value={newUser.nombre}
+                              onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
+                              placeholder="Ej: María González"
+                              className="mt-1"
+                              maxLength={120}
+                            />
+                            {validateFieldLength('nombre', newUser.nombre, 120) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateFieldLength('nombre', newUser.nombre, 120)}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor="email">Email Corporativo *</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              value={newUser.email}
+                              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                              placeholder="usuario@municipio.gov"
+                              className="mt-1"
+                              maxLength={200}
+                            />
+                            {newUser.email && checkEmailExists(newUser.email) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {checkEmailExists(newUser.email)}
+                              </p>
+                            )}
+                            {validateEmail(newUser.email) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateEmail(newUser.email)}
+                              </p>
+                            )}
+                            {validateFieldLength('email', newUser.email, 200) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateFieldLength('email', newUser.email, 200)}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor="rut">RUT *</Label>
+                            <Input
+                              id="rut"
+                              value={newUser.rut}
+                              onChange={handleRutChange}
+                              placeholder="12.345.678-9"
+                              className="mt-1"
+                              maxLength={12}
+                            />
+                            {newUser.rut && checkRutExists(newUser.rut) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {checkRutExists(newUser.rut)}
+                              </p>
+                            )}
+                            {validateRutFormat(newUser.rut) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateRutFormat(newUser.rut)}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Formato: 12.345.678-9 o 12.345.678-k
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="telefono">Teléfono Móvil</Label>
+                            <Input
+                              id="telefono"
+                              value={newUser.numero_telefonico_movil}
+                              onChange={(e) => setNewUser({ ...newUser, numero_telefonico_movil: e.target.value.replace(/\D/g, '') })}
+                              placeholder="987654321"
+                              className="mt-1"
+                              maxLength={9}
+                            />
+                            {validateFieldLength('telefono', newUser.numero_telefonico_movil, 9) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateFieldLength('telefono', newUser.numero_telefonico_movil, 9)}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Solo números, máximo 9 dígitos
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Información del Sistema */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Shield className="w-5 h-5" />
+                          Información del Sistema
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="tipo_usuario">Tipo de Usuario *</Label>
+                            <Select value={newUser.tipo_usuario} onValueChange={(value) => setNewUser({ ...newUser, tipo_usuario: value })}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar tipo de usuario" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CURRENT_USER_ROLE === "Administrador Municipal" && (
+                                  <SelectItem value="jefe_departamento">
+                                    <div className="flex items-center gap-2">
+                                      <ShieldCheck className="w-4 h-4" />
+                                      Jefe de departamento
+                                    </div>
+                                  </SelectItem>
+                                )}
+                                <SelectItem value="personal">
+                                  <div className="flex items-center gap-2">
+                                    <Edit className="w-4 h-4" />
+                                    Personal Municipal
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="departamento">Departamento *</Label>
+                            <Select
+                              value={newUser.departamento_id}
+                              onValueChange={(value) => setNewUser({ ...newUser, departamento_id: value })}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar departamento" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {departamentos.map((dept) => (
+                                  <SelectItem key={dept.id} value={dept.id.toString()}>
+                                    {dept.nombre}
+                                    {dept.jefe_departamento && (
+                                      <span className="text-xs text-gray-500 ml-2">
+                                        (Jefe: {dept.jefe_departamento.nombre})
+                                      </span>
+                                    )}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {checkDepartmentHasChief(newUser.departamento_id, newUser.tipo_usuario) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {checkDepartmentHasChief(newUser.departamento_id, newUser.tipo_usuario)}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              El usuario será asignado a este departamento
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Configuración de Acceso */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Key className="w-5 h-5" />
+                          Configuración de Acceso
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="password">Contraseña Temporal *</Label>
+                            <Input
+                              id="password"
+                              type="password"
+                              value={newUser.password}
+                              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                              placeholder="Mínimo 6 caracteres"
+                              className="mt-1"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Debe contener al menos 6 caracteres
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="confirmPassword">Confirmar Contraseña *</Label>
+                            <Input
+                              id="confirmPassword"
+                              type="password"
+                              value={newUser.confirmPassword}
+                              onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
+                              placeholder="Repetir contraseña"
+                              className="mt-1"
+                            />
+                            {checkPasswordMatch() && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {checkPasswordMatch()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-4 mt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Enviar credenciales por email</Label>
+                              <p className="text-sm text-gray-500">Se enviará un email con las credenciales de acceso</p>
+                            </div>
+                            <Switch
+                              checked={newUser.enviarCredenciales}
+                              onCheckedChange={(checked) => setNewUser({ ...newUser, enviarCredenciales: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Requerir cambio de contraseña</Label>
+                              <p className="text-sm text-gray-500">
+                                El usuario deberá cambiar la contraseña en el primer acceso
+                              </p>
+                            </div>
+                            <Switch
+                              checked={newUser.requiereCambioPassword}
+                              onCheckedChange={(checked) => setNewUser({ ...newUser, requiereCambioPassword: checked })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Permisos Preview */}
+                      {newUser.tipo_usuario && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Shield className="w-5 h-5" />
+                            Permisos del Tipo de Usuario Seleccionado
+                          </h3>
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex flex-wrap gap-2">
+                              {getPermisosForRole(
+                                newUser.tipo_usuario === 'jefe_departamento' ? 'Jefe de departamento' :
+                                  newUser.tipo_usuario === 'personal' ? 'Personal Municipal' : ''
+                              ).map((permiso, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {permiso}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsCreateDialogOpen(false)
+                          resetNewUserForm()
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleCreateUser}
+                            className="bg-green-600 hover:bg-green-700"
+                            disabled={
+                              updating ||
+                              !newUser.nombre ||
+                              !newUser.email ||
+                              !newUser.rut ||
+                              !newUser.tipo_usuario ||
+                              !newUser.departamento_id ||
+                              !newUser.password ||
+                              !newUser.confirmPassword ||
+                              validateFieldLength('nombre', newUser.nombre, 120) ||
+                              validateEmail(newUser.email) ||
+                              validateFieldLength('email', newUser.email, 200) ||
+                              validateRutFormat(newUser.rut) ||
+                              validateFieldLength('telefono', newUser.numero_telefonico_movil, 9) ||
+                              checkRutExists(newUser.rut) ||
+                              checkEmailExists(newUser.email) ||
+                              checkDepartmentHasChief(newUser.departamento_id, newUser.tipo_usuario) ||
+                              newUser.password !== newUser.confirmPassword ||
+                              newUser.password.length < 6
+                            }
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            {updating ? "Creando..." : "Crear Usuario"}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getDisabledButtonReason()}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Diálogo de Edición de Usuario */}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Edit className="w-5 h-5" />
+                        Editar Usuario
+                      </DialogTitle>
+                      <DialogDescription>
+                        Modifique los datos del usuario. Los campos marcados con asterisco (*) son obligatorios.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      {/* Información Personal */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Users className="w-5 h-5" />
+                          Información Personal
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="edit-nombre">Nombre Completo *</Label>
+                            <Input
+                              id="edit-nombre"
+                              value={editUser.nombre}
+                              onChange={(e) => setEditUser({ ...editUser, nombre: e.target.value })}
+                              placeholder="Ej: María González"
+                              className="mt-1"
+                              maxLength={120}
+                            />
+                            {validateFieldLength('nombre', editUser.nombre, 120) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateFieldLength('nombre', editUser.nombre, 120)}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-email">Email Corporativo *</Label>
+                            <Input
+                              id="edit-email"
+                              type="email"
+                              value={editUser.email}
+                              onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                              placeholder="usuario@municipio.gov"
+                              className="mt-1"
+                              maxLength={200}
+                            />
+                            {validateEmail(editUser.email) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateEmail(editUser.email)}
+                              </p>
+                            )}
+                            {validateFieldLength('email', editUser.email, 200) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateFieldLength('email', editUser.email, 200)}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-rut">RUT</Label>
+                            <Input
+                              id="edit-rut"
+                              value={editUser.rut}
+                              onChange={handleEditRutChange}
+                              placeholder="12.345.678-9"
+                              className="mt-1"
+                              maxLength={12}
+                            />
+                            {validateRutFormat(editUser.rut) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateRutFormat(editUser.rut)}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Formato: 12.345.678-9 o 12.345.678-k
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-telefono">Teléfono Móvil</Label>
+                            <Input
+                              id="edit-telefono"
+                              value={editUser.numero_telefonico_movil}
+                              onChange={(e) => setEditUser({ ...editUser, numero_telefonico_movil: e.target.value.replace(/\D/g, '') })}
+                              placeholder="987654321"
+                              className="mt-1"
+                              maxLength={9}
+                            />
+                            {validateFieldLength('telefono', editUser.numero_telefonico_movil, 9) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateFieldLength('telefono', editUser.numero_telefonico_movil, 9)}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Solo números, máximo 9 dígitos
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Información del Sistema */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Shield className="w-5 h-5" />
+                          Información del Sistema
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="edit-tipo_usuario">Tipo de Usuario *</Label>
+                            <Select value={editUser.tipo_usuario} onValueChange={(value) => setEditUser({ ...editUser, tipo_usuario: value })}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar tipo de usuario" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CURRENT_USER_ROLE === "Administrador Municipal" && (
+                                  <SelectItem value="jefe_departamento">
+                                    <div className="flex items-center gap-2">
+                                      <ShieldCheck className="w-4 h-4" />
+                                      Jefe de departamento
+                                    </div>
+                                  </SelectItem>
+                                )}
+                                <SelectItem value="personal">
+                                  <div className="flex items-center gap-2">
+                                    <Edit className="w-4 h-4" />
+                                    Personal Municipal
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-departamento">Departamento</Label>
+                            <Select
+                              value={editUser.departamento_id}
+                              onValueChange={(value) => setEditUser({ ...editUser, departamento_id: value })}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar departamento" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {departamentos.map((dept) => {
+                                  const hasChief = dept.jefe_departamento && dept.jefe_departamento.id !== editUser.id
+                                  const wouldConflict = editUser.tipo_usuario === 'jefe_departamento' && hasChief
+
+                                  return (
+                                    <SelectItem
+                                      key={dept.id}
+                                      value={dept.id.toString()}
+                                      disabled={wouldConflict}
+                                      className={wouldConflict ? "text-gray-400" : ""}
+                                    >
+                                      <div className="flex items-center justify-between w-full">
+                                        <span>{dept.nombre}</span>
+                                        {dept.jefe_departamento && (
+                                          <span className="text-xs text-gray-500 ml-2">
+                                            {dept.jefe_departamento.id === editUser.id ?
+                                              "(Jefe actual: Usted)" :
+                                              `(Jefe: ${dept.jefe_departamento.nombre})`
+                                            }
+                                          </span>
+                                        )}
+                                        {wouldConflict && (
+                                          <span className="text-xs text-red-500 ml-2">⚠️</span>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                })}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Cambiará la asignación del usuario
+                            </p>
+                            {editUser.tipo_usuario === 'jefe_departamento' && editUser.departamento_id && (
+                              (() => {
+                                const validation = validateDepartmentChiefForEdit(
+                                  editUser.departamento_id,
+                                  editUser.tipo_usuario,
+                                  editUser.id
+                                )
+                                return !validation.isValid ? (
+                                  <p className="text-xs text-red-500 mt-1">
+                                    ⚠️ {validation.message}
+                                  </p>
+                                ) : null
+                              })()
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Configuración de Cuenta */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Key className="w-5 h-5" />
+                          Configuración de Cuenta
+                        </h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Usuario activo</Label>
+                              <p className="text-sm text-gray-500">
+                                Determina si el usuario puede acceder al sistema
+                              </p>
+                            </div>
+                            <Switch
+                              checked={editUser.esta_activo}
+                              onCheckedChange={(checked) => setEditUser({ ...editUser, esta_activo: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Requerir cambio de contraseña</Label>
+                              <p className="text-sm text-gray-500">
+                                El usuario deberá cambiar la contraseña en el próximo acceso
+                              </p>
+                            </div>
+                            <Switch
+                              checked={editUser.requiereCambioPassword}
+                              onCheckedChange={(checked) => setEditUser({ ...editUser, requiereCambioPassword: checked })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Permisos Preview */}
+                      {editUser.tipo_usuario && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Shield className="w-5 h-5" />
+                            Permisos del Tipo de Usuario Seleccionado
+                          </h3>
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex flex-wrap gap-2">
+                              {getPermisosForRole(
+                                editUser.tipo_usuario === 'jefe_departamento' ? 'Jefe de departamento' :
+                                  editUser.tipo_usuario === 'personal' ? 'Personal Municipal' : ''
+                              ).map((permiso, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {permiso}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditDialogOpen(false)
+                          resetEditUserForm()
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleUpdateUser}
+                            className="bg-blue-600 hover:bg-blue-700"
+                            disabled={
+                              updating ||
+                              !editUser.nombre ||
+                              !editUser.email ||
+                              validateFieldLength('nombre', editUser.nombre, 120) ||
+                              validateEmail(editUser.email) ||
+                              validateFieldLength('email', editUser.email, 200) ||
+                              (editUser.rut && validateRutFormat(editUser.rut)) ||
+                              validateFieldLength('telefono', editUser.numero_telefonico_movil, 9) ||
+                              (editUser.departamento_id && !validateDepartmentChiefForEdit(
+                                editUser.departamento_id,
+                                editUser.tipo_usuario,
+                                editUser.id
+                              ).isValid)
+                            }
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            {updating ? "Actualizando..." : "Actualizar Usuario"}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getDisabledEditButtonReason()}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Ban className="w-5 h-5 text-red-600" />
-              <div>
-                <p className="text-2xl font-bold text-red-600">
-                  {filteredUsers.filter((u) => u.estado === "Bloqueado").length}
-                </p>
-                <p className="text-sm text-gray-600">Bloqueados</p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por nombre, email o departamento..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
+              <Select value={filterRol} onValueChange={setFilterRol}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrar por rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los roles</SelectItem>
+                  <SelectItem value="Administrador Municipal">Administrador Municipal</SelectItem>
+                  <SelectItem value="Jefe de departamento">Jefe de departamento</SelectItem>
+                  <SelectItem value="Personal Municipal">Personal Municipal</SelectItem>
+                  <SelectItem value="Vecino">Vecino</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterEstado} onValueChange={setFilterEstado}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los estados</SelectItem>
+                  <SelectItem value="Activo">Activo</SelectItem>
+                  <SelectItem value="Inactivo">Inactivo</SelectItem>
+                  <SelectItem value="Pendiente">Pendiente</SelectItem>
+                  <SelectItem value="Bloqueado">Bloqueado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{filteredUsers.length}</p>
-                <p className="text-sm text-gray-600">Total Usuarios</p>
+
+            {/* Tabla de usuarios mejorada */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-6 py-3 border-b">
+                <div className="grid grid-cols-16 gap-4 text-sm font-medium text-gray-700">
+                  <div className="col-span-5">Usuario</div>
+                  <div className="col-span-3 hidden md:block">Rol</div>
+                  <div className="col-span-2 hidden lg:block">Departamento</div>
+                  <div className="col-span-2 hidden lg:block">Estado</div>
+                  <div className="col-span-2 hidden xl:block">Último Acceso</div>
+                  <div className="col-span-2 md:col-span-11 lg:col-span-6 xl:col-span-2">Acciones</div>
+                </div>
+              </div>
+              <div className="divide-y">
+                {filteredUsers.map((usuario) => (
+                  <div key={usuario.id} className="px-6 py-4 hover:bg-gray-50">
+                    <div className="grid grid-cols-16 gap-4 items-center">
+                      <div className="col-span-5">
+                        <div className="space-y-1">
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <span className="truncate">{usuario.nombre}</span>
+                            {usuario.requiereCambioPassword && (
+                              <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" title="Requiere cambio de contraseña" />
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate" title={usuario.email}>
+                            {usuario.email}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-400">
+                            {usuario.rut && (
+                              <span>RUT: {formatRut(usuario.rut)}</span>
+                            )}
+                            {usuario.telefono && usuario.telefono !== 'No especificado' && (
+                              <span>Tel: {usuario.telefono}</span>
+                            )}
+                          </div>
+                          {usuario.intentosFallidos > 0 && (
+                            <div className="text-xs text-red-500">{usuario.intentosFallidos} intentos fallidos</div>
+                          )}
+                          {/* Mostrar rol, departamento y estado en móvil */}
+                          <div className="flex flex-wrap gap-2 md:hidden mt-2">
+                            <Badge className={`${getRolColor(usuario.rol)} flex items-center gap-1 w-fit border text-xs`}>
+                              {getRolIcon(usuario.rol)}
+                              <span className="truncate">{usuario.rol}</span>
+                            </Badge>
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs truncate">
+                              {usuario.departamento}
+                            </Badge>
+                            <Badge className={`${getEstadoColor(usuario.estado)} flex items-center gap-1 w-fit border text-xs`}>
+                              {getEstadoIcon(usuario.estado)}
+                              {usuario.estado}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-3 hidden md:block">
+                        <Badge className={`${getRolColor(usuario.rol)} flex items-center gap-1 w-fit border text-xs`}>
+                          {getRolIcon(usuario.rol)}
+                          <span className="truncate">{usuario.rol}</span>
+                        </Badge>
+                      </div>
+                      <div className="col-span-2 hidden lg:block">
+                        <span className="text-sm text-gray-600 truncate" title={usuario.departamento}>
+                          {usuario.departamento}
+                        </span>
+                      </div>
+                      <div className="col-span-2 hidden lg:block">
+                        <Badge className={`${getEstadoColor(usuario.estado)} flex items-center gap-1 w-fit border text-xs`}>
+                          {getEstadoIcon(usuario.estado)}
+                          {usuario.estado}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2 hidden xl:block">
+                        <span className="text-sm text-gray-600 truncate" title={usuario.ultimoAcceso}>
+                          {usuario.ultimoAcceso}
+                        </span>
+                      </div>
+                      <div className="col-span-2 md:col-span-11 lg:col-span-6 xl:col-span-2">
+                        <div className="flex gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="outline" onClick={() => setSelectedUser(usuario)} title="Ver detalles">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <UserCog className="w-5 h-5" />
+                                  Detalles del Usuario
+                                </DialogTitle>
+                              </DialogHeader>
+                              {selectedUser && (
+                                <Tabs defaultValue="info" className="w-full">
+                                  <TabsList className="grid w-full grid-cols-4">
+                                    <TabsTrigger value="info">Información</TabsTrigger>
+                                    <TabsTrigger value="permisos">Permisos</TabsTrigger>
+                                    <TabsTrigger value="actividad">Actividad</TabsTrigger>
+                                    <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+                                  </TabsList>
+                                  <TabsContent value="info" className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-6">
+                                      <div className="space-y-4">
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Nombre Completo</Label>
+                                          <p className="text-lg font-semibold">{selectedUser.nombre}</p>
+                                        </div>
+                                        {selectedUser.rut && (
+                                          <div>
+                                            <Label className="text-sm font-medium text-gray-700">RUT</Label>
+                                            <p className="text-sm font-medium">{selectedUser.rut}</p>
+                                          </div>
+                                        )}
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Email</Label>
+                                          <div className="flex items-center gap-2">
+                                            <Mail className="w-4 h-4 text-gray-500" />
+                                            <p>{selectedUser.email}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Teléfono</Label>
+                                          <div className="flex items-center gap-2">
+                                            <Phone className="w-4 h-4 text-gray-500" />
+                                            <p>{selectedUser.telefono}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-4">
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Rol</Label>
+                                          <Badge
+                                            className={`${getRolColor(selectedUser.rol)} flex items-center gap-1 w-fit mt-1 border`}
+                                          >
+                                            {getRolIcon(selectedUser.rol)}
+                                            {selectedUser.rol}
+                                          </Badge>
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Departamento</Label>
+                                          <div className="flex items-center gap-2">
+                                            <Building2 className="w-4 h-4 text-gray-500" />
+                                            <p>{selectedUser.departamento}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Estado</Label>
+                                          <Badge
+                                            className={`${getEstadoColor(selectedUser.estado)} flex items-center gap-1 w-fit mt-1 border`}
+                                          >
+                                            {getEstadoIcon(selectedUser.estado)}
+                                            {selectedUser.estado}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="border-t pt-4">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Fecha de Creación</Label>
+                                          <div className="flex items-center gap-2">
+                                            <Calendar className="w-4 h-4 text-gray-500" />
+                                            <p>{selectedUser.fechaCreacion}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium text-gray-700">Último Acceso</Label>
+                                          <div className="flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-gray-500" />
+                                            <p>{selectedUser.ultimoAcceso}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TabsContent>
+                                  <TabsContent value="permisos" className="space-y-4">
+                                    <div>
+                                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Permisos Asignados
+                                      </Label>
+                                      <div className="flex flex-wrap gap-2">
+                                        {selectedUser.permisos.map((permiso, index) => (
+                                          <Badge key={index} variant="outline" className="text-xs">
+                                            {permiso}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </TabsContent>
+                                  <TabsContent value="actividad" className="space-y-4">
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                        <CheckCircle className="w-5 h-5 text-green-600" />
+                                        <div>
+                                          <p className="text-sm font-medium">Último acceso exitoso</p>
+                                          <p className="text-xs text-gray-500">{selectedUser.ultimoAcceso}</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                                        <Activity className="w-5 h-5 text-blue-600" />
+                                        <div>
+                                          <p className="text-sm font-medium">Sesiones activas</p>
+                                          <p className="text-xs text-gray-500">1 sesión activa</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TabsContent>
+                                  <TabsContent value="seguridad" className="space-y-4">
+                                    <div className="space-y-4">
+                                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                          <p className="font-medium">Intentos de acceso fallidos</p>
+                                          <p className="text-sm text-gray-500">
+                                            {selectedUser.intentosFallidos} intentos
+                                          </p>
+                                        </div>
+                                        <Badge variant={selectedUser.intentosFallidos > 0 ? "destructive" : "secondary"}>
+                                          {selectedUser.intentosFallidos > 0 ? "Atención" : "Normal"}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                          <p className="font-medium">Cambio de contraseña requerido</p>
+                                          <p className="text-sm text-gray-500">
+                                            {selectedUser.requiereCambioPassword ? "Sí" : "No"}
+                                          </p>
+                                        </div>
+                                        <Badge
+                                          variant={selectedUser.requiereCambioPassword ? "destructive" : "secondary"}
+                                        >
+                                          {selectedUser.requiereCambioPassword ? "Requerido" : "Actualizada"}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </TabsContent>
+                                </Tabs>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                          {(CURRENT_USER_ROLE === "Administrador Municipal" ||
+                            (CURRENT_USER_ROLE === "Jefe de Departamento" &&
+                              usuario.departamento === CURRENT_USER_DEPARTMENT &&
+                              usuario.rol !== "Jefe de Departamento")) && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  title="Editar usuario"
+                                  onClick={() => openEditDialog(usuario)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                {CURRENT_USER_ROLE === "Administrador Municipal" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:border-red-300"
+                                    title="Eliminar usuario"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Controles de búsqueda y filtros */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Lista de Usuarios ({filteredUsers.length})
-              {CURRENT_USER_ROLE === "Jefe de Departamento" && (
-                <Badge variant="outline" className="ml-2">
-                  Departamento: {CURRENT_USER_DEPARTMENT}
-                </Badge>
-              )}
-            </CardTitle>
-            <div className="flex gap-2">
-              {/* <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button> */}
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Nuevo Usuario
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <UserPlus className="w-5 h-5" />
-                      Crear Nuevo Usuario
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-6">
-                    {/* Información Personal */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5" />
-                        Información Personal
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="nombre">Nombre Completo *</Label>
-                          <Input
-                            id="nombre"
-                            value={newUser.nombre}
-                            onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
-                            placeholder="Ej: María González"
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="email">Email Corporativo *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={newUser.email}
-                            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                            placeholder="usuario@municipio.gov"
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="telefono">Teléfono</Label>
-                          <Input
-                            id="telefono"
-                            value={newUser.telefono}
-                            onChange={(e) => setNewUser({ ...newUser, telefono: e.target.value })}
-                            placeholder="+54 11 1234-5678"
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Información del Sistema */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <Shield className="w-5 h-5" />
-                        Información del Sistema
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="rol">Rol del Usuario *</Label>
-                          <Select value={newUser.rol} onValueChange={(value) => setNewUser({ ...newUser, rol: value })}>
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Seleccionar rol" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CURRENT_USER_ROLE === "Administrador Municipal" && (
-                                <>
-                                  <SelectItem value="Administrador Municipal">
-                                    <div className="flex items-center gap-2">
-                                      <Shield className="w-4 h-4" />
-                                      Administrador Municipal
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="Jefe de Departamento">
-                                    <div className="flex items-center gap-2">
-                                      <ShieldCheck className="w-4 h-4" />
-                                      Jefe de Departamento
-                                    </div>
-                                  </SelectItem>
-                                </>
-                              )}
-                              <SelectItem value="Editor">
-                                <div className="flex items-center gap-2">
-                                  <Edit className="w-4 h-4" />
-                                  Editor
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="Visualizador">
-                                <div className="flex items-center gap-2">
-                                  <Eye className="w-4 h-4" />
-                                  Visualizador
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="departamento">Departamento *</Label>
-                          <Select
-                            value={newUser.departamento}
-                            onValueChange={(value) => setNewUser({ ...newUser, departamento: value })}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Seleccionar departamento" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CURRENT_USER_ROLE === "Administrador Municipal" ? (
-                                <>
-                                  <SelectItem value="Administración General">Administración General</SelectItem>
-                                  <SelectItem value="Obras Públicas">Obras Públicas</SelectItem>
-                                  <SelectItem value="Servicios Ciudadanos">Servicios Ciudadanos</SelectItem>
-                                  <SelectItem value="Planificación Urbana">Planificación Urbana</SelectItem>
-                                  <SelectItem value="Medio Ambiente">Medio Ambiente</SelectItem>
-                                  <SelectItem value="Finanzas">Finanzas</SelectItem>
-                                  <SelectItem value="Recursos Humanos">Recursos Humanos</SelectItem>
-                                </>
-                              ) : (
-                                <SelectItem value={CURRENT_USER_DEPARTMENT}>{CURRENT_USER_DEPARTMENT}</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Configuración de Acceso */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <Key className="w-5 h-5" />
-                        Configuración de Acceso
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="password">Contraseña Temporal *</Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            value={newUser.password}
-                            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                            placeholder="Mínimo 8 caracteres"
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Debe contener al menos 8 caracteres, una mayúscula y un número
-                          </p>
-                        </div>
-                        <div>
-                          <Label htmlFor="confirmPassword">Confirmar Contraseña *</Label>
-                          <Input
-                            id="confirmPassword"
-                            type="password"
-                            value={newUser.confirmPassword}
-                            onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
-                            placeholder="Repetir contraseña"
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 mt-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label>Enviar credenciales por email</Label>
-                            <p className="text-sm text-gray-500">Se enviará un email con las credenciales de acceso</p>
-                          </div>
-                          <Switch
-                            checked={newUser.enviarCredenciales}
-                            onCheckedChange={(checked) => setNewUser({ ...newUser, enviarCredenciales: checked })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label>Requerir cambio de contraseña</Label>
-                            <p className="text-sm text-gray-500">
-                              El usuario deberá cambiar la contraseña en el primer acceso
-                            </p>
-                          </div>
-                          <Switch
-                            checked={newUser.requiereCambioPassword}
-                            onCheckedChange={(checked) => setNewUser({ ...newUser, requiereCambioPassword: checked })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Permisos Preview */}
-                    {newUser.rol && (
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Shield className="w-5 h-5" />
-                          Permisos del Rol Seleccionado
-                        </h3>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="flex flex-wrap gap-2">
-                            {getPermisosForRole(newUser.rol).map((permiso, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {permiso}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsCreateDialogOpen(false)
-                        resetNewUserForm()
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleCreateUser} className="bg-green-600 hover:bg-green-700">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Crear Usuario
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por nombre, email o departamento..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={filterRol} onValueChange={setFilterRol}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por rol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los roles</SelectItem>
-                <SelectItem value="Administrador Municipal">Administrador Municipal</SelectItem>
-                <SelectItem value="Jefe de Departamento">Jefe de Departamento</SelectItem>
-                <SelectItem value="Editor">Editor</SelectItem>
-                <SelectItem value="Visualizador">Visualizador</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterEstado} onValueChange={setFilterEstado}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los estados</SelectItem>
-                <SelectItem value="Activo">Activo</SelectItem>
-                <SelectItem value="Inactivo">Inactivo</SelectItem>
-                <SelectItem value="Pendiente">Pendiente</SelectItem>
-                <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Tabla de usuarios */}
-          <div className="border rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-6 py-3 border-b">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-                <div className="col-span-3">Usuario</div>
-                <div className="col-span-2">Rol</div>
-                <div className="col-span-2">Departamento</div>
-                <div className="col-span-2">Estado</div>
-                <div className="col-span-2">Último Acceso</div>
-                <div className="col-span-1">Acciones</div>
-              </div>
-            </div>
-            <div className="divide-y">
-              {filteredUsers.map((usuario) => (
-                <div key={usuario.id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-3">
-                      <div>
-                        <div className="font-medium text-gray-900 flex items-center gap-2">
-                          {usuario.nombre}
-                          {usuario.requiereCambioPassword && (
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" title="Requiere cambio de contraseña" />
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-500">{usuario.email}</div>
-                        {usuario.intentosFallidos > 0 && (
-                          <div className="text-xs text-red-500">{usuario.intentosFallidos} intentos fallidos</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <Badge className={`${getRolColor(usuario.rol)} flex items-center gap-1 w-fit border`}>
-                        {getRolIcon(usuario.rol)}
-                        {usuario.rol}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-sm text-gray-600">{usuario.departamento}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <Badge className={`${getEstadoColor(usuario.estado)} flex items-center gap-1 w-fit border`}>
-                        {getEstadoIcon(usuario.estado)}
-                        {usuario.estado}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-sm text-gray-600">{usuario.ultimoAcceso}</span>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="flex gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" onClick={() => setSelectedUser(usuario)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle className="flex items-center gap-2">
-                                <UserCog className="w-5 h-5" />
-                                Detalles del Usuario
-                              </DialogTitle>
-                            </DialogHeader>
-                            {selectedUser && (
-                              <Tabs defaultValue="info" className="w-full">
-                                <TabsList className="grid w-full grid-cols-4">
-                                  <TabsTrigger value="info">Información</TabsTrigger>
-                                  <TabsTrigger value="permisos">Permisos</TabsTrigger>
-                                  <TabsTrigger value="actividad">Actividad</TabsTrigger>
-                                  <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="info" className="space-y-6">
-                                  <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Nombre Completo</Label>
-                                        <p className="text-lg font-semibold">{selectedUser.nombre}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Email</Label>
-                                        <div className="flex items-center gap-2">
-                                          <Mail className="w-4 h-4 text-gray-500" />
-                                          <p>{selectedUser.email}</p>
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Teléfono</Label>
-                                        <div className="flex items-center gap-2">
-                                          <Phone className="w-4 h-4 text-gray-500" />
-                                          <p>{selectedUser.telefono}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Rol</Label>
-                                        <Badge
-                                          className={`${getRolColor(selectedUser.rol)} flex items-center gap-1 w-fit mt-1 border`}
-                                        >
-                                          {getRolIcon(selectedUser.rol)}
-                                          {selectedUser.rol}
-                                        </Badge>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Departamento</Label>
-                                        <div className="flex items-center gap-2">
-                                          <Building2 className="w-4 h-4 text-gray-500" />
-                                          <p>{selectedUser.departamento}</p>
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Estado</Label>
-                                        <Badge
-                                          className={`${getEstadoColor(selectedUser.estado)} flex items-center gap-1 w-fit mt-1 border`}
-                                        >
-                                          {getEstadoIcon(selectedUser.estado)}
-                                          {selectedUser.estado}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="border-t pt-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Fecha de Creación</Label>
-                                        <div className="flex items-center gap-2">
-                                          <Calendar className="w-4 h-4 text-gray-500" />
-                                          <p>{selectedUser.fechaCreacion}</p>
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium text-gray-700">Último Acceso</Label>
-                                        <div className="flex items-center gap-2">
-                                          <Clock className="w-4 h-4 text-gray-500" />
-                                          <p>{selectedUser.ultimoAcceso}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </TabsContent>
-                                <TabsContent value="permisos" className="space-y-4">
-                                  <div>
-                                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                      Permisos Asignados
-                                    </Label>
-                                    <div className="flex flex-wrap gap-2">
-                                      {selectedUser.permisos.map((permiso, index) => (
-                                        <Badge key={index} variant="outline" className="text-xs">
-                                          {permiso}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </TabsContent>
-                                <TabsContent value="actividad" className="space-y-4">
-                                  <div className="space-y-3">
-                                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                                      <CheckCircle className="w-5 h-5 text-green-600" />
-                                      <div>
-                                        <p className="text-sm font-medium">Último acceso exitoso</p>
-                                        <p className="text-xs text-gray-500">{selectedUser.ultimoAcceso}</p>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                                      <Activity className="w-5 h-5 text-blue-600" />
-                                      <div>
-                                        <p className="text-sm font-medium">Sesiones activas</p>
-                                        <p className="text-xs text-gray-500">1 sesión activa</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </TabsContent>
-                                <TabsContent value="seguridad" className="space-y-4">
-                                  <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                                      <div>
-                                        <p className="font-medium">Intentos de acceso fallidos</p>
-                                        <p className="text-sm text-gray-500">
-                                          {selectedUser.intentosFallidos} intentos
-                                        </p>
-                                      </div>
-                                      <Badge variant={selectedUser.intentosFallidos > 0 ? "destructive" : "secondary"}>
-                                        {selectedUser.intentosFallidos > 0 ? "Atención" : "Normal"}
-                                      </Badge>
-                                    </div>
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                                      <div>
-                                        <p className="font-medium">Cambio de contraseña requerido</p>
-                                        <p className="text-sm text-gray-500">
-                                          {selectedUser.requiereCambioPassword ? "Sí" : "No"}
-                                        </p>
-                                      </div>
-                                      <Badge
-                                        variant={selectedUser.requiereCambioPassword ? "destructive" : "secondary"}
-                                      >
-                                        {selectedUser.requiereCambioPassword ? "Requerido" : "Actualizada"}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                </TabsContent>
-                              </Tabs>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                        {(CURRENT_USER_ROLE === "Administrador Municipal" ||
-                          (CURRENT_USER_ROLE === "Jefe de Departamento" &&
-                            usuario.departamento === CURRENT_USER_DEPARTMENT &&
-                            usuario.rol !== "Jefe de Departamento")) && (
-                            <>
-                              <Button size="sm" variant="outline">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              {CURRENT_USER_ROLE === "Administrador Municipal" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 hover:text-red-700 bg-transparent"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    )
+  }
 
   const renderRolesPermisos = () => (
     <div className="space-y-6">
@@ -1035,7 +2025,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
             </ul>
             <div className="mt-4 p-3 bg-purple-100 rounded-lg">
               <p className="text-xs text-purple-800 font-medium">
-                Usuarios activos: {usuarios.filter((u) => u.rol === "Jefe de Departamento").length}
+                Usuarios activos: {usuarios.filter((u) => u.rol === "Jefe de departamento").length}
               </p>
             </div>
           </CardContent>
@@ -1045,7 +2035,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-800">
               <Edit className="w-5 h-5" />
-              Editor
+              Personal Municipal
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1062,7 +2052,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
             </ul>
             <div className="mt-4 p-3 bg-blue-100 rounded-lg">
               <p className="text-xs text-blue-800 font-medium">
-                Usuarios activos: {usuarios.filter((u) => u.rol === "Editor").length}
+                Usuarios activos: {usuarios.filter((u) => u.rol === "Personal Municipal").length}
               </p>
             </div>
           </CardContent>
@@ -1072,7 +2062,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-800">
               <Eye className="w-5 h-5" />
-              Visualizador
+              Vecino
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1089,7 +2079,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
             </ul>
             <div className="mt-4 p-3 bg-green-100 rounded-lg">
               <p className="text-xs text-green-800 font-medium">
-                Usuarios activos: {usuarios.filter((u) => u.rol === "Visualizador").length}
+                Usuarios activos: {usuarios.filter((u) => u.rol === "Vecino").length}
               </p>
             </div>
           </CardContent>
@@ -1112,8 +2102,8 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                   <th className="text-left p-2">Módulo</th>
                   <th className="text-center p-2">Admin Municipal</th>
                   <th className="text-center p-2">Jefe Depto</th>
-                  <th className="text-center p-2">Editor</th>
-                  <th className="text-center p-2">Visualizador</th>
+                  <th className="text-center p-2">Personal Municipal</th>
+                  <th className="text-center p-2">Vecino</th>
                 </tr>
               </thead>
               <tbody>
@@ -1122,19 +2112,19 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                     modulo: "Gestión de Usuarios",
                     admin: "Total",
                     jefe: "Departamento",
-                    editor: "No",
-                    visualizador: "No",
+                    personal: "No",
+                    vecino: "No",
                   },
                   {
                     modulo: "Juntas Vecinales",
                     admin: "Total",
                     jefe: "Departamento",
-                    editor: "Editar",
-                    visualizador: "Ver",
+                    personal: "Editar",
+                    vecino: "Ver",
                   },
-                  { modulo: "Mapas", admin: "Total", jefe: "Ver/Editar", editor: "Ver/Editar", visualizador: "Ver" },
-                  { modulo: "Reportes", admin: "Total", jefe: "Departamento", editor: "Básicos", visualizador: "Ver" },
-                  { modulo: "Configuración", admin: "Total", jefe: "No", editor: "No", visualizador: "No" },
+                  { modulo: "Mapas", admin: "Total", jefe: "Ver/Editar", personal: "Ver/Editar", vecino: "Ver" },
+                  { modulo: "Reportes", admin: "Total", jefe: "Departamento", personal: "Básicos", vecino: "Ver" },
+                  { modulo: "Configuración", admin: "Total", jefe: "No", personal: "No", vecino: "No" },
                 ].map((row, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
                     <td className="p-2 font-medium">{row.modulo}</td>
@@ -1145,10 +2135,10 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                       <Badge className="bg-purple-100 text-purple-800">{row.jefe}</Badge>
                     </td>
                     <td className="p-2 text-center">
-                      <Badge className="bg-blue-100 text-blue-800">{row.editor}</Badge>
+                      <Badge className="bg-blue-100 text-blue-800">{row.personal}</Badge>
                     </td>
                     <td className="p-2 text-center">
-                      <Badge className="bg-green-100 text-green-800">{row.visualizador}</Badge>
+                      <Badge className="bg-green-100 text-green-800">{row.vecino}</Badge>
                     </td>
                   </tr>
                 ))}
@@ -1734,10 +2724,10 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                 <div className="flex items-start gap-4">
                   <div
                     className={`w-3 h-3 rounded-full mt-2 ${solicitud.prioridad === "Alta"
-                        ? "bg-red-500"
-                        : solicitud.prioridad === "Media"
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
+                      ? "bg-red-500"
+                      : solicitud.prioridad === "Media"
+                        ? "bg-yellow-500"
+                        : "bg-green-500"
                       }`}
                   />
                   <div>
@@ -1784,6 +2774,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const renderContent = () => {
     switch (activeSection) {
       case "gestion":
+      case "gestiondeusuarios":
         return renderGestionUsuarios()
       case "rolesypermisos":
         return renderRolesPermisos()
@@ -1803,91 +2794,71 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     setIsOpened(!isOpened)
   }
   return (
-    <>
+    <TooltipProvider>
       <TopBar title="Cuentas de Usuario" optionalbg="bg-[#00A86B]" handleOpenSidebar={handleOpenSidebar} />
-      <div className="min-h-screen bg-gray-50 p-6">
-        {/* Header Municipal */}
-        {/* <div className="bg-green-600 text-white p-6 mb-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Users className="w-8 h-8" />
-              <div>
-                <h1 className="text-3xl font-bold">Cuentas de Usuario</h1>
-                <p className="text-green-100 mt-1">
-                  {CURRENT_USER_ROLE === "Administrador Municipal"
-                    ? "Gestión integral de usuarios del sistema municipal"
-                    : `Gestión de usuarios del departamento de ${CURRENT_USER_DEPARTMENT}`}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="bg-white text-green-600 border-green-200">
-                {CURRENT_USER_ROLE}
-              </Badge>
-              {CURRENT_USER_ROLE === "Jefe de Departamento" && (
-                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
-                  {CURRENT_USER_DEPARTMENT}
-                </Badge>
-              )}
-            </div>
-          </div>
+      <div className="p-6 bg-gray-50 min-h-screen">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Panel de Gestión de Usuarios</h1>
+          <p className="text-gray-600">
+            {CURRENT_USER_ROLE === "Administrador Municipal"
+              ? "Gestión integral de usuarios del sistema municipal"
+              : `Gestión de usuarios del departamento de ${CURRENT_USER_DEPARTMENT}`}
+          </p>
         </div>
-      </div> */}
 
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Sidebar de Secciones - Estilo de la imagen */}
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Secciones</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="space-y-1">
-                    {seccionesUsuarios.map((seccion, index) => {
-                      const IconComponent = seccion.icono
-                      const sectionKey = seccion.nombre
-                        .toLowerCase()
-                        .replace(/\s+/g, "")
-                        .replace(/ó/g, "o")
-                        .replace(/í/g, "i")
-                        .replace(/á/g, "a")
-                      const isActive = activeSection === sectionKey
+        {/* Layout principal mejorado */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Sidebar de Secciones - Más compacto */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Secciones</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="space-y-1">
+                  {seccionesUsuarios.map((seccion, index) => {
+                    const IconComponent = seccion.icono
+                    const sectionKey = seccion.nombre
+                      .toLowerCase()
+                      .replace(/\s+/g, "")
+                      .replace(/ó/g, "o")
+                      .replace(/í/g, "i")
+                      .replace(/á/g, "a")
+                    const isActive = activeSection === sectionKey
 
-                      return (
-                        <div
-                          key={index}
-                          className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${isActive ? "bg-green-50 border-r-4 border-green-500" : "hover:bg-gray-50"
-                            }`}
-                          onClick={() => setActiveSection(sectionKey)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${seccion.color}`}>
-                              <IconComponent className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className={`font-medium ${isActive ? "text-green-700" : "text-gray-900"}`}>
-                                {seccion.nombre}
-                              </h3>
-                              <p className="text-sm text-gray-500">{seccion.elementos} elementos</p>
-                            </div>
-                          </div>
-                          {isActive && <ChevronRight className="w-5 h-5 text-green-500" />}
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setActiveSection(sectionKey)}
+                        className={`w-full text-left p-4 flex items-center gap-3 transition-colors ${isActive
+                          ? "bg-green-50 border-r-4 border-green-600 text-green-700"
+                          : "hover:bg-gray-50 text-gray-700"
+                          }`}
+                      >
+                        <div className={`p-2 rounded-lg ${isActive ? "bg-green-100" : seccion.color}`}>
+                          <IconComponent className={`w-4 h-4 ${isActive ? "text-green-600" : ""}`} />
                         </div>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Contenido Principal */}
-            <div className="lg:col-span-3">{renderContent()}</div>
+                        <div className="flex-1">
+                          <h3 className={`font-medium text-sm ${isActive ? "text-green-700" : "text-gray-900"}`}>
+                            {seccion.nombre}
+                          </h3>
+                          <p className="text-xs text-gray-500">{seccion.elementos} elementos</p>
+                        </div>
+                        {isActive && <ChevronRight className="w-4 h-4 text-green-500" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
+          {/* Contenido Principal - Más espacio */}
+          <div className="lg:col-span-4">{renderContent()}</div>
         </div>
       </div>
-    </>
+    </TooltipProvider>
   )
 }
 
