@@ -82,22 +82,25 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
     data.forEach((item, index) => {
       const marker = L.marker([item.Junta_Vecinal.latitud, item.Junta_Vecinal.longitud], {
         opacity: 0,
+        // Asegurar que el marcador sea interactivo en modal
+        interactive: true,
+        bubblingMouseEvents: false,
       }).addTo(mapInstanceRef.current)
 
       const tooltipContent = `
         <div class="p-3 bg-white shadow-lg min-w-[250px] rounded-lg border-2 border-red-200">
-          <h3 class="font-bold mb-2 text-red-800 text-lg">${item.Junta_Vecinal.nombre}</h3>
+          <h3 class="font-bold mb-2 text-red-800 text-lg">${item.Junta_Vecinal.nombre || "Sin nombre"}</h3>
           <div class="space-y-1 text-sm">
-            <p class="text-red-700"><strong>🚨 Total pendientes:</strong> ${item.Junta_Vecinal.pendientes}</p>
-            <p class="text-orange-700"><strong>⚠️ Casos urgentes:</strong> ${item.Junta_Vecinal.urgentes}</p>
-            <p class="text-yellow-700"><strong>⏱️ Tiempo promedio:</strong> ${item.tiempo_promedio_pendiente}</p>
+            <p class="text-red-700"><strong>🚨 Total pendientes:</strong> ${item.Junta_Vecinal.pendientes || 0}</p>
+            <p class="text-orange-700"><strong>⚠️ Casos urgentes:</strong> ${item.Junta_Vecinal.urgentes || 0}</p>
+            <p class="text-yellow-700"><strong>⏱️ Tiempo promedio:</strong> ${item.tiempo_promedio_pendiente || "N/A"}</p>
             <hr class="border-red-200 my-2">
-            <p class="text-red-600"><strong>🏥 Asistencia Social:</strong> ${item["Asistencia Social"]}</p>
-            <p class="text-orange-600"><strong>🛣️ Mantención de Calles:</strong> ${item["Mantención de Calles"]}</p>
-            <p class="text-yellow-600"><strong>🛡️ Seguridad:</strong> ${item.Seguridad}</p>
-            <p class="text-pink-600"><strong>🌳 Áreas verdes:</strong> ${item["Áreas verdes"]}</p>
+            <p class="text-red-600"><strong>🏥 Asistencia Social:</strong> ${item["Asistencia Social"] || 0}</p>
+            <p class="text-orange-600"><strong>🛣️ Mantención de Calles:</strong> ${item["Mantención de Calles"] || 0}</p>
+            <p class="text-yellow-600"><strong>🛡️ Seguridad:</strong> ${item.Seguridad || 0}</p>
+            <p class="text-pink-600"><strong>🌳 Áreas verdes:</strong> ${item["Áreas verdes"] || 0}</p>
             <hr class="border-red-200 my-2">
-            <p class="text-red-500 text-xs"><strong>📅 Última publicación:</strong> ${new Date(item.ultima_publicacion).toLocaleDateString("es-AR")}</p>
+            <p class="text-red-500 text-xs"><strong>📅 Última publicación:</strong> ${item.ultima_publicacion ? new Date(item.ultima_publicacion).toLocaleDateString("es-AR") : "N/A"}</p>
           </div>
         </div>
       `
@@ -108,6 +111,11 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
         offset: [0, -10],
         opacity: 1,
         className: "leaflet-tooltip-custom-calor",
+        sticky: true, // Permite que el tooltip se mueva con el mouse
+        ...(isModal && {
+          pane: 'tooltipPane',
+          zIndexOffset: 10017,
+        }),
       })
 
       marker.on("mouseover", () => {
@@ -120,7 +128,7 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
 
       markersRef.current.push(marker)
     })
-  }, [data])
+  }, [data, isModal])
 
   // Cargar leaflet.heat dinámicamente
   useEffect(() => {
@@ -149,7 +157,8 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
           position: "relative",
         }}
       />
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .leaflet-tooltip-custom-calor {
           background: transparent !important;
           border: none !important;
@@ -161,19 +170,26 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
         }
         /* Asegurar que el mapa del modal tenga z-index alto */
         .leaflet-container {
-          z-index: ${isModal ? "9999" : "1"} !important;
+          z-index: ${isModal ? "10015" : "1"} !important;
           position: relative !important;
         }
         .leaflet-map-pane {
-          z-index: ${isModal ? "9999" : "1"} !important;
+          z-index: ${isModal ? "10015" : "1"} !important;
         }
         .leaflet-tile-pane {
-          z-index: ${isModal ? "9999" : "1"} !important;
+          z-index: ${isModal ? "10015" : "1"} !important;
         }
         .leaflet-overlay-pane {
-          z-index: ${isModal ? "10000" : "2"} !important;
+          z-index: ${isModal ? "10016" : "2"} !important;
         }
-      `}</style>
+        .leaflet-tooltip-pane {
+          z-index: ${isModal ? "10017" : "3"} !important;
+        }
+        .leaflet-marker-pane {
+          z-index: ${isModal ? "10016" : "2"} !important;
+        }
+        `
+      }} />
     </>
   )
 }

@@ -83,18 +83,18 @@ const MapaFrioComponente = ({ data, isModal = false }) => {
 
       const tooltipContent = `
         <div class="p-3 bg-white shadow-lg min-w-[250px] rounded-lg border-2 border-blue-200">
-          <h3 class="font-bold mb-2 text-blue-800 text-lg">${item.Junta_Vecinal.nombre}</h3>
+          <h3 class="font-bold mb-2 text-blue-800 text-lg">${item.Junta_Vecinal?.nombre || "Sin nombre"}</h3>
           <div class="space-y-1 text-sm">
-            <p class="text-blue-700"><strong>✅ Total resueltas:</strong> ${item.Junta_Vecinal.total_resueltas}</p>
-            <p class="text-cyan-700"><strong>📊 Eficiencia:</strong> ${item.Junta_Vecinal.eficiencia}%</p>
-            <p class="text-indigo-700"><strong>⏱️ Tiempo promedio:</strong> ${item.tiempo_promedio_resolucion}</p>
+            <p class="text-blue-700"><strong>✅ Total resueltas:</strong> ${item.Junta_Vecinal?.total_resueltas || 0}</p>
+            <p class="text-cyan-700"><strong>📊 Eficiencia:</strong> ${item.Junta_Vecinal?.eficiencia || 0}%</p>
+            <p class="text-indigo-700"><strong>⏱️ Tiempo promedio:</strong> ${item.tiempo_promedio_resolucion || "0 días"}</p>
             <hr class="border-blue-200 my-2">
-            <p class="text-blue-600"><strong>🏥 Asistencia Social:</strong> ${item["Asistencia Social"]}</p>
-            <p class="text-cyan-600"><strong>🛣️ Mantención de Calles:</strong> ${item["Mantención de Calles"]}</p>
-            <p class="text-indigo-600"><strong>🛡️ Seguridad:</strong> ${item.Seguridad}</p>
-            <p class="text-teal-600"><strong>🌳 Áreas verdes:</strong> ${item["Áreas verdes"]}</p>
+            <p class="text-blue-600"><strong>🏥 Asistencia Social:</strong> ${item["Asistencia Social"] || 0}</p>
+            <p class="text-cyan-600"><strong>🛣️ Mantención de Calles:</strong> ${item["Mantención de Calles"] || 0}</p>
+            <p class="text-indigo-600"><strong>🛡️ Seguridad:</strong> ${item.Seguridad || 0}</p>
+            <p class="text-teal-600"><strong>🌳 Áreas verdes:</strong> ${item["Áreas verdes"] || 0}</p>
             <hr class="border-blue-200 my-2">
-            <p class="text-blue-500 text-xs"><strong>📅 Última resolución:</strong> ${new Date(item.ultima_resolucion).toLocaleDateString("es-AR")}</p>
+            <p class="text-blue-500 text-xs"><strong>📅 Última resolución:</strong> ${item.ultima_resolucion ? new Date(item.ultima_resolucion).toLocaleDateString("es-AR") : "Sin fecha"}</p>
           </div>
         </div>
       `

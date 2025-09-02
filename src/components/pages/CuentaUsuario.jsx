@@ -1,7 +1,7 @@
 import TopBar from '../TopBar'
 
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import useAuth from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -57,6 +58,8 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const [selectedUser, setSelectedUser] = useState(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
   const { isAdmin } = useAuth()
 
   // Determinar el rol del usuario actual basado en el token
@@ -93,6 +96,9 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState(null)
+  const [rutVerificationMessage, setRutVerificationMessage] = useState(null)
+  const [emailVerificationMessage, setEmailVerificationMessage] = useState(null)
+  const [verifying, setVerifying] = useState({ rut: false, email: false })
   const axiosPrivate = useAxiosPrivate()
 
   const getPermisosForRole = useCallback((rol) => {
@@ -159,7 +165,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await axiosPrivate.get('/usuarios/')
+      const response = await axiosPrivate.get('/usuarios/?tipo_usuario=jefe_departamento,personal,administrador')
       const mappedUsers = response.data.map(mapApiUserToUIUser)
       setUsuarios(mappedUsers)
     } catch (err) {
@@ -176,12 +182,108 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     fetchDepartamentos()
   }, [fetchUsuarios, fetchDepartamentos])
 
-  // Filtrar secciones según el rol del usuario actual
-  const getSeccionesUsuarios = () => {
+  // Función para obtener RUT sin formato para envío al backend
+  const getRutForBackend = useCallback((formattedRut) => {
+    if (!formattedRut) return null
+    // Remover puntos pero mantener guión y dígito verificador
+    return formattedRut.replace(/\./g, '').toLowerCase();
+  }, [])
+
+  // Función para verificar RUT en tiempo real
+  const checkRutExists = useCallback(async (rut) => {
+    if (!rut) {
+      setRutVerificationMessage(null)
+      return null
+    }
+
+    setVerifying(prev => ({ ...prev, rut: true }))
+    try {
+      const response = await axiosPrivate.post('/verificar-usuario/', { rut: getRutForBackend(rut) })
+      const message = !response.data.rut_disponible
+        ? `⚠️ Este RUT ya está registrado por: ${response.data.usuario_rut?.nombre || 'otro usuario'}`
+        : null
+      setRutVerificationMessage(message)
+      return message
+    } catch (error) {
+      console.error('Error al verificar RUT:', error)
+      setRutVerificationMessage(null)
+      return null
+    } finally {
+      setVerifying(prev => ({ ...prev, rut: false }))
+    }
+  }, [axiosPrivate, getRutForBackend])
+
+  // Función para verificar email en tiempo real
+  const checkEmailExists = useCallback(async (email) => {
+    if (!email) {
+      setEmailVerificationMessage(null)
+      return null
+    }
+
+    setVerifying(prev => ({ ...prev, email: true }))
+    try {
+      const response = await axiosPrivate.post('/verificar-usuario/', { email: email.toLowerCase() })
+      const message = !response.data.email_disponible
+        ? `⚠️ Este email ya está registrado por: ${response.data.usuario_email?.nombre || 'otro usuario'}`
+        : null
+      setEmailVerificationMessage(message)
+      return message
+    } catch (error) {
+      console.error('Error al verificar email:', error)
+      setEmailVerificationMessage(null)
+      return null
+    } finally {
+      setVerifying(prev => ({ ...prev, email: false }))
+    }
+  }, [axiosPrivate])
+
+  // Verificación automática del RUT con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (newUser.rut) {
+        checkRutExists(newUser.rut)
+      }
+    }, 500)
+    return () => clearTimeout(timeoutId)
+  }, [newUser.rut]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Verificación automática del email con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (newUser.email) {
+        checkEmailExists(newUser.email)
+      }
+    }, 500)
+    return () => clearTimeout(timeoutId)
+  }, [newUser.email]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const getFilteredUsersForRole = useCallback(() => {
+    if (CURRENT_USER_ROLE === "Administrador Municipal") {
+      return usuarios
+    } else {
+      // Jefe de Departamento solo ve usuarios de su departamento
+      return usuarios.filter(
+        (user) =>
+          user.departamento === CURRENT_USER_DEPARTMENT ||
+          (user.rol === "Jefe de departamento" && user.departamento === CURRENT_USER_DEPARTMENT),
+      )
+    }
+  }, [usuarios, CURRENT_USER_ROLE, CURRENT_USER_DEPARTMENT])
+
+  const getMyTeamUsers = useCallback(() => {
+    return usuarios.filter(
+      (user) => user.departamento === CURRENT_USER_DEPARTMENT && user.rol !== "Jefe de departamento",
+    )
+  }, [usuarios, CURRENT_USER_DEPARTMENT])
+
+  const seccionesUsuarios = useMemo(() => {
+    const filteredUsers = getFilteredUsersForRole()
+    const myTeamUsers = getMyTeamUsers()
+
     const baseSections = [
       {
         nombre: "Gestión de Usuarios",
-        elementos: getFilteredUsersForRole().length,
+        elementos: filteredUsers.length,
         icono: Users,
         color: "text-green-600 bg-green-50",
         descripcion:
@@ -214,7 +316,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
         ...baseSections,
         {
           nombre: "Mi Equipo",
-          elementos: getMyTeamUsers().length,
+          elementos: myTeamUsers.length,
           icono: Users,
           color: "text-blue-600 bg-blue-50",
           descripcion: "Usuarios bajo mi supervisión directa",
@@ -235,53 +337,47 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
         // },
       ]
     }
-  }
+  }, [getFilteredUsersForRole, getMyTeamUsers, CURRENT_USER_ROLE])
 
-  const getFilteredUsersForRole = () => {
-    if (CURRENT_USER_ROLE === "Administrador Municipal") {
-      return usuarios
-    } else {
-      // Jefe de Departamento solo ve usuarios de su departamento
-      return usuarios.filter(
-        (user) =>
-          user.departamento === CURRENT_USER_DEPARTMENT ||
-          (user.rol === "Jefe de departamento" && user.departamento === CURRENT_USER_DEPARTMENT),
-      )
-    }
-  }
-
-  const getMyTeamUsers = () => {
-    return usuarios.filter(
-      (user) => user.departamento === CURRENT_USER_DEPARTMENT && user.rol !== "Jefe de departamento",
-    )
-  }
-
-  const seccionesUsuarios = getSeccionesUsuarios()
-
-  const filteredUsers = getFilteredUsersForRole().filter((user) => {
-    const matchesSearch =
-      user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.departamento.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRolFilter = filterRol === "todos" || user.rol === filterRol
-    const matchesEstadoFilter = filterEstado === "todos" || user.estado === filterEstado
-    return matchesSearch && matchesRolFilter && matchesEstadoFilter
-  })
+  const filteredUsers = useMemo(() => {
+    return getFilteredUsersForRole().filter((user) => {
+      const matchesSearch =
+        user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.departamento.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesRolFilter = filterRol === "todos" || user.rol === filterRol
+      const matchesEstadoFilter = filterEstado === "todos" || user.estado === filterEstado
+      return matchesSearch && matchesRolFilter && matchesEstadoFilter
+    })
+  }, [getFilteredUsersForRole, searchTerm, filterRol, filterEstado])
 
   // Función para validar si ya existe un usuario con el mismo RUT o email
-  const validateUniqueUser = (rut, email) => {
-    const existingUserByRut = usuarios.find(user => user.rut === rut)
-    const existingUserByEmail = usuarios.find(user => user.email.toLowerCase() === email.toLowerCase())
+  const validateUniqueUser = async (rut, email) => {
+    try {
+      const response = await axiosPrivate.post('/verificar-usuario/', {
+        rut: getRutForBackend(rut),
+        email: email.toLowerCase()
+      })
 
-    if (existingUserByRut) {
-      return { isValid: false, message: `Ya existe un usuario registrado con el RUT: ${rut}` }
+      if (!response.data.rut_disponible) {
+        return {
+          isValid: false,
+          message: `El RUT ${rut} ya está registrado por: ${response.data.usuario_rut?.nombre || 'otro usuario'}`
+        }
+      }
+
+      if (!response.data.email_disponible) {
+        return {
+          isValid: false,
+          message: `El email ${email} ya está registrado por: ${response.data.usuario_email?.nombre || 'otro usuario'}`
+        }
+      }
+
+      return { isValid: true, message: "" }
+    } catch (error) {
+      console.error('Error al validar usuario único:', error)
+      return { isValid: false, message: "Error al verificar la disponibilidad del usuario" }
     }
-
-    if (existingUserByEmail) {
-      return { isValid: false, message: `Ya existe un usuario registrado con el email: ${email}` }
-    }
-
-    return { isValid: true, message: "" }
   }
 
   // Función para validar si el departamento ya tiene un jefe asignado
@@ -320,20 +416,6 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     return { isValid: true, message: "" }
   }
 
-  // Función para verificar RUT en tiempo real
-  const checkRutExists = (rut) => {
-    if (!rut) return null
-    const existingUser = usuarios.find(user => user.rut === rut)
-    return existingUser ? `⚠️ Este RUT ya está registrado por: ${existingUser.nombre}` : null
-  }
-
-  // Función para verificar email en tiempo real
-  const checkEmailExists = (email) => {
-    if (!email) return null
-    const existingUser = usuarios.find(user => user.email.toLowerCase() === email.toLowerCase())
-    return existingUser ? `⚠️ Este email ya está registrado por: ${existingUser.nombre}` : null
-  }
-
   // Función para verificar si el departamento ya tiene jefe
   const checkDepartmentHasChief = (departamentoId, tipoUsuario) => {
     if (tipoUsuario !== 'jefe_departamento' || !departamentoId) return null
@@ -343,7 +425,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   }
 
   // Función para formatear el RUT automáticamente para visualización
-  const formatRut = (value) => {
+  const formatRut = useCallback((value) => {
     // Limpiar solo dígitos (el filtrado de kK ya se hace en el handler)
     const cleaned = value.replace(/\D/g, '');
 
@@ -353,21 +435,14 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     // Formatear: tomar todos menos el último dígito, agregar puntos, y agregar guión + último dígito
     let formatted = cleaned.slice(0, -1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     return formatted + '-' + cleaned.slice(-1);
-  };
-
-  // Función para obtener RUT sin formato para envío al backend
-  const getRutForBackend = (formattedRut) => {
-    if (!formattedRut) return '';
-    // Remover puntos pero mantener guión y dígito verificador
-    return formattedRut.replace(/\./g, '').toLowerCase();
-  };
+  }, [])
 
   // Función para manejar el cambio del RUT con formateo
-  const handleRutChange = (e) => {
+  const handleRutChange = useCallback((e) => {
     const value = e.target.value.replace(/[^\d\-kK]/g, '');
     const formattedRut = formatRut(value);
-    setNewUser({ ...newUser, rut: formattedRut });
-  };
+    setNewUser(prev => ({ ...prev, rut: formattedRut }));
+  }, [formatRut])
 
   // Función para verificar si las contraseñas coinciden
   const checkPasswordMatch = () => {
@@ -400,6 +475,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   // Función para obtener el motivo por el cual el botón está desactivado
   const getDisabledButtonReason = () => {
     if (updating) return "Creando usuario...";
+    if (verifying.rut || verifying.email) return "Verificando disponibilidad...";
     if (!newUser.nombre) return "Falta completar el nombre";
     if (validateFieldLength('nombre', newUser.nombre, 120)) return "Nombre demasiado largo";
     if (!newUser.email) return "Falta completar el email";
@@ -412,8 +488,8 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     if (!newUser.password) return "Falta completar la contraseña";
     if (!newUser.confirmPassword) return "Falta confirmar la contraseña";
     if (validateFieldLength('telefono', newUser.numero_telefonico_movil, 9)) return "Teléfono demasiado largo";
-    if (checkRutExists(newUser.rut)) return "El RUT ya está registrado";
-    if (checkEmailExists(newUser.email)) return "El email ya está registrado";
+    if (rutVerificationMessage) return "RUT no disponible";
+    if (emailVerificationMessage) return "Email no disponible";
     if (checkDepartmentHasChief(newUser.departamento_id, newUser.tipo_usuario)) return "El departamento ya tiene jefe asignado";
     if (newUser.password !== newUser.confirmPassword) return "Las contraseñas no coinciden";
     if (newUser.password.length < 6) return "La contraseña debe tener al menos 6 caracteres";
@@ -471,7 +547,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     }
 
     // Validar si el usuario ya existe
-    const uniqueUserValidation = validateUniqueUser(newUser.rut, newUser.email)
+    const uniqueUserValidation = await validateUniqueUser(newUser.rut, newUser.email)
     if (!uniqueUserValidation.isValid) {
       alert(uniqueUserValidation.message)
       return
@@ -579,6 +655,10 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       enviarCredenciales: true,
       requiereCambioPassword: true,
     })
+    // Limpiar mensajes de verificación
+    setRutVerificationMessage(null)
+    setEmailVerificationMessage(null)
+    setVerifying({ rut: false, email: false })
   }
 
   // Funciones para editar usuario
@@ -653,7 +733,79 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     try {
       setUpdating(true) // Iniciar estado de actualización
 
-      // Preparar datos para actualizar
+      // PASO 1: Primero manejar la desasignación de jefatura ANTES de cambiar el tipo de usuario
+      if (editUser.departamento_id) {
+        try {
+          // Obtener información actual del usuario desde la UI
+          const currentUserData = usuarios.find(u => u.id === editUser.id)
+          const currentDepartmentName = currentUserData?.departamento || null
+          const currentDepartment = departamentos.find(dept => dept.nombre === currentDepartmentName)
+          const currentDepartmentId = currentDepartment?.id.toString()
+          const newDepartmentId = editUser.departamento_id.toString()
+          const currentRol = currentUserData?.rol || null
+          const newRol = editUser.tipo_usuario === 'jefe_departamento' ? 'Jefe de departamento' : 'Personal Municipal'
+
+          console.log('Departamento actual:', currentDepartmentId, 'Nuevo departamento:', newDepartmentId)
+          console.log('Rol actual:', currentRol, 'Nuevo rol:', newRol)
+          console.log('Tipo de usuario:', editUser.tipo_usuario)
+
+          // Proceder si el departamento cambió O si el tipo de usuario cambió
+          const departmentChanged = currentDepartmentId !== newDepartmentId
+
+          // IMPORTANTE: Si el usuario deja de ser jefe, remover PRIMERO la asignación del departamento
+          if (currentRol === 'Jefe de departamento' && newRol !== 'Jefe de departamento') {
+            // Encontrar el departamento donde era jefe
+            const departmentWhereWasChief = departamentos.find(dept =>
+              dept.jefe_departamento && dept.jefe_departamento.id === editUser.id
+            )
+
+            if (departmentWhereWasChief) {
+              await axiosPrivate.patch(`/departamentos-municipales/${departmentWhereWasChief.id}/`, {
+                jefe_departamento: null
+              })
+              console.log(`✅ PASO 1A: Removida asignación como jefe de departamento en: ${departmentWhereWasChief.nombre}`)
+            }
+          }
+
+          // IMPORTANTE: Si el usuario cambia de personal a jefe, eliminar su registro de usuario-departamento
+          if (currentRol === 'Personal Municipal' && newRol === 'Jefe de departamento') {
+            try {
+              const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+              const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
+                (currentAssignment.data.results || [])
+
+              if (assignments.length > 0) {
+                // Finalizar todas las asignaciones actuales en usuario-departamento
+                for (const assignment of assignments) {
+                  if (assignment.estado === 'activo') {
+                    await axiosPrivate.patch(`/usuario-departamento/${assignment.id}/`, {
+                      estado: 'inactivo',
+                      fecha_fin_asignacion: new Date().toISOString()
+                    })
+                    console.log(`✅ PASO 1B: Finalizada asignación usuario-departamento ID: ${assignment.id}`)
+                  }
+                }
+              }
+            } catch (assignmentError) {
+              console.error('❌ Error al finalizar asignaciones usuario-departamento:', assignmentError)
+            }
+          }
+
+          // Si cambió a un departamento diferente y era jefe del anterior, también remover esa asignación
+          if (departmentChanged && currentUserData?.rol === 'Jefe de departamento' && currentDepartment && currentDepartment.id !== parseInt(newDepartmentId)) {
+            await axiosPrivate.patch(`/departamentos-municipales/${currentDepartment.id}/`, {
+              jefe_departamento: null
+            })
+            console.log('✅ PASO 1C: Removida asignación anterior como jefe de departamento por cambio de departamento')
+          }
+
+        } catch (preUpdateError) {
+          console.error('❌ Error en PASO 1 (pre-actualización):', preUpdateError)
+          // Continuar con el proceso, pero registrar el error
+        }
+      }
+
+      // PASO 2: Actualizar los datos básicos del usuario
       const updateData = {
         nombre: editUser.nombre,
         email: editUser.email,
@@ -669,59 +821,55 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
       // Actualizar usuario
       await axiosPrivate.patch(`/usuarios/${editUser.id}/`, updateData)
+      console.log('✅ PASO 2: Usuario actualizado exitosamente')
 
-      // Si cambió el departamento, actualizar asignación
+      // PASO 3: Manejar las nuevas asignaciones de departamento
       if (editUser.departamento_id) {
         try {
-          // Obtener información actual del usuario desde la UI
+          // Obtener información actualizada
           const currentUserData = usuarios.find(u => u.id === editUser.id)
           const currentDepartmentName = currentUserData?.departamento || null
           const currentDepartment = departamentos.find(dept => dept.nombre === currentDepartmentName)
           const currentDepartmentId = currentDepartment?.id.toString()
           const newDepartmentId = editUser.departamento_id.toString()
+          const newRol = editUser.tipo_usuario === 'jefe_departamento' ? 'Jefe de departamento' : 'Personal Municipal'
 
-          console.log('Departamento actual:', currentDepartmentId, 'Nuevo departamento:', newDepartmentId)
-          console.log('Tipo de usuario:', editUser.tipo_usuario)
+          const departmentChanged = currentDepartmentId !== newDepartmentId
+          const roleChanged = currentUserData?.rol !== newRol
 
-          // Solo proceder si el departamento realmente cambió
-          if (currentDepartmentId !== newDepartmentId) {
+          // Solo proceder si hay cambios que procesar
+          if (departmentChanged || roleChanged) {
 
-            // Si el usuario era jefe de departamento anteriormente, remover la asignación
-            if (currentUserData?.rol === 'Jefe de departamento' && currentDepartment) {
-              await axiosPrivate.patch(`/departamentos-municipales/${currentDepartment.id}/`, {
-                jefe_departamento: null
-              })
-              console.log('Removida asignación anterior como jefe de departamento')
-            }
-
-            // Manejar según el tipo de usuario
+            // Manejar asignaciones según el nuevo tipo de usuario
             if (editUser.tipo_usuario === 'jefe_departamento') {
               // Para jefe de departamento: actualizar directamente en la tabla departamentos
               await axiosPrivate.patch(`/departamentos-municipales/${editUser.departamento_id}/`, {
                 jefe_departamento: editUser.id
               })
-              console.log('Usuario asignado como jefe de departamento')
+              console.log('✅ PASO 3A: Usuario asignado como jefe de departamento')
 
-              // También mantener registro en usuario-departamento para consistencia
-              // Buscar asignación actual en usuario-departamento
-              const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
-              const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
-                (currentAssignment.data.results || [])
+              // Solo crear registro en usuario-departamento si cambió de departamento
+              // (no si cambió de personal a jefe en el mismo departamento)
+              if (departmentChanged) {
+                const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+                const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
+                  (currentAssignment.data.results || [])
 
-              if (assignments.length > 0) {
-                // Finalizar asignación actual
-                await axiosPrivate.patch(`/usuario-departamento/${assignments[0].id}/`, {
-                  estado: 'inactivo',
-                  fecha_fin_asignacion: new Date().toISOString()
-                })
+                // Crear nueva asignación solo si cambió el departamento
+                const needsNewAssignment = assignments.length === 0 ||
+                  assignments.every(a => a.estado !== 'activo' || a.departamento.id.toString() !== editUser.departamento_id.toString())
+
+                if (needsNewAssignment) {
+                  await axiosPrivate.post('/usuario-departamento/', {
+                    usuario: editUser.id,
+                    departamento: editUser.departamento_id,
+                    estado: 'activo'
+                  })
+                  console.log('✅ PASO 3A: Asignación en usuario-departamento creada para jefe (cambio de departamento)')
+                }
+              } else {
+                console.log('✅ PASO 3A: Jefe asignado al mismo departamento, no se crea registro usuario-departamento')
               }
-
-              // Crear nueva asignación
-              await axiosPrivate.post('/usuario-departamento/', {
-                usuario: editUser.id,
-                departamento: editUser.departamento_id,
-                estado: 'activo'
-              })
 
             } else {
               // Para personal municipal: usar solo usuario-departamento
@@ -731,27 +879,52 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
               console.log('Asignaciones actuales:', assignments)
 
-              if (assignments.length > 0) {
-                // Finalizar asignación actual
-                await axiosPrivate.patch(`/usuario-departamento/${assignments[0].id}/`, {
-                  estado: 'inactivo',
-                  fecha_fin_asignacion: new Date().toISOString()
-                })
+              // Si hay asignaciones activas y cambió el departamento, finalizarlas
+              if (assignments.length > 0 && departmentChanged) {
+                const activeAssignments = assignments.filter(a => a.estado === 'activo')
+                for (const assignment of activeAssignments) {
+                  await axiosPrivate.patch(`/usuario-departamento/${assignment.id}/`, {
+                    estado: 'inactivo',
+                    fecha_fin_asignacion: new Date().toISOString()
+                  })
+                  console.log(`✅ PASO 3B: Finalizada asignación previa ID: ${assignment.id}`)
+                }
               }
 
-              // Crear nueva asignación
-              await axiosPrivate.post('/usuario-departamento/', {
-                usuario: editUser.id,
-                departamento: editUser.departamento_id,
-                estado: 'activo'
-              })
-              console.log('Asignación de departamento actualizada para personal municipal')
+              // Para usuarios que cambian a "Personal", asegurar asignación activa
+              if (editUser.tipo_usuario === 'personal') {
+                // Buscar si ya existe un registro para este usuario y departamento
+                const existingAssignment = assignments.find(
+                  a => a.departamento.id.toString() === editUser.departamento_id.toString()
+                )
+
+                if (existingAssignment) {
+                  // Si existe pero está inactivo, reactivarlo
+                  if (existingAssignment.estado === 'inactivo') {
+                    await axiosPrivate.patch(`/usuario-departamento/${existingAssignment.id}/`, {
+                      estado: 'activo',
+                      fecha_fin_asignacion: null
+                    })
+                    console.log('✅ PASO 3B: Asignación existente reactivada para personal municipal')
+                  } else {
+                    console.log('✅ PASO 3B: Usuario ya tiene asignación activa en el departamento objetivo')
+                  }
+                } else {
+                  // Si no existe registro, crear uno nuevo
+                  await axiosPrivate.post('/usuario-departamento/', {
+                    usuario: editUser.id,
+                    departamento: editUser.departamento_id,
+                    estado: 'activo'
+                  })
+                  console.log('✅ PASO 3B: Nueva asignación de departamento creada para personal municipal')
+                }
+              }
             }
           } else {
-            console.log('El departamento no cambió, no se actualiza la asignación')
+            console.log('✅ Ni el departamento ni el rol cambiaron, no se actualiza la asignación')
           }
         } catch (assignmentError) {
-          console.error('Error al actualizar asignación de departamento:', assignmentError)
+          console.error('❌ Error en PASO 3 (post-actualización):', assignmentError)
           // No interrumpir el proceso por errores de asignación
         }
       }
@@ -760,11 +933,12 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       setIsEditDialogOpen(false)
       resetEditUserForm()
 
-      // Recargar tanto usuarios como departamentos para reflejar cambios
+      // PASO 4: Recargar tanto usuarios como departamentos para reflejar cambios
       await Promise.all([
         fetchUsuarios(),
         fetchDepartamentos()
       ])
+      console.log('✅ PASO 4: Datos recargados exitosamente')
 
     } catch (error) {
       console.error('Error al actualizar usuario:', error)
@@ -815,6 +989,81 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       esta_activo: true,
       requiereCambioPassword: false,
     })
+  }
+
+  // Funciones para eliminar usuario
+  const openDeleteDialog = (usuario) => {
+    setUserToDelete(usuario)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setUpdating(true)
+
+      // Verificar si el usuario tiene dependencias críticas
+      const canDelete = await validateUserDeletion(userToDelete)
+      if (!canDelete.isValid) {
+        alert(canDelete.message)
+        return
+      }
+
+      // Eliminar usuario
+      await axiosPrivate.delete(`/usuarios/${userToDelete.id}/`)
+
+      alert("Usuario eliminado exitosamente")
+      setIsDeleteDialogOpen(false)
+      setUserToDelete(null)
+
+      // Recargar tanto usuarios como departamentos para reflejar cambios
+      await Promise.all([
+        fetchUsuarios(),
+        fetchDepartamentos()
+      ])
+
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error)
+
+      if (error.response?.status === 400) {
+        alert("No se puede eliminar el usuario porque tiene dependencias activas.")
+      } else if (error.response?.status === 403) {
+        alert("No tienes permisos para eliminar este usuario.")
+      } else if (error.response?.status === 404) {
+        alert("El usuario no existe o ya fue eliminado.")
+      } else {
+        alert("Error al eliminar usuario. Por favor, intente nuevamente.")
+      }
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const validateUserDeletion = async (usuario) => {
+    // Verificar si es el último administrador
+    const adminUsers = usuarios.filter(u => u.rol === "Administrador Municipal" && u.estado === "Activo")
+    if (usuario.rol === "Administrador Municipal" && adminUsers.length <= 1) {
+      return {
+        isValid: false,
+        message: "No se puede eliminar el último administrador del sistema."
+      }
+    }
+
+    // Verificar si es jefe de departamento con departamento asignado
+    if (usuario.rol === "Jefe de departamento") {
+      const departamento = departamentos.find(dept =>
+        dept.jefe_departamento?.id === usuario.id
+      )
+      if (departamento) {
+        return {
+          isValid: false,
+          message: `No se puede eliminar al jefe del departamento "${departamento.nombre}". Asigne otro jefe primero.`
+        }
+      }
+    }
+
+    return { isValid: true, message: "" }
   }
 
   // Función para manejar el cambio del RUT en edición
@@ -1085,9 +1334,9 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               className="mt-1"
                               maxLength={200}
                             />
-                            {newUser.email && checkEmailExists(newUser.email) && (
+                            {emailVerificationMessage && (
                               <p className="text-xs text-red-500 mt-1">
-                                {checkEmailExists(newUser.email)}
+                                {emailVerificationMessage}
                               </p>
                             )}
                             {validateEmail(newUser.email) && (
@@ -1111,9 +1360,9 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               className="mt-1"
                               maxLength={12}
                             />
-                            {newUser.rut && checkRutExists(newUser.rut) && (
+                            {rutVerificationMessage && (
                               <p className="text-xs text-red-500 mt-1">
-                                {checkRutExists(newUser.rut)}
+                                {rutVerificationMessage}
                               </p>
                             )}
                             {validateRutFormat(newUser.rut) && (
@@ -1329,8 +1578,8 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               validateFieldLength('email', newUser.email, 200) ||
                               validateRutFormat(newUser.rut) ||
                               validateFieldLength('telefono', newUser.numero_telefonico_movil, 9) ||
-                              checkRutExists(newUser.rut) ||
-                              checkEmailExists(newUser.email) ||
+                              rutVerificationMessage ||
+                              emailVerificationMessage ||
                               checkDepartmentHasChief(newUser.departamento_id, newUser.tipo_usuario) ||
                               newUser.password !== newUser.confirmPassword ||
                               newUser.password.length < 6
@@ -1937,6 +2186,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                                     variant="outline"
                                     className="text-red-600 hover:text-red-700 hover:border-red-300"
                                     title="Eliminar usuario"
+                                    onClick={() => openDeleteDialog(usuario)}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
@@ -2857,6 +3107,34 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           {/* Contenido Principal - Más espacio */}
           <div className="lg:col-span-4">{renderContent()}</div>
         </div>
+
+        {/* Alert Dialog para confirmar eliminación */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {userToDelete && (
+                  <div className="space-y-2">
+                    <p>¿Estás seguro de que deseas eliminar al usuario <strong>{userToDelete.nombre} {userToDelete.apellido}</strong>?</p>
+                    <p>RUT: {userToDelete.rut}</p>
+                    <p>Email: {userToDelete.email}</p>
+                    <p className="text-red-600 font-medium mt-3">Esta acción no se puede deshacer.</p>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteUser}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Eliminar usuario
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   )
