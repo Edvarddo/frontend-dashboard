@@ -17,6 +17,7 @@ import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { useToast } from "../../hooks/use-toast"
 import { ModalEliminarCategoria } from "../ModalEliminarCategoria"
 import { Spinner } from "@radix-ui/themes"
+import { operations } from "@/lib/constants"
 
 // Datos de ejemplo para departamentos
 const departamentosData = [
@@ -152,13 +153,18 @@ const GestionCategoria = ({ onVolver }) => {
           await axiosPrivate.patch(`/categorias/${formData.id}/`, formData)
           // frontend
           setCategorias((prev) => prev.map((cat) => (cat.id === formData.id ? { ...cat, ...formData } : cat)))
+          toast({
+            title: "Categoría actualizada",
+            description: "La categoría se ha actualizado con éxito.",
+            className: operations.SUCCESS,
+          })
+          setModalAbierto(false)
         } catch (error) {
           console.error("Error al actualizar la categoría:", error)
           toast({
             title: "Error al actualizar la categoría",
             description: "Ha ocurrido un error al intentar actualizar la categoría.",
-            status: "error",
-            variants: "destructive",
+            className: operations.ERROR,
           })
         } finally {
           setLoading(false)
@@ -180,15 +186,15 @@ const GestionCategoria = ({ onVolver }) => {
           toast({
             title: "Categoría creada",
             description: "La categoría se ha creado con éxito.",
-            status: "success",
+            className: operations.SUCCESS,
           })
+          setModalAbierto(false)
         } catch (error) {
           console.error("Error al crear la categoría:", error)
           toast({
             title: "Error al crear la categoría",
             description: "Ha ocurrido un error al intentar crear la categoría.",
-            status: "error",
-            variants: "destructive",
+            className: operations.ERROR,
           })
         }
 
@@ -202,7 +208,7 @@ const GestionCategoria = ({ onVolver }) => {
         nombre: "",
         descripcion: "",
         departamento_id: "",
-        estado: "Habilitado",
+        estado: "habilitado",
       })
     }
   }
@@ -217,8 +223,7 @@ const GestionCategoria = ({ onVolver }) => {
         toast({
           title: "Categoría eliminada",
           description: "La categoría se ha eliminado con éxito.",
-          status: "success",
-          className: "bg-green-500 text-white",
+          className: operations.SUCCESS,
         })
       })
       .catch((error) => {
@@ -226,8 +231,7 @@ const GestionCategoria = ({ onVolver }) => {
         toast({
           title: "Error al eliminar la categoría",
           description: "Ha ocurrido un error al intentar eliminar la categoría.",
-          status: "error",
-          variants: "destructive",
+          className: operations.ERROR,
         })
       })
   }
@@ -292,15 +296,14 @@ const GestionCategoria = ({ onVolver }) => {
       toast({
         title: "Tabla recargada",
         description: "Los datos se han actualizado correctamente.",
-        status: "success",
+        className: operations.SUCCESS,
       })
     } catch (error) {
       console.error("Error al recargar la tabla:", error)
       toast({
         title: "Error al recargar",
         description: "Ha ocurrido un error al intentar recargar los datos.",
-        status: "error",
-        variants: "destructive",
+        className: operations.ERROR,
       })
     } finally {
       setLoading(false)

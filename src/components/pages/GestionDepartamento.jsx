@@ -14,6 +14,7 @@ import { Search, Plus, Edit, Trash2, ArrowLeft, Building2, Users, Eye } from "lu
 import TopBar from "../TopBar"
 import { useToast } from "../../hooks/use-toast"
 import useAxiosPrivate from "../../hooks/useAxiosPrivate"
+import { operations } from "@/lib/constants"
 
 // Datos de ejemplo para departamentos
 const departamentosData = [
@@ -162,30 +163,36 @@ const GestionDepartamento = ({ onVolver }) => {
                 : dept,
             ),
           )
+          toast({
+            title: "Departamento actualizado",
+            description: "El departamento ha sido actualizado correctamente.",
+            className: operations.SUCCESS,
+          })
         } catch (error) {
           console.error("Error al actualizar departamento:", error)
           toast({
             title: "Error al actualizar departamento",
             description: "Ha ocurrido un error al intentar actualizar el departamento.",
-            status: "error",
+            className: operations.ERROR,
           })
         }
       } else {
         // try-catch format
         try {
           const response = await axiosPrivate.post("/departamentos-municipales/", formData)
+          console.log("Departamento creado:", response.data)
           setDepartamentos((prev) => [...prev, response.data])
           toast({
             title: "Departamento creado",
             description: "El departamento ha sido creado correctamente.",
-            status: "success",
+            className: operations.SUCCESS,
           })
         } catch (error) {
           console.error("Error al crear departamento:", error)
           toast({
             title: "Error al crear departamento",
             description: "Ha ocurrido un error al intentar crear el departamento.",
-            status: "error",
+            className: operations.ERROR,
           })
         }
       }
@@ -219,7 +226,7 @@ const GestionDepartamento = ({ onVolver }) => {
         toast({
           title: "Departamento eliminado",
           description: "El departamento ha sido eliminado correctamente.",
-          status: "success",
+          className: operations.SUCCESS,
         })
       }
     } catch (error) {
@@ -227,7 +234,7 @@ const GestionDepartamento = ({ onVolver }) => {
       toast({
         title: "Error al eliminar departamento",
         description: "Ha ocurrido un error al intentar eliminar el departamento.",
-        status: "error",
+        className: operations.ERROR,
       })
     }
   }
@@ -277,8 +284,7 @@ const GestionDepartamento = ({ onVolver }) => {
       toast({
         title: "Error al obtener departamentos",
         description: "Ha ocurrido un error al intentar obtener los departamentos.",
-        status: "error",
-        variants: "destructive",
+        className: operations.ERROR,
       })
     } finally {
       setLoading(false)

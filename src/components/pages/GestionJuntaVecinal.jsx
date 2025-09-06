@@ -16,6 +16,7 @@ import TopBar from "../TopBar"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { set } from "date-fns"
 import { useToast } from "../../hooks/use-toast"
+import { operations } from "../../lib/constants"
 
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
@@ -149,10 +150,11 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   const handleAgregarJunta = async () => {
     try {
+      // throw new Error("Simulated error for demonstration") // Remove this line to enable actual submission
       if (formData.nombre && formData.calle && formData.numero && formData.ubicacion && formData.estado) {
         console.log("Nueva junta vecinal:", formData)
         const nuevaJunta = {
-          id: Date.now(), // Generate unique ID for demo
+          id: null, // Generate unique ID for demo
           nombre_junta: formData.nombre,
           nombre_calle: formData.calle,
           numero_calle: formData.numero,
@@ -164,7 +166,18 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           tipo: "nueva",
         }
         console.log("Nueva junta vecinal:", nuevaJunta)
-
+        // backend connection
+        const response = await axiosPrivate.post("/juntas-vecinales/", {
+          nombre_junta: nuevaJunta.nombre_junta,
+          nombre_calle: nuevaJunta.nombre_calle,
+          numero_calle: nuevaJunta.numero_calle,
+          estado: nuevaJunta.estado,
+          latitud: nuevaJunta.latitud,
+          longitud: nuevaJunta.longitud,
+        })
+        // gET the id from response and set it to nuevaJunta
+        nuevaJunta.id = response.data.id
+        console.log("Response from backend:", response)
         setNuevasUbicaciones((prev) => [...prev, nuevaJunta])
 
         setFormData({
@@ -180,16 +193,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         toast({
           title: "Junta vecinal agregada",
           description: "La nueva junta vecinal ha sido agregada exitosamente.",
-          duration: 5000,
-          className: "bg-green-500 text-white border-none",
+          className: operations.SUCCESS,
         })
       }
     } catch (error) {
       toast({
         title: "Error al agregar junta vecinal",
         description: "Ha ocurrido un error al agregar la nueva junta vecinal.",
-        duration: 5000,
-        className: "bg-red-500 text-white border-none",
+        className: operations.ERROR,
       })
       console.error("Error al agregar nueva junta vecinal:", error)
     }
@@ -262,7 +273,10 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           longitud: Number.parseFloat(editFormData.longitud).toFixed(6),
         }
         console.log("Updated junta:", editFormData)
+        console.log("Updated junta to save:", updatedJunta)
+        console.log("Editing junta:", editingJunta)
         // backend connection
+        console.log("Editing junta with ID:", editFormData.id)
         const response = await axiosPrivate.patch(`/juntas-vecinales/${editFormData.id}/`, updatedJunta)
         console.log("Response from backend:", response)
         setJuntasVecinales((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
@@ -274,20 +288,17 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         setEditingJunta(null)
 
         toast({
-          title: "Departamento actualizado",
-          description: "El departamento ha sido actualizado exitosamente.",
-          duration: 5000,
-          className: "bg-green-500 text-white",
-        });
+          title: "Junta vecinal actualizada",
+          description: "La junta vecinal ha sido actualizada exitosamente.",
+          className: operations.SUCCESS,
+        })
       }
     } catch (error) {
       toast({
-          title: "Error al actualizar departamento",
-          description: "Ha ocurrido un error al intentar actualizar el departamento.",
-          duration: 5000,
-          // without white borders
-          className: "bg-red-500 text-white border-none",
-        });
+          title: "Error al actualizar la junta vecinal",
+          description: "Ha ocurrido un error al intentar actualizar la junta vecinal.",
+          className: operations.ERROR,
+        })
       console.error("Error al actualizar junta vecinal:", error)
     }
   }
@@ -314,16 +325,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         toast({
           title: "Junta vecinal eliminada",
           description: "La junta vecinal ha sido eliminada exitosamente.",
-          duration: 5000,
-          className: "bg-green-500 text-white border-none",
+          className: operations.SUCCESS,
         })
       }
     } catch (error) {
       toast({
         title: "Error al eliminar junta vecinal",
         description: "Ha ocurrido un error al intentar eliminar la junta vecinal.",
-        duration: 5000,
-        className: "bg-red-500 text-white border-none",
+        className: operations.ERROR,
       })
       console.error("Error al eliminar junta vecinal:", error)
     } finally {
@@ -506,7 +515,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   >
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      
                     />
                     <MapClickHandler onMapClick={handleMapClick} />
 
