@@ -4,6 +4,7 @@ import TopBar from '../TopBar'
 import { useState, useEffect, useCallback, useMemo } from "react"
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import useAuth from '@/hooks/useAuth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/toaster"
 import {
   Users,
   UserPlus,
@@ -45,7 +47,6 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
-  Ban,
   UserCog,
   RefreshCw,
 } from "lucide-react"
@@ -61,6 +62,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
   const { isAdmin } = useAuth()
+  const { toast } = useToast()
 
   // Determinar el rol del usuario actual basado en el token
   const CURRENT_USER_ROLE = isAdmin ? "Administrador Municipal" : "Jefe de departamento"
@@ -513,50 +515,82 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   }; const handleCreateUser = async () => {
     // Validaciones básicas
     if (!newUser.nombre || !newUser.email || !newUser.rut || !newUser.tipo_usuario) {
-      alert("Por favor, complete todos los campos obligatorios")
+      toast({
+        title: "Error de validación",
+        description: "Por favor, complete todos los campos obligatorios",
+        variant: "destructive",
+      })
       return
     }
 
     if (!newUser.departamento_id) {
-      alert("Por favor, seleccione un departamento")
+      toast({
+        title: "Error de validación",
+        description: "Por favor, seleccione un departamento",
+        variant: "destructive",
+      })
       return
     }
 
     if (newUser.password !== newUser.confirmPassword) {
-      alert("Las contraseñas no coinciden")
+      toast({
+        title: "Error de validación",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive",
+      })
       return
     }
 
     if (newUser.password.length < 6) {
-      alert("La contraseña debe tener al menos 6 caracteres")
+      toast({
+        title: "Error de validación",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive",
+      })
       return
     }
 
     // Validación de RUT formato básico (opcional)
     const rutPattern = /^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/
     if (!rutPattern.test(newUser.rut)) {
-      alert("Por favor, ingrese el RUT en formato válido (ej: 12.345.678-9)")
+      toast({
+        title: "Error de validación",
+        description: "Por favor, ingrese el RUT en formato válido (ej: 12.345.678-9)",
+        variant: "destructive",
+      })
       return
     }
 
     // Validación de email formato
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailPattern.test(newUser.email)) {
-      alert("Por favor, ingrese un email válido")
+      toast({
+        title: "Error de validación",
+        description: "Por favor, ingrese un email válido",
+        variant: "destructive",
+      })
       return
     }
 
     // Validar si el usuario ya existe
     const uniqueUserValidation = await validateUniqueUser(newUser.rut, newUser.email)
     if (!uniqueUserValidation.isValid) {
-      alert(uniqueUserValidation.message)
+      toast({
+        title: "Usuario duplicado",
+        description: uniqueUserValidation.message,
+        variant: "destructive",
+      })
       return
     }
 
     // Validar si el departamento ya tiene jefe asignado
     const departmentChiefValidation = validateDepartmentChief(newUser.departamento_id, newUser.tipo_usuario)
     if (!departmentChiefValidation.isValid) {
-      alert(departmentChiefValidation.message)
+      toast({
+        title: "Error de asignación",
+        description: departmentChiefValidation.message,
+        variant: "destructive",
+      })
       return
     }
 
@@ -594,7 +628,12 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
         })
       }
 
-      alert("Usuario creado exitosamente")
+      toast({
+        title: "Éxito",
+        description: "Usuario creado exitosamente",
+        duration: 5000,
+        className: "bg-green-500 text-white",
+      })
       setIsCreateDialogOpen(false)
       resetNewUserForm()
 
@@ -613,12 +652,20 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
         // Verificar errores específicos de campos únicos
         if (errorData.rut && Array.isArray(errorData.rut)) {
-          alert(`Error con el RUT: ${errorData.rut.join(', ')}`)
+          toast({
+            title: "Error con el RUT",
+            description: errorData.rut.join(', '),
+            variant: "destructive",
+          })
           return
         }
 
         if (errorData.email && Array.isArray(errorData.email)) {
-          alert(`Error con el email: ${errorData.email.join(', ')}`)
+          toast({
+            title: "Error con el email",
+            description: errorData.email.join(', '),
+            variant: "destructive",
+          })
           return
         }
 
@@ -633,9 +680,17 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           })
           .join('\n')
 
-        alert(`Error al crear usuario:\n${errorMessages}`)
+        toast({
+          title: "Error al crear usuario",
+          description: errorMessages,
+          variant: "destructive",
+        })
       } else {
-        alert("Error al crear usuario. Por favor, intente nuevamente.")
+        toast({
+          title: "Error",
+          description: "Error al crear usuario. Por favor, intente nuevamente.",
+          variant: "destructive",
+        })
       }
     } finally {
       setUpdating(false) // Finalizar estado de actualización
@@ -685,35 +740,59 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const handleUpdateUser = async () => {
     // Validaciones básicas
     if (!editUser.nombre || !editUser.email) {
-      alert("Por favor, complete todos los campos obligatorios")
+      toast({
+        title: "Error de validación",
+        description: "Por favor, complete todos los campos obligatorios",
+        variant: "destructive",
+      })
       return
     }
 
     // Validar formato de email
     if (validateEmail(editUser.email)) {
-      alert("El formato del email es inválido")
+      toast({
+        title: "Error de validación",
+        description: "El formato del email es inválido",
+        variant: "destructive",
+      })
       return
     }
 
     // Validar formato de RUT si se proporciona
     if (editUser.rut && validateRutFormat(editUser.rut)) {
-      alert("El formato del RUT es inválido")
+      toast({
+        title: "Error de validación",
+        description: "El formato del RUT es inválido",
+        variant: "destructive",
+      })
       return
     }
 
     // Validar longitudes de campos
     if (validateFieldLength('nombre', editUser.nombre, 120)) {
-      alert("El nombre es demasiado largo (máximo 120 caracteres)")
+      toast({
+        title: "Error de validación",
+        description: "El nombre es demasiado largo (máximo 120 caracteres)",
+        variant: "destructive",
+      })
       return
     }
 
     if (validateFieldLength('email', editUser.email, 200)) {
-      alert("El email es demasiado largo (máximo 200 caracteres)")
+      toast({
+        title: "Error de validación",
+        description: "El email es demasiado largo (máximo 200 caracteres)",
+        variant: "destructive",
+      })
       return
     }
 
     if (validateFieldLength('telefono', editUser.numero_telefonico_movil, 9)) {
-      alert("El teléfono es demasiado largo (máximo 9 dígitos)")
+      toast({
+        title: "Error de validación",
+        description: "El teléfono es demasiado largo (máximo 9 dígitos)",
+        variant: "destructive",
+      })
       return
     }
 
@@ -725,7 +804,11 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
         editUser.id
       )
       if (!departmentChiefValidation.isValid) {
-        alert(departmentChiefValidation.message)
+        toast({
+          title: "Error de asignación",
+          description: departmentChiefValidation.message,
+          variant: "destructive",
+        })
         return
       }
     }
@@ -929,7 +1012,12 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
         }
       }
 
-      alert("Usuario actualizado exitosamente")
+      toast({
+        title: "Éxito",
+        description: "Usuario actualizado exitosamente",
+        duration: 5000,
+        className: "bg-green-500 text-white",
+      })
       setIsEditDialogOpen(false)
       resetEditUserForm()
 
@@ -948,12 +1036,20 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
         // Manejar errores específicos
         if (errorData.rut) {
-          alert(`Error con el RUT: ${Array.isArray(errorData.rut) ? errorData.rut.join(', ') : errorData.rut}`)
+          toast({
+            title: "Error con el RUT",
+            description: Array.isArray(errorData.rut) ? errorData.rut.join(', ') : errorData.rut,
+            variant: "destructive",
+          })
           return
         }
 
         if (errorData.email) {
-          alert(`Error con el email: ${Array.isArray(errorData.email) ? errorData.email.join(', ') : errorData.email}`)
+          toast({
+            title: "Error con el email",
+            description: Array.isArray(errorData.email) ? errorData.email.join(', ') : errorData.email,
+            variant: "destructive",
+          })
           return
         }
 
@@ -968,9 +1064,17 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           })
           .join('\n')
 
-        alert(`Error al actualizar usuario:\n${errorMessages}`)
+        toast({
+          title: "Error al actualizar usuario",
+          description: errorMessages,
+          variant: "destructive",
+        })
       } else {
-        alert("Error al actualizar usuario. Por favor, intente nuevamente.")
+        toast({
+          title: "Error",
+          description: "Error al actualizar usuario. Por favor, intente nuevamente.",
+          variant: "destructive",
+        })
       }
     } finally {
       setUpdating(false) // Finalizar estado de actualización
@@ -1006,14 +1110,23 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       // Verificar si el usuario tiene dependencias críticas
       const canDelete = await validateUserDeletion(userToDelete)
       if (!canDelete.isValid) {
-        alert(canDelete.message)
+        toast({
+          title: "No se puede eliminar",
+          description: canDelete.message,
+          variant: "destructive",
+        })
         return
       }
 
       // Eliminar usuario
       await axiosPrivate.delete(`/usuarios/${userToDelete.id}/`)
 
-      alert("Usuario eliminado exitosamente")
+      toast({
+        title: "Éxito",
+        description: "Usuario eliminado exitosamente",
+        duration: 5000,
+        className: "bg-green-500 text-white",
+      })
       setIsDeleteDialogOpen(false)
       setUserToDelete(null)
 
@@ -1027,13 +1140,29 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       console.error('Error al eliminar usuario:', error)
 
       if (error.response?.status === 400) {
-        alert("No se puede eliminar el usuario porque tiene dependencias activas.")
+        toast({
+          title: "Error",
+          description: "No se puede eliminar el usuario porque tiene dependencias activas.",
+          variant: "destructive",
+        })
       } else if (error.response?.status === 403) {
-        alert("No tienes permisos para eliminar este usuario.")
+        toast({
+          title: "Sin permisos",
+          description: "No tienes permisos para eliminar este usuario.",
+          variant: "destructive",
+        })
       } else if (error.response?.status === 404) {
-        alert("El usuario no existe o ya fue eliminado.")
+        toast({
+          title: "Usuario no encontrado",
+          description: "El usuario no existe o ya fue eliminado.",
+          variant: "destructive",
+        })
       } else {
-        alert("Error al eliminar usuario. Por favor, intente nuevamente.")
+        toast({
+          title: "Error",
+          description: "Error al eliminar usuario. Por favor, intente nuevamente.",
+          variant: "destructive",
+        })
       }
     } finally {
       setUpdating(false)
@@ -1202,7 +1331,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
         </Card>
 
         {/* Estadísticas rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -1219,25 +1348,12 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-yellow-600" />
-                <div>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {filteredUsers.filter((u) => u.estado === "Pendiente").length}
-                  </p>
-                  <p className="text-sm text-gray-600">Pendientes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Ban className="w-5 h-5 text-red-600" />
+                <XCircle className="w-5 h-5 text-red-600" />
                 <div>
                   <p className="text-2xl font-bold text-red-600">
-                    {filteredUsers.filter((u) => u.estado === "Bloqueado").length}
+                    {filteredUsers.filter((u) => u.estado === "Inactivo").length}
                   </p>
-                  <p className="text-sm text-gray-600">Bloqueados</p>
+                  <p className="text-sm text-gray-600">Usuarios Inactivos</p>
                 </div>
               </div>
             </CardContent>
@@ -1500,7 +1616,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                           </div>
                         </div>
 
-                        <div className="space-y-4 mt-4">
+                        {/* <div className="space-y-4 mt-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <Label>Enviar credenciales por email</Label>
@@ -1523,7 +1639,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               onCheckedChange={(checked) => setNewUser({ ...newUser, requiereCambioPassword: checked })}
                             />
                           </div>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Permisos Preview */}
@@ -1807,7 +1923,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               onCheckedChange={(checked) => setEditUser({ ...editUser, esta_activo: checked })}
                             />
                           </div>
-                          <div className="flex items-center justify-between">
+                          {/* <div className="flex items-center justify-between">
                             <div>
                               <Label>Requerir cambio de contraseña</Label>
                               <p className="text-sm text-gray-500">
@@ -1818,7 +1934,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               checked={editUser.requiereCambioPassword}
                               onCheckedChange={(checked) => setEditUser({ ...editUser, requiereCambioPassword: checked })}
                             />
-                          </div>
+                          </div> */}
                         </div>
                       </div>
 
@@ -1912,7 +2028,6 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                   <SelectItem value="Administrador Municipal">Administrador Municipal</SelectItem>
                   <SelectItem value="Jefe de departamento">Jefe de departamento</SelectItem>
                   <SelectItem value="Personal Municipal">Personal Municipal</SelectItem>
-                  <SelectItem value="Vecino">Vecino</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterEstado} onValueChange={setFilterEstado}>
@@ -2022,11 +2137,11 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               </DialogHeader>
                               {selectedUser && (
                                 <Tabs defaultValue="info" className="w-full">
-                                  <TabsList className="grid w-full grid-cols-4">
+                                  <TabsList className="grid w-full grid-cols-2">
                                     <TabsTrigger value="info">Información</TabsTrigger>
                                     <TabsTrigger value="permisos">Permisos</TabsTrigger>
-                                    <TabsTrigger value="actividad">Actividad</TabsTrigger>
-                                    <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+                                    {/* <TabsTrigger value="actividad">Actividad</TabsTrigger>
+                                    <TabsTrigger value="seguridad">Seguridad</TabsTrigger> */}
                                   </TabsList>
                                   <TabsContent value="info" className="space-y-6">
                                     <div className="grid grid-cols-2 gap-6">
@@ -2167,30 +2282,46 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               )}
                             </DialogContent>
                           </Dialog>
+                          {/* Mostrar botones de editar y eliminar con permisos apropiados */}
                           {(CURRENT_USER_ROLE === "Administrador Municipal" ||
                             (CURRENT_USER_ROLE === "Jefe de Departamento" &&
                               usuario.departamento === CURRENT_USER_DEPARTMENT &&
                               usuario.rol !== "Jefe de Departamento")) && (
                               <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  title="Editar usuario"
-                                  onClick={() => openEditDialog(usuario)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                {CURRENT_USER_ROLE === "Administrador Municipal" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-red-600 hover:text-red-700 hover:border-red-300"
-                                    title="Eliminar usuario"
-                                    onClick={() => openDeleteDialog(usuario)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={usuario.rol === "Administrador Municipal"}
+                                      onClick={() => usuario.rol !== "Administrador Municipal" && openEditDialog(usuario)}
+                                      className={usuario.rol === "Administrador Municipal" ? "opacity-50 cursor-not-allowed" : ""}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{usuario.rol === "Administrador Municipal" ? "No se puede editar una cuenta de Administrador Municipal" : "Editar usuario"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={usuario.rol === "Administrador Municipal"}
+                                      onClick={() => usuario.rol !== "Administrador Municipal" && openDeleteDialog(usuario)}
+                                      className={usuario.rol === "Administrador Municipal" ?
+                                        "opacity-50 cursor-not-allowed" :
+                                        "text-red-600 hover:text-red-700 hover:border-red-300"}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{usuario.rol === "Administrador Municipal" ? "No se puede eliminar una cuenta de Administrador Municipal" : "Eliminar usuario"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               </>
                             )}
                         </div>
@@ -3136,6 +3267,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      <Toaster />
     </TooltipProvider>
   )
 }
