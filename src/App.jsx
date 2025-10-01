@@ -76,14 +76,7 @@ const PrivLayout = ({ children, isOpened, setIsOpened }) => {
   );
 };
 
-const LayoutWithoutSidebar = ({ children }) => {
-  return (
-    <>
-      {children}
-      <Outlet />
-    </>
-  );
-};
+
 
 function App() {
   

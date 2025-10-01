@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+// import skeleton from shadcn ui 
+import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -34,8 +36,11 @@ import {
 } from "lucide-react"
 import React from 'react'
 import TopBar from '../TopBar'
-
+import useAxiosPrivate from '@/hooks/useAxiosPrivate'
+import { set } from "date-fns"
+import Spinner from "../Spinner"
 const TablaAuditoria = ({ setIsOpened, isOpened }) => {
+  const axiosPrivate = useAxiosPrivate()
   const [loading, setLoading] = useState(true)
   const [auditLogs, setAuditLogs] = useState([])
   const [auditLogsOriginales, setAuditLogsOriginales] = useState([])
@@ -48,6 +53,8 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
     busqueda: "",
     resultado: "Todos los resultados",
   })
+  const [auditData, setAuditData] = useState([])
+
 
   // Datos de auditoría simplificados y organizados
   const auditDataEjemplo = [
@@ -162,29 +169,29 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       // riesgo: "BAJO",
       error: "Credenciales incorrectas",
     },
-      // {
-      //   id: "AUD006",
-      //   timestamp: "2024-01-26T15:30:22.678Z",
-      //   usuario: {
-      //     id: "USR005",
-      //     nombre: "Roberto Silva",
-      //     email: "roberto.silva@municipio.gov",
-      //     rol: "Técnico",
-      //     avatar: "/placeholder.svg?height=32&width=32",
-      //   },
-      //   accion: "UPDATE",
-      //   modulo: "Configuración",
-      //   entidad: "Configuración",
-      //   entidad_id: "CFG001",
-      //   descripcion: "Modificó configuración de notificaciones por email",
-      //   ip_address: "192.168.1.104",
-      //   dispositivo: "Desktop",
-      //   navegador: "Firefox 121.0",
-      //   resultado: "FALLIDO",
-      //   duracion_ms: 2345,
-      //   // riesgo: "MEDIO",
-      //   error: "Permisos insuficientes para modificar configuración",
-      // },
+    // {
+    //   id: "AUD006",
+    //   timestamp: "2024-01-26T15:30:22.678Z",
+    //   usuario: {
+    //     id: "USR005",
+    //     nombre: "Roberto Silva",
+    //     email: "roberto.silva@municipio.gov",
+    //     rol: "Técnico",
+    //     avatar: "/placeholder.svg?height=32&width=32",
+    //   },
+    //   accion: "UPDATE",
+    //   modulo: "Configuración",
+    //   entidad: "Configuración",
+    //   entidad_id: "CFG001",
+    //   descripcion: "Modificó configuración de notificaciones por email",
+    //   ip_address: "192.168.1.104",
+    //   dispositivo: "Desktop",
+    //   navegador: "Firefox 121.0",
+    //   resultado: "FALLIDO",
+    //   duracion_ms: 2345,
+    //   // riesgo: "MEDIO",
+    //   error: "Permisos insuficientes para modificar configuración",
+    // },
   ]
 
   const usuarios = [
@@ -199,14 +206,14 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
   const modulos = ["Todos los módulos", "Publicaciones", "Usuarios", "Reportes", "Autenticación", "Configuración"]
   const resultados = ["Todos los resultados", "EXITOSO", "FALLIDO"]
 
-  useEffect(() => {
-    setLoading(true)
-    setTimeout(() => {
-      setAuditLogsOriginales(auditDataEjemplo)
-      setAuditLogs(auditDataEjemplo)
-      setLoading(false)
-    }, 1000)
-  }, [])
+  // useEffect(() => {
+  //   setLoading(true)
+  //   setTimeout(() => {
+  //     setAuditLogsOriginales(auditDataEjemplo)
+  //     setAuditLogs(auditDataEjemplo)
+  //     setLoading(false)
+  //   }, 1000)
+  // }, [])
 
   const handleFiltroChange = (campo, valor) => {
     setFiltros((prev) => ({
@@ -290,7 +297,9 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
   }
 
   const getResultadoBadge = (resultado) => {
-    return resultado === "EXITOSO" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+    // es_exitoso: true or false. not resultado now
+
+    return resultado ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
   }
 
   const getRiesgoBadge = (riesgo) => {
@@ -318,85 +327,133 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
       const fechaLog = new Date(log.timestamp).toDateString()
       return hoy === fechaLog
     }).length,
-    usuariosActivos: new Set(auditLogs.map((log) => log.usuario.id)).size,
-    accionesExitosas: auditLogs.filter((log) => log.resultado === "EXITOSO").length,
-    accionesFallidas: auditLogs.filter((log) => log.resultado === "FALLIDO").length,
+    usuariosActivos: new Set(auditLogs.map((log) => log.autor.id)).size,
+    accionesExitosas: auditLogs.filter((log) => log.es_exitoso).length,
+    accionesFallidas: auditLogs.filter((log) => log.es_exitoso === false).length,
     riesgoAlto: auditLogs.filter((log) => log.riesgo === "ALTO").length,
   }
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
+  const getAuditData = async () => {
+    // Simular llamada a API
+    setLoading(true);
+    try {
+      const response = await axiosPrivate.get('/auditoria/');
+      setAuditData(response.data);
+      setAuditLogs(response.data);
+      setAuditLogsOriginales(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error al obtener datos de auditoría:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    getAuditData();
+
+  }, []);
+
+
   return (
     <>
       <TopBar title="Auditoría" optionalbg="bg-[#00A86B]" handleOpenSidebar={handleOpenSidebar} />
       <div className="p-6 bg-gray-50 min-h-screen">
         <SidebarInset>
-          {/* Header Verde Municipal */}
-          {/* <div className="bg-green-600 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-6 h-6" />
-              <div>
-                <h1 className="text-2xl font-bold">Auditoría</h1>
-                <p className="text-green-100">Sistema de registro y monitoreo de actividades</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="text-center">
-                <div className="text-lg font-bold">{estadisticas.totalLogs}</div>
-                <div className="text-green-100">Registros</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold">{estadisticas.usuariosActivos}</div>
-                <div className="text-green-100">Usuarios</div>
-              </div>
-            </div>
-          </div>
-        </div> */}
+
 
           <div className="bg-gray-50">
             {/* Resumen de estadísticas */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-              <Card className="bg-white shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{estadisticas.totalLogs}</div>
-                  <div className="text-sm text-gray-600">Total</div>
-                </CardContent>
-              </Card>
+              {/* skeleton replace card */}
+              {loading ? (
+                <Skeleton className="w-full h-32" />
+              ) : (
+                <Card className="bg-white shadow-sm flex items-center justify-center py-4">
+                  {/* when loading, use <Spinner /> */}
 
-              <Card className="bg-white shadow-sm">
                 <CardContent className="p-4 text-center">
-                  <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{estadisticas.logsHoy}</div>
-                  <div className="text-sm text-gray-600">Hoy</div>
+                  {/* here skeleton if. but with identical dimensions. */}
+                  
+                      <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                      <div className="text-xl font-bold text-gray-900">{estadisticas.totalLogs}</div>
+                      <div className="text-sm text-gray-600">Total</div>
+                    
+                  
                 </CardContent>
-              </Card>
 
-              <Card className="bg-white shadow-sm">
+              </Card>
+              )}
+              {loading ? (
+                <Skeleton className="w-full h-32" />
+              ) : (
+                <Card className="bg-white shadow-sm flex items-center justify-center py-4">
+                  <CardContent className="p-4 text-center">
+                    <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-gray-900">{estadisticas.logsHoy}</div>
+                    <div className="text-sm text-gray-600">Hoy</div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {loading ? (
+                <Skeleton className="w-full h-32" />
+              ) : (
+                <Card className="bg-white shadow-sm flex items-center justify-center py-4">
+                  {/* when loading, use <Spinner /> */}
+
                 <CardContent className="p-4 text-center">
-                  <User className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{estadisticas.usuariosActivos}</div>
-                  <div className="text-sm text-gray-600">Usuarios</div>
+                  {loading ? (
+                    <>
+                      <Spinner className="w-6 h-6 mx-auto" />
+       
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                      <div className="text-xl font-bold text-gray-900">{estadisticas.usuariosActivos}</div>
+                      <div className="text-sm text-gray-600">Usuarios</div>
+                    </>
+                  )}
                 </CardContent>
-              </Card>
 
-              <Card className="bg-white shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{estadisticas.accionesExitosas}</div>
-                  <div className="text-sm text-gray-600">Exitosas</div>
+              </Card>
+              )}
+
+              {loading ? (
+                <Skeleton className="w-full h-32" />
+              ) : (
+                <Card className="bg-white shadow-sm flex items-center justify-center py-4">
+                  {/* when loading, use <Spinner /> */}
+
+                <CardContent className=" text-center">
+                  
+                      <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                      <div className="text-xl font-bold text-gray-900">{estadisticas.accionesExitosas}</div>
+                      <div className="text-sm text-gray-600">Exitosas</div>
+                
                 </CardContent>
-              </Card>
 
-              <Card className="bg-white shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <XCircle className="w-6 h-6 text-red-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{estadisticas.accionesFallidas}</div>
-                  <div className="text-sm text-gray-600">Fallidas</div>
-                </CardContent>
               </Card>
+              )}
+              {loading ? (
+                <Skeleton className="w-full h-32" />
+              ) : (
+                <Card className="bg-white shadow-sm flex items-center justify-center py-4">
+                  {/* when loading, use <Spinner /> */}
 
+                  <CardContent className="p-4 text-center">
+                   
+                        <XCircle className="w-6 h-6 text-red-600 mx-auto mb-2" />
+                        <div className="text-xl font-bold text-gray-900">{estadisticas.accionesFallidas}</div>
+                        <div className="text-sm text-gray-600">Fallidas</div>
+                
+                  
+                  </CardContent>
+                
+              </Card>
+              )}
               {/* <Card className="bg-white shadow-sm">
                 <CardContent className="p-4 text-center">
                   <AlertTriangle className="w-6 h-6 text-orange-600 mx-auto mb-2" />
@@ -409,7 +466,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
             {/* Pestañas principales */}
             <Tabs defaultValue="registros" className="space-y-6">
               <div className="flex items-center justify-between">
-                
+
 
                 <div className="flex items-center gap-2">
                   {/* <Button variant="outline" size="sm">
@@ -522,21 +579,21 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                             <TableHead className="font-semibold">Usuario</TableHead>
                             <TableHead className="font-semibold">Acción</TableHead>
                             <TableHead className="font-semibold">Módulo</TableHead>
-                            <TableHead className="font-semibold">Descripción</TableHead>
+                            {/* <TableHead className="font-semibold">Descripción</TableHead> */}
                             <TableHead className="font-semibold">IP / Dispositivo</TableHead>
                             <TableHead className="font-semibold">Resultado</TableHead>
                             {/* <TableHead className="font-semibold">Riesgo</TableHead> */}
                             <TableHead className="font-semibold">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        {/* when loading more height to the row */}
+                        <TableBody className="h-full">
                           {loading ? (
-                            <TableRow>
+                            // more rows with animate-pulse
+                            
+                            <TableRow className="animate-pulse ">
                               <TableCell colSpan={8} className="text-center py-8">
-                                <div className="flex justify-center items-center">
-                                  <RefreshCw className="w-6 h-6 animate-spin text-green-600 mr-2" />
-                                  Cargando registros de auditoría...
-                                </div>
+                                <Spinner text="Cargando registros..." />
                               </TableCell>
                             </TableRow>
                           ) : auditLogs.length === 0 ? (
@@ -554,24 +611,25 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                               <TableRow key={log.id} className="hover:bg-gray-50">
                                 <TableCell className="font-mono text-xs">
                                   <div>
-                                    <div className="font-semibold">{formatearFecha(log.timestamp)}</div>
+                                    <div className="font-semibold">{formatearFecha(log.fecha)}</div>
                                     <div className="text-gray-500 text-xs">ID: {log.id}</div>
                                   </div>
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <Avatar className="w-8 h-8">
-                                      <AvatarImage src={log.usuario.avatar || "/placeholder.svg"} />
-                                      <AvatarFallback className="text-xs">
-                                        {log.usuario.nombre
+                                      <AvatarImage src={log.autor.avatar || "/placeholder.svg"} />
+                                      {/* only two letters from the first and last name */}
+                                      <AvatarFallback className="text-xs bg-gray-200 text-gray-600  ">
+                                        {log.autor.nombre
                                           .split(" ")
                                           .map((n) => n[0])
-                                          .join("")}
+                                          .join("").slice(0, 2)}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <div className="font-medium text-sm">{log.usuario.nombre}</div>
-                                      <div className="text-xs text-gray-500">{log.usuario.rol}</div>
+                                      <div className="font-medium text-sm">{log.autor.nombre}</div>
+                                      <div className="text-xs text-gray-500">{log.autor.rol}</div>
                                     </div>
                                   </div>
                                 </TableCell>
@@ -584,32 +642,36 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                                     <span className="font-medium text-sm">{log.modulo}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                {/* <TableCell>
                                   <div className="max-w-xs">
+                                    
                                     <p className="text-sm text-gray-600 truncate" title={log.descripcion}>
-                                      {log.descripcion}
+                                      
+                                      {log.descripcion.length > 10 ? log.descripcion.slice(0, 50) + "..." : log.descripcion}
                                     </p>
                                     <div className="text-xs text-gray-500 mt-1">
                                       {log.entidad}: {log.entidad_id}
                                     </div>
                                   </div>
-                                </TableCell>
+                                </TableCell> */}
                                 <TableCell>
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-1 text-xs">
                                       <Globe className="w-3 h-3 text-gray-500" />
-                                      <span className="font-mono">{log.ip_address}</span>
+                                      {/* ip address is at description. extract ip from description. if there is no ip, show "N/A" */}
+                                      <span className="font-mono">{log.descripcion.match(/(\d{1,3}\.){3}\d{1,3}/)?.[0] || "N/A"}</span>
                                     </div>
                                     <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      {/* if there is no device, show "N/A" */}
                                       {getDispositivoIcon(log.dispositivo)}
-                                      <span>{log.navegador}</span>
+                                      <span>{log.navegador || "N/A"}</span>
                                     </div>
                                   </div>
                                 </TableCell>
                                 <TableCell>
                                   <div className="space-y-1">
-                                    <Badge className={`text-xs ${getResultadoBadge(log.resultado)}`}>
-                                      {log.resultado}
+                                    <Badge className={`text-xs ${getResultadoBadge(log.es_exitoso)}`}>
+                                      {log.es_exitoso ? "EXITOSO" : "FALLIDO"}
                                     </Badge>
                                     <div className="text-xs text-gray-500">
                                       <Clock className="w-3 h-3 inline mr-1" />
@@ -639,15 +701,15 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                                         <div className="grid grid-cols-2 gap-4">
                                           <div>
                                             <label className="text-sm font-medium text-gray-700">Timestamp</label>
-                                            <p className="text-sm text-gray-900">{formatearFecha(log.timestamp)}</p>
+                                            <p className="text-sm text-gray-900">{formatearFecha(log.fecha)}</p>
                                           </div>
                                           <div>
                                             <label className="text-sm font-medium text-gray-700">Usuario</label>
                                             <p className="text-sm text-gray-900">
-                                              {log.usuario.nombre} ({log.usuario.rol})
+                                              {log.autor.nombre} ({log.autor.rol})
                                             </p>
                                           </div>
-                                          <div>
+                                          <div className="flex items-center gap-2">
                                             <label className="text-sm font-medium text-gray-700">Acción</label>
                                             <Badge className={`text-xs ${getAccionBadge(log.accion)}`}>
                                               {log.accion}
@@ -659,15 +721,17 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                                           </div>
                                           <div>
                                             <label className="text-sm font-medium text-gray-700">IP Address</label>
-                                            <p className="text-sm text-gray-900 font-mono">{log.ip_address}</p>
+                                            {/* get from description ip address */}
+                                            <p className="text-sm text-gray-900 font-mono">{log.descripcion.match(/(?:\d{1,3}\.){3}\d{1,3}/)?.[0] || "N/A"}</p>
                                           </div>
-                                          <div>
+                                          {/* <div>
                                             <label className="text-sm font-medium text-gray-700">Dispositivo</label>
                                             <p className="text-sm text-gray-900">{log.dispositivo}</p>
-                                          </div>
+                                          </div> */}
                                         </div>
                                         <div>
                                           <label className="text-sm font-medium text-gray-700">Descripción</label>
+
                                           <p className="text-sm text-gray-900">{log.descripcion}</p>
                                         </div>
                                         {log.error && (
