@@ -1,3 +1,4 @@
+// src/components/AnuncioFormulario.jsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from './TopBar'
@@ -14,11 +15,13 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeftIcon, Upload, X, Loader2 } from 'lucide-react'
+import { ArrowLeftIcon, Loader2 } from 'lucide-react'
 import useAxiosPrivate from '../hooks/useAxiosPrivate'
 import { useToast } from "../hooks/use-toast"
-import { format } from 'date-fns'
+import { format, set } from 'date-fns'
 import { es } from 'date-fns/locale'
+import FileUpload from './FileUpload'; // Importa el nuevo componente
+import useFileHandling from '../hooks/useFileHandling'; // Importa el nuevo hook
 
 const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   const axiosPrivate = useAxiosPrivate()
@@ -36,9 +39,20 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     fecha_publicacion: format(new Date(), 'yyyy-MM-dd'),
     autor: 'Municipalidad de Calama'
   })
-  const [selectedFiles, setSelectedFiles] = useState([])
-  const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+
+  const {
+    files,
+    isDragging,
+    uploadProgress,
+    setUploadProgress,
+    handleFileChange,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    removeFile,
+  } = useFileHandling();
+
 
   const handleStateChange = (checked) => {
     setEstado(checked)
@@ -49,50 +63,13 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
     setIsOpened(!isOpened)
   }
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files)
-    addFiles(files)
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const files = Array.from(e.dataTransfer.files)
-    addFiles(files)
-  }
-
-  const addFiles = (files) => {
-    const newFiles = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }))
-    setSelectedFiles(prevFiles => [...prevFiles, ...newFiles])
-  }
-
-  const removeFile = (index) => {
-    setSelectedFiles(prevFiles => {
-      const updatedFiles = [...prevFiles]
-      URL.revokeObjectURL(updatedFiles[index].preview)
-      updatedFiles.splice(index, 1)
-      return updatedFiles
-    })
-  }
-
   const handleSubmit = async (event) => {
     event.preventDefault();
-    // USE ISO DATE FORMAT ISODATE!!! 
     const date = new Date().toISOString()
     const festado = estado ? 'Publicado' : 'Pendiente'
+    setIsUploading(true);
+    setUploadProgress({});
+
     try {
       const anuncioData = {
         usuario: 1,
@@ -104,34 +81,32 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         fecha: date,
         autor: anuncio.autor
       };
-      console.log(selectedFiles)
 
       const anuncioResponse = await axiosPrivate.post(
         "anuncios-municipales/",
         anuncioData
       );
 
-      if (selectedFiles.length !== 0) {
-        setIsUploading(true);
-        const anuncioId = anuncioResponse?.data?.id;
-        console.log(selectedFiles)
-        for (const image of selectedFiles) {
+      const anuncioId = anuncioResponse?.data?.id;
+
+      if (files.length > 0) {
+        for (const image of files) {
           const formData = new FormData();
           formData.append("anuncio", anuncioId)
           formData.append("anuncio_id", anuncioId);
           formData.append("imagen", image?.file);
           formData.append("extension", image?.file?.name?.split(".")?.pop());
+          formData.append('nombre', image?.file?.name);
+          formData.append('peso', image?.file?.size);
 
           await axiosPrivate.post("/imagenes-anuncios/", formData, {
             headers: {
               "Content-Type": "multipart/form-data",
-            }
-          });
-          toast({
-            title: "Éxito",
-            description: "El anuncio y las imágenes fueron creados correctamente.",
-            variant: "custom",
-            className: "bg-green-500 text-white",
+            },
+            onUploadProgress: (progressEvent) => {
+              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+              setUploadProgress((prev) => ({ ...prev, [image.id]: progress }))
+            },
           });
         }
       }
@@ -143,6 +118,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         className: "bg-green-500 text-white",
       });
 
+      // 3. Finalizar y navegar
       navigate("/anuncios");
     } catch (error) {
       toast({
@@ -151,8 +127,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
         variant: "destructive",
       });
       console.error(error);
-    } finally {
-      setIsUploading(false);
+      setIsUploading(false); // Solo para en error
     }
   };
 
@@ -176,14 +151,6 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   useEffect(() => {
     fetchURLS('categorias/')
   }, [])
-
-  useEffect(() => {
-    return () => {
-      selectedFiles.forEach(fileObj => {
-        URL.revokeObjectURL(fileObj.preview)
-      })
-    }
-  }, [selectedFiles])
 
   return (
     <>
@@ -289,73 +256,25 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
                 <Label htmlFor="estado">Publicar inmediatamente</Label>
               </div>
 
-              <div className="space-y-2">
-                <Label>Adjuntar imágenes</Label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                    }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <Upload className="h-8 w-4 text-gray-400" />
-                    <div className="text-center">
-                      <Label
-                        htmlFor="imagenes"
-                        className="text-green-600 hover:text-green-700 cursor-pointer"
-                      >
-                        Seleccione archivos
-                      </Label>
-                      <span className="text-gray-500"> o arrastre y suelte aquí</span>
-                    </div>
-                    <Input
-                      id="imagenes"
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={handleFileChange}
-                      accept="image/jpeg, image/png, image/gif"
-                    />
-                  </div>
+              <FileUpload
+                files={files}
+                isDragging={isDragging}
+                handleFileChange={handleFileChange}
+                handleDragOver={handleDragOver}
+                handleDragLeave={handleDragLeave}
+                handleDrop={handleDrop}
+                removeFile={removeFile}
+                isUploading={isUploading}
+                setUploadProgress={setUploadProgress}
+                uploadProgress={uploadProgress}
+              />
+
+              {isUploading && !files.length && ( // Mostrar solo si no hay archivos
+                <div className="flex items-center justify-center space-x-2 mt-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-green-600" />
+                  <span className="text-green-600">Guardando anuncio...</span>
                 </div>
-
-                {selectedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm text-gray-500 mb-2">
-                      {selectedFiles.length} {selectedFiles.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {selectedFiles.map((fileObj, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={fileObj.preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6"
-                            onClick={() => removeFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isUploading && (
-                  <div className="flex items-center justify-center space-x-2 mt-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-green-600" />
-                    <span className="text-green-600">Subiendo imágenes...</span>
-                  </div>
-                )}
-              </div>
-
+              )}
               <div className="flex justify-end">
                 <Button
                   type="submit"
@@ -374,4 +293,3 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
 }
 
 export default AnuncioFormulario
-

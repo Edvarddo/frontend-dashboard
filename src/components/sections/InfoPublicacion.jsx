@@ -32,6 +32,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const [situationLoading, setSituationLoading] = useState(false)
   const [showResponseForm, setShowResponseForm] = useState(false)
   const [responses, setResponses] = useState([])
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
   const [departaments, setDepartaments] = useState([])
   const [responsesLoading, setResponsesLoading] = useState(false)
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false)
@@ -62,6 +63,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
       })
   }
   const axiosPrivate = useAxiosPrivate()
+
   const openDialog = () => {
     setTempStatus(status)
     setIsDialogOpen(true)
@@ -77,6 +79,20 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     setTempStatus(status)
     setIsAlertDialogOpen(false)
   }
+
+  const currentConfig = statusConfig[publicacion?.situacion?.nombre] || statusConfig.Pendiente
+  const canEditStatus =
+    publicacion?.situacion?.nombre !== "Resuelto" && publicacion?.situacion?.nombre !== "No Resuelto"
+
+
+  useEffect(() => {
+    if (publicacion?.situacion?.nombre) {
+      setStatus(publicacion.situacion.nombre)
+      setTempStatus(publicacion.situacion.nombre)
+    }
+  }, [publicacion])
+
+
   const changeStatus = () => {
     const url = `publicaciones/${id}/`
     axiosPrivate.patch(url, { situacion: situationMap[tempStatus] })
@@ -95,34 +111,41 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     setIsDialogOpen(false)
     setIsAlertDialogOpen(false)
   }
-  const handleAddResponse = async (newResponse) => {
+
+  // 1. 'onSubmit' (ANTES 'handleAddResponse')
+  //    Ahora solo crea la respuesta y la retorna.
+  const createMunicipalResponse = async (newResponse) => {
     try {
       console.log('newResponse:', newResponse)
       const response = await axiosPrivate.post('respuestas-municipales/', {
         ...newResponse,
         publicacion: id
       })
-      fetchResponses()
-      setShowResponseForm(false)
-      if(response.status === 201 || response.status === 200){
-        toast({
-          title: "Respuesta agregada",
-          description: "La respuesta municipal ha sido agregada exitosamente.",
-          duration: 5000,
-          className: "bg-green-500 text-white",
-        });
 
-      }
+      // ¡NO hay fetchResponses() ni setShowResponseForm(false) aquí!
+      // El formulario ahora controla esto.
+
+      // Simplemente retornamos la respuesta creada para que el formulario 
+      // pueda usar su ID para la subida de archivos.
+      return response.data;
+
     } catch (error) {
-      console.error('Error adding municipal response:', error)
+      console.error('Error creating municipal response:', error)
       toast({
-        title: "Error al agregar respuesta",
-        description: "Ha ocurrido un error al intentar agregar la respuesta municipal.",
-        duration: 5000,
-        className: "bg-red-500 text-white",
+        title: "Error al crear respuesta",
+        description: "No se pudo crear la respuesta. La subida de archivos fue cancelada.",
+        variant: "destructive",
       });
+      return null; // Retornamos null para que el formulario sepa que falló
     }
   }
+
+  // 2. ¡NUEVA FUNCIÓN! Se ejecutará DESPUÉS de que el formulario termine todo.
+  const handleUploadComplete = () => {
+    fetchResponses()      // Ahora recargamos los datos
+    setShowResponseForm(false) // Y ahora ocultamos el formulario
+  }
+
   const fetchResponses = async () => {
     setResponsesLoading(true)
     try {
@@ -136,10 +159,11 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
       setResponsesLoading(false)
     }
   }
+
   const onEditResponse = async (updatedResponse, id) => {
     console.log('updatedResponse:', updatedResponse)
 
-    
+
     try {
       const response = await axiosPrivate.patch(`respuestas-municipales/${id}/`, updatedResponse)
       fetchResponses()
@@ -158,17 +182,17 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
         duration: 5000,
         className: "bg-red-500 text-white",
       });
-      
+
     }
   }
   const onDeleteResponse = async (id) => {
-   
-    
+
+
     try {
       const lastResponse = responses[responses.length - 1];
 
       await axiosPrivate.delete(`respuestas-municipales/${id}/`)
-      
+
 
       // Change the publication status to the previous state
       const previousStatus = lastResponse.situacion_inicial;
@@ -255,7 +279,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              
+
               <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Nombre de usuario:</p>
                 <p>
@@ -273,7 +297,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                 <p>
                   {loading ? <Skeleton className="h-[1.5rem] w-full" /> :
                     formatPhoneNumber(publicacion?.usuario?.numero_telefonico_movil) || "No disponible"
-                    }
+                  }
                 </p>
               </div>
               {/* email */}
@@ -283,7 +307,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                   {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.usuario?.email}
                 </p>
               </div>
-              
+
             </div>
           </CardContent>
         </Card>
@@ -295,7 +319,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-            <div className="space-y-1">
+              <div className="space-y-1">
                 <p className="text-sm font-medium text-green-600">Código:</p>
                 <p>
                   {loading ? <Skeleton className="h-[1.5rem] w-full" /> : publicacion?.codigo}
@@ -428,7 +452,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button  className=" bg-green-500 hover:bg-green-600 text-white w-full mt-4 " onClick={() => setIsAlertDialogOpenDepartment(true)}>Aceptar</Button>
+                      <Button className=" bg-green-500 hover:bg-green-600 text-white w-full mt-4 " onClick={() => setIsAlertDialogOpenDepartment(true)}>Aceptar</Button>
                       <AlertDialog open={isAlertDialogOpenDepartment} onOpenChange={setIsAlertDialogOpenDepartment}>
                         <AlertDialogContent>
                           <AlertDialogHeader>
@@ -480,7 +504,8 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
         <CardContent>
           {showResponseForm && (
             <FormRespuestaMunicipal
-              onSubmit={handleAddResponse}
+              onSubmit={createMunicipalResponse}
+              onUploadComplete={handleUploadComplete}
               previousStatus={publicacion?.situacion?.nombre}
               currentStatus={publicacion?.situacion?.nombre}
               statusConfig={statusConfig}
