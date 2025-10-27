@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import axios from 'axios';
+import { set } from 'date-fns';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,7 +17,19 @@ export default function Login() {
   const [validCredentials, setValidCredentials] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
-  const { setAuthToken, authToken, setIsAdmin, login, setUserId, refreshToken } = useAuth();
+  const { 
+    setAuthToken, 
+    authToken, 
+    setIsAdmin, 
+    login, 
+    setUserId, 
+    refreshToken, 
+    userId,
+    setNombre,
+    setRol, 
+    setDepartamento
+  } = useAuth();
+  const [data, setData] = useState(null);
 
   const formatRut = (value) => {
     const cleaned = value.replace(/\D/g, '');
@@ -39,14 +52,24 @@ export default function Login() {
       setLoginLoading(false);
       return;
     }
-    axios.post(`${import.meta.env.VITE_URL_PROD_VERCEL}token/`, {
+    const response =axios.post(`${import.meta.env.VITE_URL_PROD_VERCEL}token/`, {
       rut: rut.replace(/\./g, ''),
       password: password
     })
       .then((response) => {
         console.log(response);
+        console.log(response.data);
+        console.log(response.data.access, response.data.id);
+        login(
+          response.data.access, 
+          response.data.refresh,
+          response.data.es_administrador
+        );
+
+ 
+        getUserDetails(response.data.id, response.data.access);
         
-        login(response.data.access, response.data.refresh,response.data.es_administrador);
+        setValidCredentials(true);
         
         setLoginLoading(false);
         if (response.data.es_administrador) navigate('/dashboard');
@@ -58,6 +81,8 @@ export default function Login() {
         setValidCredentials(false);
         setLoginLoading(false);
       });
+    console.log(authToken, userId );
+    
   };
 
   const handleEnterDashboard = () => {
@@ -72,6 +97,25 @@ export default function Login() {
       return true;
     }
     return false;
+  }
+  const getUserDetails = async (userId, authToken) => {
+    axios.get(`${import.meta.env.VITE_URL_PROD_VERCEL}usuarios/${userId}/`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    )
+      .then((response) => {
+        console.log('User details:', response.data);
+        setUserId(response.data.id);
+        setNombre(response.data.nombre);
+        setRol(response.data.tipo_usuario);
+        setDepartamento(response.data.departamento_asignado);
+        localStorage.setItem('userId', response.data.id);
+        localStorage.setItem('nombre', response.data.nombre);
+        localStorage.setItem('rol', response.data.tipo_usuario);
+        localStorage.setItem('departamento', response.data.departamento_asignado);
+      })
+      .catch((error) => {
+        console.error('Error fetching user details:', error);
+      });
   }
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-orange-50 to-sky-50 p-4">

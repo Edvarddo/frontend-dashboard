@@ -31,15 +31,18 @@ import {
 } from "lucide-react"
 import TopBar from "../TopBar"
 import { useNavigate } from "react-router-dom"
+import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 
 const HistorialModificacionPublicaciones = () => {
+  const [modificacionesData, setModificacionesData] = useState([])
+  const axiosPrivate = useAxiosPrivate()
   // Usuario actual simulado - AQUÍ SE DETERMINA EL ROL
   const [usuarioActual] = useState({
     id: "USR001", // Cambiar a USR002 para vista de personal
     nombre: "Juan Pérez", // Cambiar a "María González" para personal
     email: "juan.perez@municipio.gov",
     departamento: "Obras Públicas",
-    rol: "técnico", // "supervisor" = jefe, "tecnico" = personal
+    rol: "jefe", // "supervisor" = jefe, "tecnico" = personal
     avatar: "/placeholder.svg?height=40&width=40",
     puede_ver_todos: true, // true para jefe, false para personal
     fecha_ingreso: "2022-01-15",
@@ -66,7 +69,7 @@ const HistorialModificacionPublicaciones = () => {
 
   // Determinar si es jefe o personal
   const esJefe =
-    usuarioActual.rol === "supervisor" || usuarioActual.rol === "admin" || usuarioActual.rol === "coordinador"
+    usuarioActual.rol === "jefe" || usuarioActual.rol === "admin"
   const esPersonal = !esJefe
   const onVolver = () => {
     console.log("Volviendo al listado de publicaciones")
@@ -437,7 +440,8 @@ const HistorialModificacionPublicaciones = () => {
   }
 
   // Estadísticas dinámicas según el rol
-  const estadisticas = esJefe
+  const estadisticas = 
+  esJefe
     ? {
         totalModificaciones: publicaciones.reduce((total, pub) => total + pub.total_modificaciones, 0),
         modificacionesHoy: publicaciones
@@ -465,6 +469,22 @@ const HistorialModificacionPublicaciones = () => {
         modificacionesAprobadas: modificacionesFlat.filter((mod) => mod.aprobada_por !== "Pendiente de aprobación")
           .length,
       }
+  
+const getModificacionesData = () => {
+  const data = axiosPrivate.get(`${import.meta.env.VITE_URL_PROD_VERCEL}historial-modificaciones/`);
+  data
+    .then(response => {
+      console.log('Modificaciones data fetched:', response.data);
+      setModificacionesData(response.data);
+    })
+    .catch(error => {
+      console.error('Error fetching modificaciones data:', error);
+    });
+   
+}
+useEffect(() => {
+  getModificacionesData();
+}, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -484,6 +504,7 @@ const HistorialModificacionPublicaciones = () => {
             <Card className="bg-white shadow-lg">
               <CardHeader className="border-b border-gray-200">
                 <div className="flex items-center justify-between">
+                  {/* DIVISION DE VISTAS */}
                   <div className="flex items-center gap-4">
                     {esJefe ? (
                       <Building className="w-8 h-8 text-green-600" />

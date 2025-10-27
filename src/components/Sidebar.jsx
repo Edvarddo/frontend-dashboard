@@ -1,24 +1,36 @@
 "use client"
 
-import { useContext, useEffect } from "react"
+import { useContext, useEffect, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { LogOut } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import logo from "../assets/logo_muni.png"
 import AuthContext from "../contexts/AuthContext"
 import SidebarSectionContext from "../contexts/SidebarSectionContext"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const Sidebar = ({ isOpened }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { authToken, setAuthToken, logout } = useContext(AuthContext)
+  const { authToken, setAuthToken, logout, nombre, rol, departamento } = useContext(AuthContext)
   const { sections, setSelectedSection, selectedSection } = useContext(SidebarSectionContext)
+  const [isLoadingUser, setIsLoadingUser] = useState(true)
 
   const mockUser = {
     name: "Juan Pérez",
     role: "Administrador",
+    // function to get initials from name
     initials: "JP",
   }
+
+  useEffect(() => {
+    // Simula una carga de datos del usuario
+    const timer = setTimeout(() => {
+      setIsLoadingUser(false)
+    }, 1500)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const currentSection = sections.find((section) => section.link === location.pathname)
@@ -63,19 +75,32 @@ const Sidebar = ({ isOpened }) => {
             ))}
           </ul>
         </div>
+        {/* USER SECTION */}
         <div className="user-section sticky bottom-0">
-          <div className="user-info">
-            <Avatar className="h-10 w-10 bg-[#00A86B]">
-              <AvatarFallback className="bg-[#00A86B] text-white font-semibold">{mockUser.initials}</AvatarFallback>
-            </Avatar>
-            <div className="user-details">
-              <span className="user-name">{mockUser.name}</span>
-              <span className="user-role">{mockUser.role}</span>
+          {isLoadingUser ? (
+            <div className="user-info">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="user-details flex-1 space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             </div>
-          </div>
-          <button onClick={handleLogout} className="logout-button" title="Cerrar sesión">
-            <LogOut className="h-5 w-5" />
-          </button>
+          ) : (
+            <>
+              <div className="user-info">
+                <Avatar className="h-10 w-10 bg-[#00A86B]">
+                  <AvatarFallback className="bg-[#00A86B] text-white font-semibold">{mockUser.initials}</AvatarFallback>
+                </Avatar>
+                <div className="user-details">
+                  <span className="user-name">{nombre ? nombre : mockUser.name}</span>
+                  <span className="user-role">{rol ? rol : mockUser.role}</span>
+                </div>
+              </div>
+              <button onClick={handleLogout} className="logout-button" title="Cerrar sesión">
+                <LogOut className="h-5 w-5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </nav>
