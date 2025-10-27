@@ -201,10 +201,9 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
 
   return (
     <>
-      <TopBar handleOpenSidebar={handleOpenSidebar} title="Anuncios" />
+      <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de Anuncios" />
       <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Listado de Anuncios</h1>
+        <div className="flex justify-end items-center mb-6">
           <Button
             onClick={() => navigate('/anuncio-formulario')}
             className="bg-emerald-600 hover:bg-emerald-700 text-white">

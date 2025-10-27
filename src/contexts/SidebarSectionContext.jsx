@@ -7,7 +7,7 @@ const SidebarSectionContext = createContext();
 
 
 export const SidebarSectionProvider = ({ children }) => {
- 
+
   const sections = [
     {
       title: "Dashboard",
@@ -24,32 +24,17 @@ export const SidebarSectionProvider = ({ children }) => {
       icon: <Megaphone className='icon' />,
       link: "/anuncios"
     },
-    // {
-    //   title: "Reportes",
-    //   icon: <ChartNoAxesColumn className='icon' />,
-    //   link: "/reportes"
-    // },
     {
-    title: "Mapa Térmico",
-    link: "/mapa",
-    icon: <Thermometer className='icon ' />,
-    isSpecial: true, // Marcador especial para el mapa térmico
-  },
-    // {
-    //   title: "Descargar",
-    //   icon: "bx bx-download",
-    //   link: "/descargar"
-    // },
-    // {
-    //   title: "Respuestas municipales",
-    //   icon: <FileText className='icon' />,
-    //   link: "/respuestas-municipales"
-    // }
+      title: "Mapa Térmico",
+      link: "/mapa",
+      icon: <Thermometer className='icon ' />,
+      isSpecial: true, // Marcador especial para el mapa térmico
+    },
     {
-      title: "Gestion de datos",
+      title: "Gestión de datos",
       icon: <Settings className='icon' />,
       // gear icon para este
-      
+
       link: "/gestion-datos"
     },
     {
@@ -64,12 +49,6 @@ export const SidebarSectionProvider = ({ children }) => {
       icon: <Book className='icon' />,
       link: "/auditoria"
     },
-    {
-      // kanban board
-      title: "Kanban",
-      icon: <StickyNote className='icon' />,
-      link: "/kanban"
-    },
     // cuentas de usuario
     {
       title: "Cuentas de usuario",
@@ -77,9 +56,9 @@ export const SidebarSectionProvider = ({ children }) => {
       link: "/cuentas-usuario"
     }
   ]
-  
+
   const [selectedSection, setSelectedSection] = useState("");
-  
+
   return (
     <SidebarSectionContext.Provider value={
       {
