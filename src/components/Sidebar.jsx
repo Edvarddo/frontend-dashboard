@@ -89,7 +89,8 @@ const Sidebar = ({ isOpened }) => {
             <>
               <div className="user-info">
                 <Avatar className="h-10 w-10 bg-[#00A86B]">
-                  <AvatarFallback className="bg-[#00A86B] text-white font-semibold">{mockUser.initials}</AvatarFallback>
+                  {/* initials for avatar */}
+                  <AvatarFallback className="bg-[#00A86B] text-white font-semibold">{nombre ? nombre.split(" ").map((n) => n[0]).join("") : mockUser.initials}</AvatarFallback>
                 </Avatar>
                 <div className="user-details">
                   <span className="user-name">{nombre ? nombre : mockUser.name}</span>

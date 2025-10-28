@@ -31,25 +31,28 @@ import {
 } from "lucide-react"
 import TopBar from "../TopBar"
 import { useNavigate } from "react-router-dom"
-import useAxiosPrivate from '../../hooks/useAxiosPrivate'
+import useAxiosPrivate from "../../hooks/useAxiosPrivate"
+import useAuth from "../../hooks/useAuth"
 
 const HistorialModificacionPublicaciones = () => {
   const [modificacionesData, setModificacionesData] = useState([])
   const axiosPrivate = useAxiosPrivate()
+  const { userId, departamento, departamentoId, rol, nombre } = useAuth()
+
   // Usuario actual simulado - AQUÍ SE DETERMINA EL ROL
   const [usuarioActual] = useState({
-    id: "USR001", // Cambiar a USR002 para vista de personal
-    nombre: "Juan Pérez", // Cambiar a "María González" para personal
+    id: userId,
+    nombre: nombre,
     email: "juan.perez@municipio.gov",
-    departamento: "Obras Públicas",
-    rol: "jefe", // "supervisor" = jefe, "tecnico" = personal
+    departamento: departamento || "Sin asignar",
+    rol: rol,
     avatar: "/placeholder.svg?height=40&width=40",
-    puede_ver_todos: true, // true para jefe, false para personal
+    puede_ver_todos: true,
     fecha_ingreso: "2022-01-15",
   })
 
-  // Estados unificados
-  // usemos useNavigate
+  const [modificacionesDataPorUsuario, setModificacionesDataPorUsuario] = useState([])
+  const [statsData, setStatsData] = useState({})
   const navigate = useNavigate()
   const [publicaciones, setPublicaciones] = useState([])
   const [publicacionesOriginales, setPublicacionesOriginales] = useState([])
@@ -69,209 +72,103 @@ const HistorialModificacionPublicaciones = () => {
 
   // Determinar si es jefe o personal
   const esJefe =
-    usuarioActual.rol === "jefe" || usuarioActual.rol === "admin"
+    usuarioActual.rol === "jefe" || usuarioActual.rol === "admin" || usuarioActual.rol === "jefe_departamento"
   const esPersonal = !esJefe
-  const onVolver = () => {
-    console.log("Volviendo al listado de publicaciones")
-  }
-  // Datos de ejemplo para publicaciones y modificaciones
 
-  // Datos de ejemplo completos
-  const publicacionesEjemplo = [
-    {
-      publicacion_id: "PUB001",
-      titulo: "Poste de luz dañado en Av. Corrientes",
-      ubicacion: "Av. Corrientes 1234",
-      estado_actual: "Resuelto",
-      fecha_creacion: "2024-01-10T08:00:00",
-      departamento_responsable: "Obras Públicas",
-      total_modificaciones: 4,
-      modificaciones: [
-        {
-          id: "MOD001",
-          publicacion_id: "PUB001",
-          fecha: "2024-01-15T10:30:00",
-          usuario_id: "USR001",
-          usuario_info: {
-            id: "USR001",
-            nombre: "Juan Pérez",
-            email: "juan.perez@municipio.gov",
-            departamento: "Obras Públicas",
-            rol: "Supervisor",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          campo_modificado: "Estado",
-          valor_anterior: "Reportado",
-          valor_nuevo: "En proceso",
-          motivo: "Técnico asignado para evaluación",
-          ip_address: "192.168.1.100",
-          impacto: "Medio",
-          aprobada_por: "Auto-aprobada (Supervisor)",
-          es_propia: usuarioActual.id === "USR001",
-        },
-        {
-          id: "MOD002",
-          publicacion_id: "PUB001",
-          fecha: "2024-01-16T14:20:00",
-          usuario_id: "USR002",
-          usuario_info: {
-            id: "USR002",
-            nombre: "María González",
-            email: "maria.gonzalez@municipio.gov",
-            departamento: "Obras Públicas",
-            rol: "Técnico",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          campo_modificado: "Ubicación",
-          valor_anterior: "Av. Corrientes 1200",
-          valor_nuevo: "Av. Corrientes 1234",
-          motivo: "Corrección de dirección exacta tras inspección",
-          ip_address: "192.168.1.101",
-          impacto: "Bajo",
-          aprobada_por: "Juan Pérez - Supervisor",
-          es_propia: usuarioActual.id === "USR002",
-        },
-        {
-          id: "MOD003",
-          publicacion_id: "PUB001",
-          fecha: "2024-01-18T09:45:00",
-          usuario_id: "USR003",
-          usuario_info: {
-            id: "USR003",
-            nombre: "Carlos Rodríguez",
-            email: "carlos.rodriguez@municipio.gov",
-            departamento: "Obras Públicas",
-            rol: "Técnico Senior",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          campo_modificado: "Descripción",
-          valor_anterior: "Poste dañado",
-          valor_nuevo: "Poste de luz con cable expuesto, riesgo eléctrico",
-          motivo: "Ampliación de detalles tras inspección técnica",
-          ip_address: "192.168.1.102",
-          impacto: "Alto",
-          aprobada_por: "Juan Pérez - Supervisor",
-          es_propia: usuarioActual.id === "USR003",
-        },
-        {
-          id: "MOD004",
-          publicacion_id: "PUB001",
-          fecha: "2024-01-20T16:00:00",
-          usuario_id: "USR001",
-          usuario_info: {
-            id: "USR001",
-            nombre: "Juan Pérez",
-            email: "juan.perez@municipio.gov",
-            departamento: "Obras Públicas",
-            rol: "Supervisor",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          campo_modificado: "Estado",
-          valor_anterior: "En proceso",
-          valor_nuevo: "Resuelto",
-          motivo: "Reparación completada exitosamente por el equipo",
-          ip_address: "192.168.1.100",
-          impacto: "Alto",
-          aprobada_por: "Auto-aprobada (Supervisor)",
-          es_propia: usuarioActual.id === "USR001",
-        },
-      ],
-    },
-    {
-      publicacion_id: "PUB002",
-      titulo: "Bache en calle San Martín",
-      ubicacion: "San Martín 567",
-      estado_actual: "En proceso",
-      fecha_creacion: "2024-01-12T10:15:00",
-      departamento_responsable: "Obras Públicas",
-      total_modificaciones: 2,
-      modificaciones: [
-        {
-          id: "MOD005",
-          publicacion_id: "PUB002",
-          fecha: "2024-01-14T11:30:00",
-          usuario_id: "USR004",
-          usuario_info: {
-            id: "USR004",
-            nombre: "Ana López",
-            email: "ana.lopez@municipio.gov",
-            departamento: "Obras Públicas",
-            rol: "Coordinadora",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          campo_modificado: "Prioridad",
-          valor_anterior: "Media",
-          valor_nuevo: "Alta",
-          motivo: "Bache profundo que afecta significativamente el tránsito",
-          ip_address: "192.168.1.103",
-          impacto: "Alto",
-          aprobada_por: "Juan Pérez - Supervisor",
-          es_propia: usuarioActual.id === "USR004",
-        },
-        {
-          id: "MOD006",
-          publicacion_id: "PUB002",
-          fecha: "2024-01-15T15:45:00",
-          usuario_id: "USR002",
-          usuario_info: {
-            id: "USR002",
-            nombre: "María González",
-            email: "maria.gonzalez@municipio.gov",
-            departamento: "Obras Públicas",
-            rol: "Técnico",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          campo_modificado: "Estado",
-          valor_anterior: "Reportado",
-          valor_nuevo: "En proceso",
-          motivo: "Cuadrilla de asfalto asignada para reparación",
-          ip_address: "192.168.1.101",
-          impacto: "Medio",
-          aprobada_por: "Juan Pérez - Supervisor",
-          es_propia: usuarioActual.id === "USR002",
-        },
-      ],
-    },
-  ]
+  const getModificacionesData = async () => {
+    try {
+      console.log("Fetching modificaciones data for department ID:", departamentoId)
+      const response = await axiosPrivate.get(
+        `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/con-historial/?departamento=${departamento}`,
+      )
+      console.log("Modificaciones data fetched:", response.data)
+      console.log(response.data.results)
+      setModificacionesData(response.data.results)
+    } catch (error) {
+      console.error("Error fetching modificaciones data:", error)
+    }
+  }
+
+  const obtenerModificacionesPorUsuario = async () => {
+    try {
+      console.log(`[v0] Fetching modificaciones for user ${userId}`)
+      const response = await axiosPrivate.get(
+        `${import.meta.env.VITE_URL_PROD_VERCEL}historial-modificaciones/?autor=${userId}`,
+      )
+      console.log(`[v0] Modificaciones for user ${userId} fetched:`, response.data)
+      console.log("[v0] modificacionesDataPorUsuario results:", response?.data?.results)
+      console.log("[v0] modificacionesDataPorUsuario length:", response?.data?.results?.length)
+      setModificacionesDataPorUsuario(response?.data || [])
+    } catch (error) {
+      console.error(`[v0] Error fetching modificaciones for user ${userId}:`, error)
+    }
+  }
+
+  const getUsersByDepartment = async () => {
+    try {
+      console.log("Fetching users for department ID:", departamentoId)
+      const response = await axiosPrivate.get(
+        `${import.meta.env.VITE_URL_PROD_VERCEL}usuario-departamento/?departamento=${departamentoId}`,
+      )
+      console.log("Users fetched for department:", response.data)
+      setMiembrosEquipo(response.data)
+    } catch (error) {
+      console.error("Error fetching users for department:", error)
+    }
+  }
+
+  const getStats = async () => {
+    try {
+      console.log("Fetching stats for department ID:", departamentoId)
+      const response = await axiosPrivate.get(
+        `${import.meta.env.VITE_URL_PROD_VERCEL}estadisticas-historial-modificaciones/`,
+      )
+      console.log("Stats fetched:", response.data)
+      setStatsData(response.data)
+    } catch (error) {
+      console.error("Error fetching stats:", error)
+    }
+  }
 
   useEffect(() => {
-    setLoading(true)
-    setTimeout(() => {
-      // Filtrar publicaciones por departamento del usuario actual
-      const publicacionesFiltradas = usuarioActual.puede_ver_todos
-        ? publicacionesEjemplo
-        : publicacionesEjemplo.filter((pub) => pub.departamento_responsable === usuarioActual.departamento)
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        console.log("[v0] userId:", userId)
+        console.log("[v0] departamento:", departamento)
+        console.log("[v0] departamentoId:", departamentoId)
+        console.log("[v0] rol:", rol)
+        console.log("[v0] esJefe:", esJefe)
+        console.log("[v0] esPersonal:", esPersonal)
 
-      setPublicacionesOriginales(publicacionesFiltradas)
-      setPublicaciones(publicacionesFiltradas)
+        await Promise.all([
+          getModificacionesData(),
+          obtenerModificacionesPorUsuario(),
+          getUsersByDepartment(),
+          getStats(),
+        ])
 
-      // Crear lista plana de modificaciones para vista de personal
-      const modificacionesFlat = publicacionesFiltradas.flatMap((pub) =>
-        pub.modificaciones.map((mod) => ({
-          ...mod,
-          publicacion_titulo: pub.titulo,
-          publicacion_ubicacion: pub.ubicacion,
-          publicacion_estado: pub.estado_actual,
-        })),
+        console.log("[v0] All data fetched successfully")
+      } catch (error) {
+        console.error("[v0] Error fetching data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (userId && departamento && departamentoId) {
+      fetchData()
+    } else {
+      console.log(
+        "[v0] Missing required data - userId:",
+        userId,
+        "departamento:",
+        departamento,
+        "departamentoId:",
+        departamentoId,
       )
-
-      setModificacionesFlatOriginales(modificacionesFlat)
-      setModificacionesFlat(modificacionesFlat)
-
-      // Extraer miembros del equipo del departamento
-      const miembros = new Map()
-      publicacionesFiltradas.forEach((pub) => {
-        pub.modificaciones.forEach((mod) => {
-          if (mod.usuario_info.departamento === usuarioActual.departamento || usuarioActual.puede_ver_todos) {
-            miembros.set(mod.usuario_info.id, mod.usuario_info)
-          }
-        })
-      })
-
-      setMiembrosEquipo(Array.from(miembros.values()))
-      setLoading(false)
-    }, 1000)
-  }, [usuarioActual])
+    }
+  }, [userId, departamento, departamentoId])
 
   const togglePublicacion = (publicacionId) => {
     const nuevasAbiertas = new Set(publicacionesAbiertas)
@@ -290,27 +187,26 @@ const HistorialModificacionPublicaciones = () => {
     }))
   }
 
-  // Función para manejar clic en modificación
   const handleModificacionClick = (modificacion, publicacion = null) => {
+    console.log("Modificación clickeada:", modificacion)
+    console.log("Publicación ktorá:", publicacion)
     const datosCompletos = {
       modificacion,
       publicacion: publicacion || {
-        publicacion_id: modificacion.publicacion_id,
-        titulo: modificacion.publicacion_titulo,
-        ubicacion: modificacion.publicacion_ubicacion,
-        estado_actual: modificacion.publicacion_estado,
+        publicacion_id: modificacion.publicacion.id,
+        titulo: modificacion.publicacion.titulo,
+        ubicacion: modificacion.publicacion.ubicacion,
+        estado_actual: modificacion.publicacion.estado_actual,
       },
       todasLasModificaciones: publicacion ? publicacion.modificaciones : [],
     }
-    // onVerDetalle(datosCompletos)
     navigate(`/detalle-modificacion-publicacion/${modificacion.id}`, {
-      state: { datosCompletos  },
+      state: { datosCompletos },
     })
   }
 
   const aplicarFiltros = () => {
     if (esJefe) {
-      // Filtros para vista de jefe (publicaciones agrupadas)
       let publicacionesFiltradas = [...publicacionesOriginales]
 
       if (filtros.miembro_equipo && filtros.miembro_equipo !== "Todos los miembros") {
@@ -341,7 +237,6 @@ const HistorialModificacionPublicaciones = () => {
 
       setPublicaciones(publicacionesFiltradas)
     } else {
-      // Filtros para vista de personal (modificaciones planas)
       let modificacionesFiltradas = [...modificacionesFlatOriginales]
 
       if (filtros.miembro_equipo && filtros.miembro_equipo !== "Todos los miembros") {
@@ -439,9 +334,7 @@ const HistorialModificacionPublicaciones = () => {
     return iconos[campo] || <Edit className="w-4 h-4 text-gray-500" />
   }
 
-  // Estadísticas dinámicas según el rol
-  const estadisticas = 
-  esJefe
+  const estadisticas = esJefe
     ? {
         totalModificaciones: publicaciones.reduce((total, pub) => total + pub.total_modificaciones, 0),
         modificacionesHoy: publicaciones
@@ -469,42 +362,19 @@ const HistorialModificacionPublicaciones = () => {
         modificacionesAprobadas: modificacionesFlat.filter((mod) => mod.aprobada_por !== "Pendiente de aprobación")
           .length,
       }
-  
-const getModificacionesData = () => {
-  const data = axiosPrivate.get(`${import.meta.env.VITE_URL_PROD_VERCEL}historial-modificaciones/`);
-  data
-    .then(response => {
-      console.log('Modificaciones data fetched:', response.data);
-      setModificacionesData(response.data);
-    })
-    .catch(error => {
-      console.error('Error fetching modificaciones data:', error);
-    });
-   
-}
-useEffect(() => {
-  getModificacionesData();
-}, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      {/* <div className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            <History className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-semibold text-gray-900">Historial de modificación de publicaciones</h1>
-          </div>
-        </div>
-      </div> */}
-      <TopBar title={"Historial de modificación de publicaciones"} icon={<History className="h-6 w-6 text-blue-600" />} />
+      <TopBar
+        title={"Historial de modificación de publicaciones"}
+        icon={<History className="h-6 w-6 text-blue-600" />}
+      />
       <div className="p-6">
         <SidebarInset>
           <div className="">
             <Card className="bg-white shadow-lg">
               <CardHeader className="border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  {/* DIVISION DE VISTAS */}
                   <div className="flex items-center gap-4">
                     {esJefe ? (
                       <Building className="w-8 h-8 text-green-600" />
@@ -550,21 +420,21 @@ useEffect(() => {
                       <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                         <CardContent className="p-4 text-center">
                           <Activity className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-blue-700">{estadisticas.totalModificaciones}</div>
+                          <div className="text-2xl font-bold text-blue-700">{statsData?.totalModificaciones}</div>
                           <div className="text-sm text-blue-600">Total modificaciones</div>
                         </CardContent>
                       </Card>
                       <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                         <CardContent className="p-4 text-center">
                           <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-green-700">{estadisticas.modificacionesHoy}</div>
+                          <div className="text-2xl font-bold text-green-700">{statsData?.modificacionesHoy}</div>
                           <div className="text-sm text-green-600">Modificaciones hoy</div>
                         </CardContent>
                       </Card>
                       <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
                         <CardContent className="p-4 text-center">
                           <Users className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-purple-700">{estadisticas.miembrosEquipo}</div>
+                          <div className="text-2xl font-bold text-purple-700">{statsData?.miembrosEquipo}</div>
                           <div className="text-sm text-purple-600">Miembros del equipo</div>
                         </CardContent>
                       </Card>
@@ -572,7 +442,7 @@ useEffect(() => {
                         <CardContent className="p-4 text-center">
                           <User className="w-8 h-8 text-orange-600 mx-auto mb-2" />
                           <div className="text-lg font-bold text-orange-700 truncate">
-                            {estadisticas.miembroMasActivo.miembro?.nombre.split(" ")[0] || "N/A"}
+                            {statsData?.miembroMasActivo?.miembro?.nombre.split(" ")[0] || "N/A"}
                           </div>
                           <div className="text-sm text-orange-600">Más activo</div>
                         </CardContent>
@@ -583,21 +453,21 @@ useEffect(() => {
                       <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                         <CardContent className="p-4 text-center">
                           <Activity className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-blue-700">{estadisticas.totalModificaciones}</div>
+                          <div className="text-2xl font-bold text-blue-700">{statsData?.totalModificaciones}</div>
                           <div className="text-sm text-blue-600">Total del equipo</div>
                         </CardContent>
                       </Card>
                       <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                         <CardContent className="p-4 text-center">
                           <User className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-green-700">{estadisticas.misModificaciones}</div>
+                          <div className="text-2xl font-bold text-green-700">{statsData?.misModificaciones}</div>
                           <div className="text-sm text-green-600">Mis modificaciones</div>
                         </CardContent>
                       </Card>
                       <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
                         <CardContent className="p-4 text-center">
                           <Users className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                          <div className="text-2xl font-bold text-purple-700">{estadisticas.modificacionesEquipo}</div>
+                          <div className="text-2xl font-bold text-purple-700">{statsData?.modificacionesEquipo}</div>
                           <div className="text-sm text-purple-600">Del equipo</div>
                         </CardContent>
                       </Card>
@@ -627,19 +497,18 @@ useEffect(() => {
                           <SelectContent>
                             <SelectItem value="Todos los miembros">Todos los miembros</SelectItem>
                             {miembrosEquipo.map((miembro) => (
-                              <SelectItem key={miembro.id} value={miembro.nombre}>
+                              <SelectItem key={miembro?.usuario?.id} value={miembro?.usuario?.nombre}>
                                 <div className="flex items-center gap-2">
                                   <Avatar className="w-6 h-6">
-                                    <AvatarImage src={miembro.avatar || "/placeholder.svg"} />
                                     <AvatarFallback className="text-xs">
-                                      {miembro.nombre
+                                      {miembro?.usuario?.nombre
                                         .split(" ")
                                         .map((n) => n[0])
                                         .join("")}
                                     </AvatarFallback>
                                   </Avatar>
-                                  {miembro.nombre}
-                                  {miembro.id === usuarioActual.id && !esJefe && " (Yo)"}
+                                  {miembro?.usuario?.nombre}
+                                  {miembro?.usuario?.id === usuarioActual.id && !esJefe && " (Yo)"}
                                 </div>
                               </SelectItem>
                             ))}
@@ -716,17 +585,14 @@ useEffect(() => {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                       </div>
                     ) : (
-                      publicaciones.map((publicacion) => (
-                        <Card key={publicacion.publicacion_id} className="border-l-4 border-l-green-500">
+                      modificacionesData.map((publicacion) => (
+                        <Card key={publicacion.id} className="border-l-4 border-l-green-500">
                           <Collapsible>
-                            <CollapsibleTrigger
-                              className="w-full"
-                              onClick={() => togglePublicacion(publicacion.publicacion_id)}
-                            >
+                            <CollapsibleTrigger className="w-full" onClick={() => togglePublicacion(publicacion.id)}>
                               <CardHeader className="hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-4">
-                                    {publicacionesAbiertas.has(publicacion.publicacion_id) ? (
+                                    {publicacionesAbiertas.has(publicacion.id) ? (
                                       <ChevronDown className="w-5 h-5 text-gray-500" />
                                     ) : (
                                       <ChevronRight className="w-5 h-5 text-gray-500" />
@@ -734,14 +600,14 @@ useEffect(() => {
                                     <div className="text-left">
                                       <div className="flex items-center gap-3">
                                         <h3 className="text-lg font-semibold text-gray-800">{publicacion.titulo}</h3>
-                                        <Badge className={`text-xs ${getEstadoBadge(publicacion.estado_actual)}`}>
-                                          {publicacion.estado_actual}
+                                        <Badge className={`text-xs ${getEstadoBadge(publicacion.situacion.nombre)}`}>
+                                          {publicacion.situacion.nombre}
                                         </Badge>
                                       </div>
                                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                                         <span className="flex items-center gap-1">
                                           <FileText className="w-4 h-4" />
-                                          ID: {publicacion.publicacion_id}
+                                          ID: {publicacion.id}
                                         </span>
                                         <span className="flex items-center gap-1">
                                           <MapPin className="w-4 h-4" />
@@ -782,7 +648,9 @@ useEffect(() => {
                                           <TableRow
                                             key={modificacion.id}
                                             className="hover:bg-white cursor-pointer transition-colors"
-                                            onClick={() => handleModificacionClick(modificacion, publicacion)}
+                                            onClick={() =>
+                                              handleModificacionClick(modificacion, modificacion.publicacion)
+                                            }
                                           >
                                             <TableCell className="font-mono text-xs">
                                               {formatearFecha(modificacion.fecha)}
@@ -790,23 +658,17 @@ useEffect(() => {
                                             <TableCell>
                                               <div className="flex items-center gap-2">
                                                 <Avatar className="w-8 h-8">
-                                                  <AvatarImage
-                                                    src={modificacion.usuario_info.avatar || "/placeholder.svg"}
-                                                  />
+                                                  <AvatarImage src={modificacion.autor.avatar || "/placeholder.svg"} />
                                                   <AvatarFallback className="text-xs">
-                                                    {modificacion.usuario_info.nombre
+                                                    {modificacion.autor.nombre
                                                       .split(" ")
                                                       .map((n) => n[0])
                                                       .join("")}
                                                   </AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                  <div className="font-medium text-sm">
-                                                    {modificacion.usuario_info.nombre}
-                                                  </div>
-                                                  <div className="text-xs text-gray-500">
-                                                    {modificacion.usuario_info.rol}
-                                                  </div>
+                                                  <div className="font-medium text-sm">{modificacion.autor.nombre}</div>
+                                                  <div className="text-xs text-gray-500">{modificacion.autor.rol}</div>
                                                 </div>
                                               </div>
                                             </TableCell>
@@ -873,25 +735,26 @@ useEffect(() => {
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {miembrosEquipo.map((miembro) => {
-                            const modificacionesMiembro = publicaciones
-                              .flatMap((pub) => pub.modificaciones)
-                              .filter((mod) => mod.usuario_info.id === miembro.id).length
+                            const modificacionesMiembro =
+                              statsData?.modificacionesPorUsuario?.find(
+                                (item) => item.usuario_id === miembro?.usuario?.id,
+                              )?.modificaciones || 0
                             return (
-                              <Card key={miembro.id} className="bg-white">
+                              <Card key={miembro?.usuario?.id} className="bg-white">
                                 <CardContent className="p-4">
                                   <div className="flex items-center gap-3">
                                     <Avatar className="w-12 h-12">
-                                      <AvatarImage src={miembro.avatar || "/placeholder.svg"} />
+                                      <AvatarImage src={miembro?.usuario?.avatar || "/placeholder.svg"} />
                                       <AvatarFallback>
-                                        {miembro.nombre
+                                        {miembro?.usuario?.nombre
                                           .split(" ")
                                           .map((n) => n[0])
                                           .join("")}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1">
-                                      <div className="font-medium text-gray-800">{miembro.nombre}</div>
-                                      <div className="text-sm text-gray-600">{miembro.rol}</div>
+                                      <div className="font-medium text-gray-800">{miembro?.usuario?.nombre}</div>
+                                      <div className="text-sm text-gray-600">{miembro?.usuario?.rol}</div>
                                       <div className="text-xs text-blue-600 mt-1">
                                         {modificacionesMiembro} modificaciones
                                       </div>
@@ -911,119 +774,115 @@ useEffect(() => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Users className="w-6 h-6 text-green-600" />
-                        Modificaciones del departamento ({modificacionesFlat.length})
+                        Modificaciones del departamento ({modificacionesDataPorUsuario?.length})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {console.log("[v0] Rendering VISTA DEL PERSONAL")}
+                      {console.log("[v0] modificacionesDataPorUsuario in render:", modificacionesDataPorUsuario)}
+                      {console.log(
+                        "[v0] modificacionesDataPorUsuario length in render:",
+                        modificacionesDataPorUsuario?.length,
+                      )}
                       {loading ? (
                         <div className="flex justify-center items-center h-64">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[140px]">Fecha</TableHead>
-                                <TableHead>Publicación</TableHead>
-                                <TableHead>Campo modificado</TableHead>
-                                <TableHead>Cambio realizado</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead>Realizada por</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {modificacionesFlat.map((modificacion) => (
-                                <TableRow
-                                  key={modificacion.id}
-                                  className="hover:bg-gray-50 cursor-pointer transition-colors"
-                                  onClick={() => handleModificacionClick(modificacion)}
-                                >
-                                  <TableCell className="font-mono text-xs">
-                                    {formatearFecha(modificacion.fecha)}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div>
-                                      <div className="font-medium text-sm">{modificacion.publicacion_titulo}</div>
-                                      <div className="text-xs text-gray-500 flex items-center gap-1">
-                                        <MapPin className="w-3 h-3" />
-                                        {modificacion.publicacion_ubicacion}
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      {getCampoIcon(modificacion.campo_modificado)}
-                                      <span className="font-medium text-sm">{modificacion.campo_modificado}</span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-2">
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs bg-red-50 text-red-700 border-red-200"
-                                        >
-                                          {modificacion.valor_anterior}
-                                        </Badge>
-                                        <span className="text-gray-400">→</span>
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs bg-green-50 text-green-700 border-green-200"
-                                        >
-                                          {modificacion.valor_nuevo}
-                                        </Badge>
-                                      </div>
-                                      <div
-                                        className="text-xs text-gray-600 max-w-xs truncate"
-                                        title={modificacion.motivo}
-                                      >
-                                        {modificacion.motivo}
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge className={`text-xs ${getEstadoBadge(modificacion.publicacion_estado)}`}>
-                                      {modificacion.publicacion_estado}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Avatar className="w-8 h-8">
-                                        <AvatarImage src={modificacion.usuario_info.avatar || "/placeholder.svg"} />
-                                        <AvatarFallback className="text-xs">
-                                          {modificacion.usuario_info.nombre
-                                            .split(" ")
-                                            .map((n) => n[0])
-                                            .join("")}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                        <div
-                                          className={`font-medium text-sm ${
-                                            modificacion.es_propia ? "text-green-700 font-bold" : ""
-                                          }`}
-                                        >
-                                          {modificacion.usuario_info.nombre}
-                                          {modificacion.es_propia && " (Yo)"}
-                                        </div>
-                                        <div className="text-xs text-gray-500">{modificacion.usuario_info.rol}</div>
-                                      </div>
-                                    </div>
-                                  </TableCell>
+                          {modificacionesDataPorUsuario?.length > 0 ? (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[140px]">Fecha</TableHead>
+                                  <TableHead>Publicación</TableHead>
+                                  <TableHead>Campo modificado</TableHead>
+                                  <TableHead>Cambio realizado</TableHead>
+                                  <TableHead>Realizada por</TableHead>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {modificacionesDataPorUsuario?.map((modificacion) => {
+                                  console.log("[v0] Rendering modificacion:", modificacion)
+                                  return (
+                                    <TableRow
+                                      key={modificacion?.id}
+                                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                      onClick={() => handleModificacionClick(modificacion, modificacion?.publicacion)}
+                                    >
+                                      <TableCell className="font-mono text-xs">
+                                        {formatearFecha(modificacion?.fecha)}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div>
+                                          <div className="font-medium text-sm">{modificacion?.publicacion?.codigo}</div>
+                                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                                            <MapPin className="w-3 h-3" />
+                                            {modificacion?.publicacion?.ubicacion
+                                              ? modificacion?.publicacion?.ubicacion
+                                              : "Sin ubicación"}
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          {getCampoIcon(modificacion?.campo_modificado)}
+                                          <span className="font-medium text-sm">{modificacion?.campo_modificado}</span>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2">
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs bg-red-50 text-red-700 border-red-200"
+                                            >
+                                              {modificacion?.valor_anterior}
+                                            </Badge>
+                                            <span className="text-gray-400">→</span>
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs bg-green-50 text-green-700 border-green-200"
+                                            >
+                                              {modificacion?.valor_nuevo}
+                                            </Badge>
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <Avatar className="w-8 h-8">
+                                            <AvatarFallback className="text-xs">
+                                              {modificacion?.autor?.nombre
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div>
+                                            <div className="text-xs text-gray-500">
+                                              {modificacion?.autor?.tipo_usuario}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )
+                                })}
+                              </TableBody>
+                            </Table>
+                          ) : (
+                            <div className="text-center py-12">
+                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                              <h3 className="text-lg font-medium text-gray-600 mb-2">No hay modificaciones</h3>
+                              <p className="text-gray-500">
+                                No se encontraron modificaciones para este usuario. Verifica que el userId sea correcto.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
-                      {!loading && modificacionesFlat.length === 0 && (
-                        <div className="text-center py-12">
-                          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-600 mb-2">No hay modificaciones</h3>
-                          <p className="text-gray-500">No se encontraron modificaciones con los filtros aplicados.</p>
-                        </div>
-                      )}
+                    
                     </CardContent>
                   </Card>
                 )}

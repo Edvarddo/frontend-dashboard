@@ -27,7 +27,7 @@ const DetalleModificacionPublicacion = ({ datos }) => {
 
   const location = useLocation();
   const datosCompletos = location.state?.datosCompletos || datos;
-  console.log("Datos recibidos:", )
+  console.log("Datos recibidos:", datosCompletos )
   const { modificacion, publicacion, todasLasModificaciones } = datosCompletos
 
   const onVolver = () => {
@@ -108,10 +108,10 @@ const DetalleModificacionPublicacion = ({ datos }) => {
         </Button>
 
         {/* Información de la modificación principal */}
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100">
+        <Card className="border-l-4 border-l-green-500">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
             <CardTitle className="flex items-center gap-3">
-              <Edit className="w-6 h-6 text-blue-600" />
+              <Edit className="w-6 h-6 text-green-600" />
               Modificación #{modificacion.id}
               {/* <Badge className={`${getImpactoBadge(modificacion.impacto)}`}>Impacto {modificacion.impacto}</Badge> */}
             </CardTitle>
@@ -130,30 +130,24 @@ const DetalleModificacionPublicacion = ({ datos }) => {
 
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
-                    <AvatarImage src={modificacion.usuario_info.avatar || "/placeholder.svg"} />
+                    <AvatarImage src={modificacion.autor.avatar || "/placeholder.svg"} />
                     <AvatarFallback>
-                      {modificacion.usuario_info.nombre
+                      {modificacion.autor.nombre
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium text-gray-900">{modificacion.usuario_info.nombre}</div>
+                    <div className="font-medium text-gray-900">{modificacion.autor.nombre}</div>
                     <div className="text-sm text-gray-600">
-                      {modificacion.usuario_info.rol} • {modificacion.usuario_info.departamento}
+                      {modificacion.autor.rol} • {modificacion.autor.departamento}
                     </div>
-                    <div className="text-xs text-gray-500">{modificacion.usuario_info.email}</div>
+                    <div className="text-xs text-gray-500">{modificacion.autor.email}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Monitor className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <div className="font-medium text-gray-900">Dirección IP</div>
-                    <div className="text-sm text-gray-600 font-mono">{modificacion.ip_address}</div>
-                  </div>
-                </div>
+                
               </div>
 
               {/* Detalles del cambio */}
@@ -181,18 +175,7 @@ const DetalleModificacionPublicacion = ({ datos }) => {
                   </div>
                 </div>
 
-                <div>
-                  <div className="font-medium text-gray-900 mb-2">Motivo de la modificación</div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{modificacion.motivo}</div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <div className="font-medium text-gray-900">Estado de aprobación</div>
-                    <div className="text-sm text-gray-600">{modificacion.aprobada_por}</div>
-                  </div>
-                </div>
+                
               </div>
             </div>
           </CardContent>
@@ -211,7 +194,7 @@ const DetalleModificacionPublicacion = ({ datos }) => {
               <div className="space-y-3">
                 <div>
                   <div className="font-medium text-gray-900">ID de Publicación</div>
-                  <div className="text-sm text-gray-600 font-mono">{publicacion.publicacion_id}</div>
+                  <div className="text-sm text-gray-600 font-mono">{publicacion.codigo }</div>
                 </div>
                 <div>
                   <div className="font-medium text-gray-900">Título</div>
@@ -223,13 +206,13 @@ const DetalleModificacionPublicacion = ({ datos }) => {
                   <MapPin className="w-4 h-4 text-red-500" />
                   <div>
                     <div className="font-medium text-gray-900">Ubicación</div>
-                    <div className="text-sm text-gray-600">{publicacion.ubicacion}</div>
+                    <div className="text-sm text-gray-600">{publicacion.ubicacion ? publicacion.ubicacion : "No especificada"}</div>
                   </div>
                 </div>
                 <div>
                   <div className="font-medium text-gray-900">Estado actual</div>
-                  <Badge className={`${getEstadoBadge(publicacion.estado_actual)} mt-1`}>
-                    {publicacion.estado_actual}
+                  <Badge className={`${getEstadoBadge(publicacion.situacion.nombre)} mt-1`}>
+                    {publicacion.situacion.nombre}
                   </Badge>
                 </div>
               </div>
@@ -347,12 +330,9 @@ const DetalleModificacionPublicacion = ({ datos }) => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">ID de Usuario:</span>
-                <span className="font-mono text-sm">{modificacion.usuario_id}</span>
+                <span className="font-mono text-sm">{modificacion.autor.id}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Dirección IP:</span>
-                <span className="font-mono text-sm">{modificacion.ip_address}</span>
-              </div>
+              
               <div className="flex justify-between">
                 <span className="text-gray-600">Timestamp:</span>
                 <span className="font-mono text-sm">{modificacion.fecha}</span>

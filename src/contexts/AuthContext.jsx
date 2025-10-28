@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
     const [rol, setRol] = useState(localStorage.getItem('rol') || null);
     const [departamento, setDepartamento] = useState(localStorage.getItem('departamento') || null);
     const [isTokenExpired, setIsTokenExpired] = useState(false);
+    const [departamentoId, setDepartamentoId] = useState(localStorage.getItem('departamentoId') || null);
 
 
     const login = (token, refreshToken, admin) => {
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }) => {
         setNombre(null);
         setRol(null);
         setDepartamento(null);
+        setDepartamentoId(null);
     };
 
     return (
@@ -65,7 +67,10 @@ export const AuthProvider = ({ children }) => {
                 rol,
                 setRol,
                 departamento,
-                setDepartamento
+                setDepartamento,
+                departamentoId,
+                setDepartamentoId,
+
             }}>
             {children}
         </AuthContext.Provider>

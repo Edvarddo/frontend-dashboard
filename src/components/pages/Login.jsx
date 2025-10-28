@@ -27,7 +27,8 @@ export default function Login() {
     userId,
     setNombre,
     setRol, 
-    setDepartamento
+    setDepartamento,
+    setDepartamentoId
   } = useAuth();
   const [data, setData] = useState(null);
 
@@ -52,6 +53,7 @@ export default function Login() {
       setLoginLoading(false);
       return;
     }
+    console.log(`rut: ${rut.replace(/\./g, '')}, password: ${password}`);
     const response =axios.post(`${import.meta.env.VITE_URL_PROD_VERCEL}token/`, {
       rut: rut.replace(/\./g, ''),
       password: password
@@ -107,11 +109,13 @@ export default function Login() {
         setUserId(response.data.id);
         setNombre(response.data.nombre);
         setRol(response.data.tipo_usuario);
-        setDepartamento(response.data.departamento_asignado);
+        setDepartamento(response.data.departamento_asignado.nombre);
+        setDepartamentoId(response.data.departamento_asignado.id);
         localStorage.setItem('userId', response.data.id);
         localStorage.setItem('nombre', response.data.nombre);
         localStorage.setItem('rol', response.data.tipo_usuario);
-        localStorage.setItem('departamento', response.data.departamento_asignado);
+        localStorage.setItem('departamento', response.data.departamento_asignado.nombre);
+        localStorage.setItem('departamentoId', response.data.departamento_asignado.id);
       })
       .catch((error) => {
         console.error('Error fetching user details:', error);

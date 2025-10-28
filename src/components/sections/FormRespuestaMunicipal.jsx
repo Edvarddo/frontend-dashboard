@@ -13,7 +13,7 @@ import { AlertCircle, Info, Paperclip, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import FileUpload from '../FileUpload'; // Importa el nuevo componente
 import useFileHandling from '../../hooks/useFileHandling'; // Importa el nuevo hook
-
+import useAuth from '../../hooks/useAuth';
 const stateOrder = ["Pendiente", "Recibido", "En curso", "Resuelto", "No Resuelto"]
 const finalStates = ["Resuelto", "No Resuelto"]
 
@@ -46,7 +46,7 @@ export function MunicipalResponseForm({
     removeFile,
     resetFiles,
   } = useFileHandling();
-
+  const { departamentoId, userId } = useAuth();
 
   useEffect(() => {
     if (previousStatus === "En curso") {
@@ -85,7 +85,7 @@ export function MunicipalResponseForm({
 
     // 1. Crear la respuesta municipal
     const createdResponse = await onSubmit({
-      usuario: 1, // O el ID del usuario actual
+      usuario: userId ? userId : null, // O el ID del usuario actual
       situacion_inicial: previousStatus,
       situacion_posterior: currentStatus,
       fecha: new Date().toISOString(),
