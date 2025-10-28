@@ -297,7 +297,6 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
   }
 
   const getResultadoBadge = (resultado) => {
-    // es_exitoso: true or false. not resultado now
 
     return resultado ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
   }
@@ -339,10 +338,10 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
     // Simular llamada a API
     setLoading(true);
     try {
-      const response = await axiosPrivate.get('/auditoria/');
-      setAuditData(response.data);
-      setAuditLogs(response.data);
-      setAuditLogsOriginales(response.data);
+      const response = await axiosPrivate.get('/auditoria/?pagesize=10');
+      setAuditData(response.data.results);
+      setAuditLogs(response.data.results);
+      setAuditLogsOriginales(response.data.results);
       console.log(response.data);
     } catch (error) {
       console.error("Error al obtener datos de auditoría:", error);
@@ -373,17 +372,17 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                 <Card className="bg-white shadow-sm flex items-center justify-center py-4">
                   {/* when loading, use <Spinner /> */}
 
-                <CardContent className="p-4 text-center">
-                  {/* here skeleton if. but with identical dimensions. */}
-                  
-                      <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                      <div className="text-xl font-bold text-gray-900">{estadisticas.totalLogs}</div>
-                      <div className="text-sm text-gray-600">Total</div>
-                    
-                  
-                </CardContent>
+                  <CardContent className="p-4 text-center">
+                    {/* here skeleton if. but with identical dimensions. */}
 
-              </Card>
+                    <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-gray-900">{estadisticas.totalLogs}</div>
+                    <div className="text-sm text-gray-600">Total</div>
+
+
+                  </CardContent>
+
+                </Card>
               )}
               {loading ? (
                 <Skeleton className="w-full h-32" />
@@ -403,22 +402,22 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                 <Card className="bg-white shadow-sm flex items-center justify-center py-4">
                   {/* when loading, use <Spinner /> */}
 
-                <CardContent className="p-4 text-center">
-                  {loading ? (
-                    <>
-                      <Spinner className="w-6 h-6 mx-auto" />
-       
-                    </>
-                  ) : (
-                    <>
-                      <User className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                      <div className="text-xl font-bold text-gray-900">{estadisticas.usuariosActivos}</div>
-                      <div className="text-sm text-gray-600">Usuarios</div>
-                    </>
-                  )}
-                </CardContent>
+                  <CardContent className="p-4 text-center">
+                    {loading ? (
+                      <>
+                        <Spinner className="w-6 h-6 mx-auto" />
 
-              </Card>
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                        <div className="text-xl font-bold text-gray-900">{estadisticas.usuariosActivos}</div>
+                        <div className="text-sm text-gray-600">Usuarios</div>
+                      </>
+                    )}
+                  </CardContent>
+
+                </Card>
               )}
 
               {loading ? (
@@ -427,15 +426,15 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                 <Card className="bg-white shadow-sm flex items-center justify-center py-4">
                   {/* when loading, use <Spinner /> */}
 
-                <CardContent className=" text-center">
-                  
-                      <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                      <div className="text-xl font-bold text-gray-900">{estadisticas.accionesExitosas}</div>
-                      <div className="text-sm text-gray-600">Exitosas</div>
-                
-                </CardContent>
+                  <CardContent className=" text-center">
 
-              </Card>
+                    <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-gray-900">{estadisticas.accionesExitosas}</div>
+                    <div className="text-sm text-gray-600">Exitosas</div>
+
+                  </CardContent>
+
+                </Card>
               )}
               {loading ? (
                 <Skeleton className="w-full h-32" />
@@ -444,15 +443,15 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                   {/* when loading, use <Spinner /> */}
 
                   <CardContent className="p-4 text-center">
-                   
-                        <XCircle className="w-6 h-6 text-red-600 mx-auto mb-2" />
-                        <div className="text-xl font-bold text-gray-900">{estadisticas.accionesFallidas}</div>
-                        <div className="text-sm text-gray-600">Fallidas</div>
-                
-                  
+
+                    <XCircle className="w-6 h-6 text-red-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-gray-900">{estadisticas.accionesFallidas}</div>
+                    <div className="text-sm text-gray-600">Fallidas</div>
+
+
                   </CardContent>
-                
-              </Card>
+
+                </Card>
               )}
               {/* <Card className="bg-white shadow-sm">
                 <CardContent className="p-4 text-center">
@@ -586,11 +585,10 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
                             <TableHead className="font-semibold">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
-                        {/* when loading more height to the row */}
                         <TableBody className="h-full">
                           {loading ? (
-                            // more rows with animate-pulse
-                            
+                            // Más filas de esqueleto para simular carga
+
                             <TableRow className="animate-pulse ">
                               <TableCell colSpan={8} className="text-center py-8">
                                 <Spinner text="Cargando registros..." />

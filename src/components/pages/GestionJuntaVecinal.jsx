@@ -150,11 +150,10 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   const handleAgregarJunta = async () => {
     try {
-      // throw new Error("Simulated error for demonstration") // Remove this line to enable actual submission
       if (formData.nombre && formData.calle && formData.numero && formData.ubicacion && formData.estado) {
         console.log("Nueva junta vecinal:", formData)
         const nuevaJunta = {
-          id: null, // Generate unique ID for demo
+          id: null, // Generar un ID temporal o manejarlo en el backend
           nombre_junta: formData.nombre,
           nombre_calle: formData.calle,
           numero_calle: formData.numero,
@@ -166,7 +165,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           tipo: "nueva",
         }
         console.log("Nueva junta vecinal:", nuevaJunta)
-        // backend connection
         const response = await axiosPrivate.post("/juntas-vecinales/", {
           nombre_junta: nuevaJunta.nombre_junta,
           nombre_calle: nuevaJunta.nombre_calle,
@@ -175,7 +173,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           latitud: nuevaJunta.latitud,
           longitud: nuevaJunta.longitud,
         })
-        // gET the id from response and set it to nuevaJunta
+        // Obtener el ID asignado por el backend
         nuevaJunta.id = response.data.id
         console.log("Response from backend:", response)
         setNuevasUbicaciones((prev) => [...prev, nuevaJunta])
@@ -189,7 +187,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           latitud: "",
           longitud: "",
         })
-        // with green bg bro
         toast({
           title: "Junta vecinal agregada",
           description: "La nueva junta vecinal ha sido agregada exitosamente.",
@@ -275,13 +272,12 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         console.log("Updated junta:", editFormData)
         console.log("Updated junta to save:", updatedJunta)
         console.log("Editing junta:", editingJunta)
-        // backend connection
         console.log("Editing junta with ID:", editFormData.id)
         const response = await axiosPrivate.patch(`/juntas-vecinales/${editFormData.id}/`, updatedJunta)
         console.log("Response from backend:", response)
         setJuntasVecinales((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
 
-        // Also update nuevasUbicaciones if the item is there
+        // Actualizar también en nuevasUbicaciones si aplica
         setNuevasUbicaciones((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
 
         setEditModalOpen(false)
@@ -295,10 +291,10 @@ const GestionJuntaVecinal = ({ onVolver }) => {
       }
     } catch (error) {
       toast({
-          title: "Error al actualizar la junta vecinal",
-          description: "Ha ocurrido un error al intentar actualizar la junta vecinal.",
-          className: operations.ERROR,
-        })
+        title: "Error al actualizar la junta vecinal",
+        description: "Ha ocurrido un error al intentar actualizar la junta vecinal.",
+        className: operations.ERROR,
+      })
       console.error("Error al actualizar junta vecinal:", error)
     }
   }
@@ -316,10 +312,10 @@ const GestionJuntaVecinal = ({ onVolver }) => {
       console.log("Delete response:", response)
       if (response.status === 200 || response.status === 204) {
         if (juntaToDelete.tipo === "nueva") {
-          // Remove from nuevasUbicaciones
+          // Eliminar de nuevasUbicaciones
           setNuevasUbicaciones((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
         } else {
-          // Remove from juntasVecinales
+          // Eliminar de juntasVecinales
           setJuntasVecinales((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
         }
         toast({
@@ -515,7 +511,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   >
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      
+
                     />
                     <MapClickHandler onMapClick={handleMapClick} />
 

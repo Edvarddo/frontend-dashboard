@@ -2,12 +2,11 @@ import React from 'react';
 import { Skeleton } from "@/components/ui/skeleton"
 
 const StatsTable = ({ data, isLoading }) => {
-  // console.log(isLoading);
-  
-  // Calculate totals for each category
+
+  // Calcular los totales para cada categoría
   const categories = ['Asistencia Social', 'Mantención de Calles', 'Seguridad', 'Áreas verdes'];
-  
-  // Create summary data
+
+  // Crear datos resumidos por junta vecinal
   const summaryData = data.map(item => ({
     junta: item.Junta_Vecinal.nombre,
     asistenciaSocial: item['Asistencia Social'] || 0,
@@ -17,7 +16,7 @@ const StatsTable = ({ data, isLoading }) => {
     total: item.Junta_Vecinal.total_publicaciones
   }));
 
-  // Calculate totals
+  // Calcular los totales generales
   const totals = summaryData.reduce((acc, curr) => ({
     asistenciaSocial: acc.asistenciaSocial + curr.asistenciaSocial,
     mantencionCalles: acc.mantencionCalles + curr.mantencionCalles,

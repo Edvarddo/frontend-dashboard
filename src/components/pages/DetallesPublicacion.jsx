@@ -30,13 +30,13 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [publicacion, setPublicacion] = useState({})
-  
+
   const [showResponseForm, setShowResponseForm] = useState(false)
   const navigate = useNavigate();
   const url = `publicaciones/${id}/`
   // const { userId } = useAuth()
   // console.log(userId)
-  
+
   const fetchPublicacion = (url) => {
     setLoading(true)
     axiosPrivate.get(url
@@ -78,7 +78,6 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
         ...newResponse,
         publicacion: id
       })
-      // Fetch the updated responses after adding a new one
       fetchResponses()
       setShowResponseForm(false)
     } catch (error) {
@@ -86,9 +85,9 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
     }
   }
 
-  
 
-  
+
+
 
   return (
     <>
@@ -142,7 +141,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
               activeTab === 'info' && (
                 <>
                   <InfoPublicacion publicacion={publicacion} loading={loading} id={id} setPublicacion={setPublicacion} />
-                  
+
                 </>
 
               )}

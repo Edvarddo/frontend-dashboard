@@ -28,7 +28,7 @@ export const categoryColors = {
 };
 
 export const getColorForCategory = (category) => {
-  return categoryColors[category] || "#778899"; // Default color if category is not found
+  return categoryColors[category] || "#778899";
 };
 
 export const chartColors = Object.values(categoryColors);

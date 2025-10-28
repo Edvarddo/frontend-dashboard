@@ -194,16 +194,16 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
       await axiosPrivate.delete(`respuestas-municipales/${id}/`)
 
 
-      // Change the publication status to the previous state
+      // Cambiar el estado de la publicación al estado anterior
       const previousStatus = lastResponse.situacion_inicial;
       const previousStatusId = situationMap[previousStatus];
 
       await axiosPrivate.patch(`publicaciones/${publicacion.id}/`, { situacion: previousStatusId })
 
-      // Update the local state
+      // Actualizar el estado en el frontend
       setPublicacion(prev => ({ ...prev, situacion: { nombre: previousStatus } }))
 
-      // Fetch updated responses
+      // Obtener nuevamente las respuestas
 
       fetchResponses()
       toast({

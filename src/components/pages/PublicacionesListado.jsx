@@ -74,7 +74,7 @@ export default function PublicacionesListado({
         urls.map(url => axiosPrivate(url).then(res => res.data))
       );
 
-      // change nombre_calle to nombre on juntasVecinales
+      // cambiar nombre_junta a nombre en juntasVecinales
       juntasVecinales.forEach(junta => {
         junta.nombre = junta.nombre_junta;
       });
@@ -146,7 +146,7 @@ export default function PublicacionesListado({
     }
   };
   const getQueryParams = () => {
-    // create url with filters object
+    // crear los parametros de consulta desde el objeto filtrosObj
     const categoriesParams = filtrosObj.categoria.join(",")
     const juntasParams = filtrosObj.junta.join(",")
     const situacionesParams = filtrosObj.situacion.join(",")
@@ -161,95 +161,95 @@ export default function PublicacionesListado({
       iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
       endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
       limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina : ""
-      
+
 
     const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}${limitPerPage}`
-    // delete & from last element
+    // borrar ultimo & si existe
     return filtros
   }
 
-    const aplicarFiltros = () => {
+  const aplicarFiltros = () => {
 
-      const filtros = getQueryParams()
-      // return;
-      let url = `${api_url}publicaciones/?${filtros}`
-      console.log(url)
+    const filtros = getQueryParams()
+    // return;
+    let url = `${api_url}publicaciones/?${filtros}`
+    console.log(url)
 
-      console.log(filtros)
-      console.log(filtrosObj.categoria.length)
+    console.log(filtros)
+    console.log(filtrosObj.categoria.length)
 
-      setUrl(url)
-      setFiltros(filtros)
-      setCurrentPage(1)
-    }
-    const limpiarFiltros = () => {
-      setSelectedCategoria(null)
-      setSelectedSituacion(null)
-      setSelectedJunta(null)
-      setSelectedDepto(null)
-      setDateRange({ from: null, to: null })
-      setUrl(null)
-      setFiltrosObj({
-        categoria: [],
-        junta: [],
-        situacion: [],
-        departamentos: [],
-        iniDate: null,
-        endDate: null
-      })
-      setClearValues(!clearValues)
-
-    }
-
-    return (
-
-
-      <>
-        <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
-        <main className=" p-4  bg-gray-100 ">
-          <div className="m-4">
-            <Filters
-              clearValues={clearValues}
-              categorias={categorias}
-              situaciones={situaciones}
-              juntasVecinales={juntasVecinales}
-              departamentos={departamentos}
-              setFiltrosObj={setFiltrosObj}
-              filtrosObj={filtrosObj}
-              dateRange={dateRange}
-              setDateRange={setDateRange}
-              setIsValid={setIsValid}
-              isValid={isValid}
-              loading={loading}
-              handleDownload={handleDownload}
-              limpiarFiltros={limpiarFiltros}
-              aplicarFiltros={aplicarFiltros}
-              showDownload={true}
-              isDownloadAvailable={isDownloadAvailable}
-            />
-
-          </div>
-          <div className="bg-white m-4  p-6 rounded-lg shadow-md">
-            <TablaPublicaciones
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-              publicacionesPorPagina={publicacionesPorPagina}
-              setPublicacionesPorPagina={setPublicacionesPorPagina}
-              loading={loading}
-              setLoading={setLoading}
-              url={url}
-              setDownloadIsAvailable={setIsDownloadAvailable}
-            />
-
-          </div>
-
-
-        </main>
-
-      </>
-
-
-
-
-    )
+    setUrl(url)
+    setFiltros(filtros)
+    setCurrentPage(1)
   }
+  const limpiarFiltros = () => {
+    setSelectedCategoria(null)
+    setSelectedSituacion(null)
+    setSelectedJunta(null)
+    setSelectedDepto(null)
+    setDateRange({ from: null, to: null })
+    setUrl(null)
+    setFiltrosObj({
+      categoria: [],
+      junta: [],
+      situacion: [],
+      departamentos: [],
+      iniDate: null,
+      endDate: null
+    })
+    setClearValues(!clearValues)
+
+  }
+
+  return (
+
+
+    <>
+      <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
+      <main className=" p-4  bg-gray-100 ">
+        <div className="m-4">
+          <Filters
+            clearValues={clearValues}
+            categorias={categorias}
+            situaciones={situaciones}
+            juntasVecinales={juntasVecinales}
+            departamentos={departamentos}
+            setFiltrosObj={setFiltrosObj}
+            filtrosObj={filtrosObj}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            setIsValid={setIsValid}
+            isValid={isValid}
+            loading={loading}
+            handleDownload={handleDownload}
+            limpiarFiltros={limpiarFiltros}
+            aplicarFiltros={aplicarFiltros}
+            showDownload={true}
+            isDownloadAvailable={isDownloadAvailable}
+          />
+
+        </div>
+        <div className="bg-white m-4  p-6 rounded-lg shadow-md">
+          <TablaPublicaciones
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            publicacionesPorPagina={publicacionesPorPagina}
+            setPublicacionesPorPagina={setPublicacionesPorPagina}
+            loading={loading}
+            setLoading={setLoading}
+            url={url}
+            setDownloadIsAvailable={setIsDownloadAvailable}
+          />
+
+        </div>
+
+
+      </main>
+
+    </>
+
+
+
+
+  )
+}

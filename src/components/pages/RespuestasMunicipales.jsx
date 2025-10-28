@@ -55,17 +55,17 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
   const handleSaveChanges = async () => {
     try {
       await axiosPrivate.put(`respuestas-municipales/${selectedResponse.id}/`, selectedResponse)
-      getMunicipalResponses() // Refresh the data
+      getMunicipalResponses() // Recargar la lista después de guardar
       setIsSidebarOpen(false)
     } catch (error) {
-      console.error('Error saving changes:', error)
+      console.error('Error guardando cambios:', error)
     }
   }
 
   return (
     <div className="flex flex-col h-full">
       <TopBar title="Respuestas Municipales" handleOpenSidebar={handleOpenSidebar} />
-      
+
       <div className="flex flex-1 overflow-hidden">
         <div className={`flex-1 p-6 bg-gray-50 overflow-auto transition-all duration-300 ${isSidebarOpen ? 'mr-80' : ''}`}>
           <Card>
@@ -82,8 +82,8 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
                     className="pl-10 h-10"
                   />
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex items-center gap-2 h-10"
                 >
                   <Calendar className="h-4 w-4" />
@@ -107,8 +107,8 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
                   </TableHeader>
                   <TableBody>
                     {municipalResponses.map((row) => (
-                      <TableRow 
-                        key={row.id} 
+                      <TableRow
+                        key={row.id}
                         className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => handleRowClick(row)}
                       >
@@ -119,8 +119,8 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
                         <TableCell className="text-gray-600">{row.situacion_inicial}</TableCell>
                         <TableCell className="text-gray-600">{row.situacion_posterior}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="link" 
+                          <Button
+                            variant="link"
                             className="text-blue-600 hover:text-blue-700"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -140,10 +140,9 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
         </div>
 
         {/* Sidebar */}
-        <div 
-          className={`fixed right-0  h-full w-80 bg-white  transform transition-transform duration-300 ease-in-out overflow-y-auto ${
-            isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+        <div
+          className={`fixed right-0  h-full w-80 bg-white  transform transition-transform duration-300 ease-in-out overflow-y-auto ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
           style={{ top: '64px' }} // Adjust this value to match your TopBar height
         >
           <div className="p-6">
@@ -161,53 +160,53 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
                 </div>
                 <div>
                   <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700">Descripción</label>
-                  <Input 
-                    id="descripcion" 
+                  <Input
+                    id="descripcion"
                     name="descripcion"
-                    value={selectedResponse.descripcion} 
+                    value={selectedResponse.descripcion}
                     onChange={handleInputChange}
-                    className="mt-1" 
+                    className="mt-1"
                   />
                 </div>
                 <div>
                   <label htmlFor="acciones" className="block text-sm font-medium text-gray-700">Acciones</label>
-                  <Input 
-                    id="acciones" 
+                  <Input
+                    id="acciones"
                     name="acciones"
-                    value={selectedResponse.acciones} 
+                    value={selectedResponse.acciones}
                     onChange={handleInputChange}
-                    className="mt-1" 
+                    className="mt-1"
                   />
                 </div>
                 <div>
                   <label htmlFor="fecha" className="block text-sm font-medium text-gray-700">Fecha</label>
-                  <Input 
-                    id="fecha" 
+                  <Input
+                    id="fecha"
                     name="fecha"
                     type="date"
-                    value={format(new Date(selectedResponse.fecha), "yyyy-MM-dd")} 
+                    value={format(new Date(selectedResponse.fecha), "yyyy-MM-dd")}
                     onChange={handleInputChange}
-                    className="mt-1" 
+                    className="mt-1"
                   />
                 </div>
                 <div>
                   <label htmlFor="situacion_inicial" className="block text-sm font-medium text-gray-700">Estado Previo</label>
-                  <Input 
-                    id="situacion_inicial" 
+                  <Input
+                    id="situacion_inicial"
                     name="situacion_inicial"
-                    value={selectedResponse.situacion_inicial} 
+                    value={selectedResponse.situacion_inicial}
                     onChange={handleInputChange}
-                    className="mt-1" 
+                    className="mt-1"
                   />
                 </div>
                 <div>
                   <label htmlFor="situacion_posterior" className="block text-sm font-medium text-gray-700">Estado Actual</label>
-                  <Input 
-                    id="situacion_posterior" 
+                  <Input
+                    id="situacion_posterior"
                     name="situacion_posterior"
-                    value={selectedResponse.situacion_posterior} 
+                    value={selectedResponse.situacion_posterior}
                     onChange={handleInputChange}
-                    className="mt-1" 
+                    className="mt-1"
                   />
                 </div>
                 <Button className="w-full mt-4" onClick={handleSaveChanges}>Guardar cambios</Button>
