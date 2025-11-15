@@ -24,7 +24,7 @@ import {
 // import dynamic from "next/dynamic"
 import MapaCalorComponente from "./MapaCalorComponente"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
-
+import { API_ROUTES } from "@/api/apiRoutes"
 // Error Boundary para manejar errores sin romper el componente
 class MapaCalorErrorBoundary extends Component {
   constructor(props) {
@@ -102,7 +102,7 @@ const MapaCalorSeccion = ({
   const obtenerJuntaCritica = useCallback(async () => {
     try {
       setLoadingJuntaCritica(true)
-      const response = await axiosPrivate.get('/junta-mas-critica/')
+      const response = await axiosPrivate.get(API_ROUTES.STATS.JUNTA_MAS_CRITICA)
       console.log('Junta más crítica del backend:', response.data)
       setJuntaCritica(response.data)
     } catch (error) {

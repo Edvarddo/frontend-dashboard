@@ -10,14 +10,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Download, Filter, Plus, Edit, MapPin, ArrowLeft, Map, Trash2 } from "lucide-react"
+import { Search, Download, Filter, Plus, Edit, MapPin, ArrowLeft, Map, Trash2, Import } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import TopBar from "../TopBar"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { set } from "date-fns"
 import { useToast } from "../../hooks/use-toast"
 import { operations } from "../../lib/constants"
-
+import { API_ROUTES } from "@/api/apiRoutes"
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
     click: (e) => {
@@ -165,7 +165,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           tipo: "nueva",
         }
         console.log("Nueva junta vecinal:", nuevaJunta)
-        const response = await axiosPrivate.post("/juntas-vecinales/", {
+        const response = await axiosPrivate.post(API_ROUTES.JUNTAS_VECINALES.ROOT, {
           nombre_junta: nuevaJunta.nombre_junta,
           nombre_calle: nuevaJunta.nombre_calle,
           numero_calle: nuevaJunta.numero_calle,
@@ -273,7 +273,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         console.log("Updated junta to save:", updatedJunta)
         console.log("Editing junta:", editingJunta)
         console.log("Editing junta with ID:", editFormData.id)
-        const response = await axiosPrivate.patch(`/juntas-vecinales/${editFormData.id}/`, updatedJunta)
+        const response = await axiosPrivate.patch(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${editFormData.id}/`, updatedJunta)
         console.log("Response from backend:", response)
         setJuntasVecinales((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
 
@@ -308,7 +308,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     if (!juntaToDelete) return
 
     try {
-      const response = await axiosPrivate.delete(`juntas-vecinales/${juntaToDelete.id}/`)
+      const response = await axiosPrivate.delete(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${juntaToDelete.id}/`)
       console.log("Delete response:", response)
       if (response.status === 200 || response.status === 204) {
         if (juntaToDelete.tipo === "nueva") {
@@ -361,7 +361,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   const fetchJuntas = async () => {
     try {
-      const response = await axiosPrivate.get("juntas-vecinales/")
+      const response = await axiosPrivate.get(API_ROUTES.JUNTAS_VECINALES.ROOT)
       console.log("Fetch juntas vecinales response:", response)
       setJuntasVecinales(response.data)
     } catch (error) {

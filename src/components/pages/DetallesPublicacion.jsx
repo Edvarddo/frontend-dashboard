@@ -18,6 +18,7 @@ import EvidenciaPublicacion from '../sections/EvidenciaPublicacion';
 import ListaRespuestaMunicipal from '../sections/ListaRespuestaMunicipal';
 import FormRespuestaMunicipal from '../sections/FormRespuestaMunicipal';
 // import useAuth from '../../hooks/useAuth'
+import {API_ROUTES} from '../../api/apiRoutes'
 
 const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const axiosPrivate = useAxiosPrivate();
@@ -74,7 +75,7 @@ const DetallesPublicacion = ({ isOpened, setIsOpened }) => {
   const handleAddResponse = async (newResponse) => {
     try {
       console.log('newResponse:', newResponse)
-      const response = await axiosPrivate.post('respuestas-municipales/', {
+      const response = await axiosPrivate.post(API_ROUTES.RESPUESTAS_MUNICIPALES.ROOT, {
         ...newResponse,
         publicacion: id
       })

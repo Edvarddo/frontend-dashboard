@@ -17,7 +17,7 @@ import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 import axios from '@/api/axios'
 import useRefreshToken from '@/contexts/useRefreshToken'
 import { toast } from '@/hooks/use-toast'
-
+import { API_ROUTES } from '../../api/apiRoutes'
 const Dashboard = ({ isOpened, setIsOpened }) => {
   const axiosPrivate = useAxiosPrivate()
   const refresh = useRefreshToken()
@@ -117,6 +117,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   const fetchCharData = async (urls) => {
     setLoading(true)
+    console.log("Fetching chart data...", urls)
     try {
       const requests =await urls.map(url => axiosPrivate(url))
       // console.log(requests)
@@ -154,20 +155,21 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   useEffect(() => {
     fetchData([
-      `categorias/`,
-      `juntas-vecinales/`,
-      `departamentos-municipales/`,
-      `situaciones-publicaciones/`
+      API_ROUTES.CATEGORIAS.ROOT,
+      API_ROUTES.JUNTAS_VECINALES.ROOT,
+      API_ROUTES.DEPARTAMENTOS.ROOT,
+      API_ROUTES.SITUACIONES_PUBLICACIONES.ROOT
     ])
   }, [api_url])
 
   useEffect(() => {
+    console.log("Fetching chart data...", API_ROUTES)
     fetchCharData([
-      `${api_url}publicaciones-por-mes-y-categoria/?${filtros || ""}`,
-      `${api_url}publicaciones-por-categoria/?${filtros || ""}`,
-      `${api_url}resumen-estadisticas/?${filtros || ""}`,
-      `${api_url}resueltos-por-mes/?${filtros || ""}`,
-      `${api_url}tasa-resolucion-departamento/?${filtros || ""}`
+      `${API_ROUTES.STATS.PUBLICACIONES_POR_MES_Y_CATEGORIA}?${filtros || ""}`,
+      `${API_ROUTES.STATS.PUBLICACIONES_POR_CATEGORIA}?${filtros || ""}`,
+      `${API_ROUTES.STATS.RESUMEN_ESTADISTICAS}?${filtros || ""}`,
+      `${API_ROUTES.STATS.RESUELTOS_POR_MES}?${filtros || ""}`,
+      `${API_ROUTES.STATS.TASA_RESOLUCION_DEPARTAMENTO}?${filtros || ""}`
     ])
   }, [filtros, api_url])
 
@@ -220,11 +222,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const handleExportPDFBackend = async (additionalComments, selectedDeptoReporte) => {
     try {
       console.log({ selectedDeptoReporte });
-      const token = localStorage.getItem("authToken"); // Obtén el token desde el almacenamiento local
-      const response = await axios.get(`${api_url}generate-pdf-report/?${filtros || ""}`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
-        },
+
+      const response = await axiosPrivate.get(`${API_ROUTES.REPORTS.GENERATE_PDF}?${filtros || ""}`, {
         params: { comentarios: additionalComments, departamento_reporte: selectedDeptoReporte },
         responseType: "blob", // Asegúrate de manejar la respuesta como un archivo blob
       });

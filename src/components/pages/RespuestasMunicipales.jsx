@@ -14,7 +14,7 @@ import { Search, Calendar, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import { format } from 'date-fns'
-
+import { API_ROUTES } from '../../api/apiRoutes'
 const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
   const [municipalResponses, setMunicipalResponses] = useState([])
   const [selectedResponse, setSelectedResponse] = useState(null)
@@ -27,7 +27,7 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
 
   const getMunicipalResponses = async () => {
     try {
-      const response = await axiosPrivate.get('respuestas-municipales/')
+      const response = await axiosPrivate.get(API_ROUTES.RESPUESTAS_MUNICIPALES.ROOT)
       console.log(response.data)
       setMunicipalResponses(response.data)
     } catch (error) {
@@ -54,7 +54,7 @@ const RespuestasMunicipales = ({ isOpened, setIsOpened }) => {
 
   const handleSaveChanges = async () => {
     try {
-      await axiosPrivate.put(`respuestas-municipales/${selectedResponse.id}/`, selectedResponse)
+      await axiosPrivate.put(`${API_ROUTES.RESPUESTAS_MUNICIPALES.ROOT}${selectedResponse.id}/`, selectedResponse)
       getMunicipalResponses() // Recargar la lista después de guardar
       setIsSidebarOpen(false)
     } catch (error) {

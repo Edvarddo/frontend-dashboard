@@ -22,6 +22,7 @@ import { useToast } from "../../hooks/use-toast"
 import EditAnuncioModal from '../EditAnuncioModal'
 import { format, addHours, isAfter } from 'date-fns'
 import { DialogClose } from '@radix-ui/react-dialog'
+import { API_ROUTES } from '../../api/apiRoutes'
 
 const estadoColors = {
   'Publicado': 'bg-green-100 text-green-800',
@@ -71,7 +72,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
 
   const fetchAnuncios = (page = 1) => {
     setIsLoading(true)
-    axiosPrivate.get(`anuncios-municipales/?page=${page}`)
+    axiosPrivate.get(`${API_ROUTES.ANUNCIOS.ROOT}?page=${page}`)
       .then((response) => {
         // console.log(response?.data)
         setListadoAnuncios(response?.data?.results)
@@ -94,7 +95,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
 
   const handleSaveEdit = (editedAnuncio) => {
     // console.log(editedAnuncio)
-    axiosPrivate.patch(`anuncios-municipales/${editedAnuncio.id}/`, editedAnuncio)
+    axiosPrivate.patch(API_ROUTES.ANUNCIOS.DETAIL(editedAnuncio.id), editedAnuncio)
       .then(response => {
         // console.log(response)
         toast({
@@ -121,7 +122,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
     // console.log("Imagen a eliminar:", listIndex);
     listIndex.forEach(async (index) => {
       try {
-        const res = await axiosPrivate.delete(`imagenes-anuncios/${index}/`)
+        const res = await axiosPrivate.delete(`${API_ROUTES.IMAGENES_ANUNCIOS.ROOT}${index}/`)
         // console.log("Imagen eliminada:", res);
       } catch (error) {
         // console.error("Error deleting image:", error)
@@ -137,7 +138,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
       formData.append("imagen", image?.file);
       formData.append("extension", image?.file?.name?.split(".")?.pop());
       try {
-        const res = await axiosPrivate.post("/imagenes-anuncios/", formData, {
+        const res = await axiosPrivate.post(API_ROUTES.IMAGENES_ANUNCIOS.ROOT, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           }
@@ -173,7 +174,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
     //   return;
     // }
 
-    axiosPrivate.delete(`anuncios-municipales/${anuncioId}/`)
+    axiosPrivate.delete(API_ROUTES.ANUNCIOS.DETAIL(anuncioId))
       .then(() => {
         toast({
           title: "Anuncio eliminado",

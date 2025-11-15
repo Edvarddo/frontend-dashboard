@@ -50,10 +50,11 @@ import {
   UserCog,
   RefreshCw,
 } from "lucide-react"
+import { API_ROUTES } from '../../api/apiRoutes'
 
 const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const [activeSection, setActiveSection] = useState("gestiondeusuarios")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")  
   const [filterRol, setFilterRol] = useState("todos")
   const [filterEstado, setFilterEstado] = useState("todos")
   const [selectedUser, setSelectedUser] = useState(null)
@@ -155,7 +156,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   // Función para obtener departamentos de la API
   const fetchDepartamentos = useCallback(async () => {
     try {
-      const response = await axiosPrivate.get('/departamentos-municipales/')
+      const response = await axiosPrivate.get(API_ROUTES.DEPARTAMENTOS.ROOT)
       setDepartamentos(response.data.filter(dept => dept.estado === 'habilitado'))
     } catch (err) {
       console.error('Error al obtener departamentos:', err)
@@ -167,7 +168,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await axiosPrivate.get('/usuarios/?tipo_usuario=jefe_departamento,personal,administrador')
+      const response = await axiosPrivate.get(`${API_ROUTES.USUARIOS.ROOT}?tipo_usuario=jefe_departamento,personal,administrador`)
       const mappedUsers = response.data.map(mapApiUserToUIUser)
       setUsuarios(mappedUsers)
     } catch (err) {
@@ -200,7 +201,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
     setVerifying(prev => ({ ...prev, rut: true }))
     try {
-      const response = await axiosPrivate.post('/verificar-usuario/', { rut: getRutForBackend(rut) })
+      const response = await axiosPrivate.post(API_ROUTES.AUTH.VERIFY_USER, { rut: getRutForBackend(rut) })
       const message = !response.data.rut_disponible
         ? `⚠️ Este RUT ya está registrado por: ${response.data.usuario_rut?.nombre || 'otro usuario'}`
         : null
@@ -224,7 +225,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
     setVerifying(prev => ({ ...prev, email: true }))
     try {
-      const response = await axiosPrivate.post('/verificar-usuario/', { email: email.toLowerCase() })
+      const response = await axiosPrivate.post(API_ROUTES.AUTH.VERIFY_USER, { email: email.toLowerCase() })
       const message = !response.data.email_disponible
         ? `⚠️ Este email ya está registrado por: ${response.data.usuario_email?.nombre || 'otro usuario'}`
         : null
@@ -356,7 +357,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   // Función para validar si ya existe un usuario con el mismo RUT o email
   const validateUniqueUser = async (rut, email) => {
     try {
-      const response = await axiosPrivate.post('/verificar-usuario/', {
+      const response = await axiosPrivate.post(API_ROUTES.AUTH.VERIFY_USER, {
         rut: getRutForBackend(rut),
         email: email.toLowerCase()
       })
@@ -610,11 +611,11 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       }
 
       // Crear usuario
-      const response = await axiosPrivate.post('/usuarios/', userData)
+      const response = await axiosPrivate.post(API_ROUTES.USUARIOS.ROOT, userData)
 
       // Asignar usuario al departamento
       if (response.data.id) {
-        await axiosPrivate.post('/usuario-departamento/', {
+        await axiosPrivate.post(API_ROUTES.USUARIO_DEPARTAMENTO.ROOT, {
           usuario: response.data.id,
           departamento: newUser.departamento_id,
           estado: 'activo'
@@ -623,7 +624,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
       // Si el usuario es jefe de departamento, asignarlo como jefe
       if (newUser.tipo_usuario === 'jefe_departamento') {
-        await axiosPrivate.patch(`/departamentos-municipales/${newUser.departamento_id}/`, {
+        await axiosPrivate.patch(`${API_ROUTES.DEPARTAMENTOS.ROOT}${newUser.departamento_id}/`, {
           jefe_departamento: response.data.id
         })
       }
@@ -843,7 +844,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
             )
 
             if (departmentWhereWasChief) {
-              await axiosPrivate.patch(`/departamentos-municipales/${departmentWhereWasChief.id}/`, {
+              await axiosPrivate.patch(`${API_ROUTES.DEPARTAMENTOS.ROOT}${departmentWhereWasChief.id}/`, {
                 jefe_departamento: null
               })
               console.log(`✅ PASO 1A: Removida asignación como jefe de departamento en: ${departmentWhereWasChief.nombre}`)
@@ -853,7 +854,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
           // IMPORTANTE: Si el usuario cambia de personal a jefe, eliminar su registro de usuario-departamento
           if (currentRol === 'Personal Municipal' && newRol === 'Jefe de departamento') {
             try {
-              const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+              const currentAssignment = await axiosPrivate.get(`${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}?usuario=${editUser.id}`)
               const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
                 (currentAssignment.data.results || [])
 
@@ -861,7 +862,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                 // Finalizar todas las asignaciones actuales en usuario-departamento
                 for (const assignment of assignments) {
                   if (assignment.estado === 'activo') {
-                    await axiosPrivate.patch(`/usuario-departamento/${assignment.id}/`, {
+                    await axiosPrivate.patch(`${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}${assignment.id}/`, {
                       estado: 'inactivo',
                       fecha_fin_asignacion: new Date().toISOString()
                     })
@@ -876,7 +877,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
           // Si cambió a un departamento diferente y era jefe del anterior, también remover esa asignación
           if (departmentChanged && currentUserData?.rol === 'Jefe de departamento' && currentDepartment && currentDepartment.id !== parseInt(newDepartmentId)) {
-            await axiosPrivate.patch(`/departamentos-municipales/${currentDepartment.id}/`, {
+            await axiosPrivate.patch(`${API_ROUTES.DEPARTAMENTOS.ROOT}${currentDepartment.id}/`, {
               jefe_departamento: null
             })
             console.log('✅ PASO 1C: Removida asignación anterior como jefe de departamento por cambio de departamento')
@@ -903,7 +904,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       }
 
       // Actualizar usuario
-      await axiosPrivate.patch(`/usuarios/${editUser.id}/`, updateData)
+      await axiosPrivate.patch(`${API_ROUTES.USUARIOS.ROOT}${editUser.id}/`, updateData)
       console.log('✅ PASO 2: Usuario actualizado exitosamente')
 
       // PASO 3: Manejar las nuevas asignaciones de departamento
@@ -926,7 +927,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
             // Manejar asignaciones según el nuevo tipo de usuario
             if (editUser.tipo_usuario === 'jefe_departamento') {
               // Para jefe de departamento: actualizar directamente en la tabla departamentos
-              await axiosPrivate.patch(`/departamentos-municipales/${editUser.departamento_id}/`, {
+              await axiosPrivate.patch(`${API_ROUTES.DEPARTAMENTOS.ROOT}${editUser.departamento_id}/`, {
                 jefe_departamento: editUser.id
               })
               console.log('✅ PASO 3A: Usuario asignado como jefe de departamento')
@@ -934,7 +935,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
               // Solo crear registro en usuario-departamento si cambió de departamento
               // (no si cambió de personal a jefe en el mismo departamento)
               if (departmentChanged) {
-                const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+                const currentAssignment = await axiosPrivate.get(`${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}?usuario=${editUser.id}`)
                 const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
                   (currentAssignment.data.results || [])
 
@@ -943,7 +944,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                   assignments.every(a => a.estado !== 'activo' || a.departamento.id.toString() !== editUser.departamento_id.toString())
 
                 if (needsNewAssignment) {
-                  await axiosPrivate.post('/usuario-departamento/', {
+                  await axiosPrivate.post(API_ROUTES.USUARIO_DEPARTAMENTO.ROOT, {
                     usuario: editUser.id,
                     departamento: editUser.departamento_id,
                     estado: 'activo'
@@ -956,7 +957,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
 
             } else {
               // Para personal municipal: usar solo usuario-departamento
-              const currentAssignment = await axiosPrivate.get(`/usuario-departamento/?usuario=${editUser.id}`)
+              const currentAssignment = await axiosPrivate.get(`${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}?usuario=${editUser.id}`)
               const assignments = Array.isArray(currentAssignment.data) ? currentAssignment.data :
                 (currentAssignment.data.results || [])
 
@@ -966,7 +967,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
               if (assignments.length > 0 && departmentChanged) {
                 const activeAssignments = assignments.filter(a => a.estado === 'activo')
                 for (const assignment of activeAssignments) {
-                  await axiosPrivate.patch(`/usuario-departamento/${assignment.id}/`, {
+                  await axiosPrivate.patch(`${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}${assignment.id}/`, {
                     estado: 'inactivo',
                     fecha_fin_asignacion: new Date().toISOString()
                   })
@@ -984,7 +985,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                 if (existingAssignment) {
                   // Si existe pero está inactivo, reactivarlo
                   if (existingAssignment.estado === 'inactivo') {
-                    await axiosPrivate.patch(`/usuario-departamento/${existingAssignment.id}/`, {
+                    await axiosPrivate.patch(`${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}${existingAssignment.id}/`, {
                       estado: 'activo',
                       fecha_fin_asignacion: null
                     })
@@ -994,7 +995,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                   }
                 } else {
                   // Si no existe registro, crear uno nuevo
-                  await axiosPrivate.post('/usuario-departamento/', {
+                  await axiosPrivate.post(API_ROUTES.USUARIO_DEPARTAMENTO.ROOT, {
                     usuario: editUser.id,
                     departamento: editUser.departamento_id,
                     estado: 'activo'
@@ -1119,7 +1120,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
       }
 
       // Eliminar usuario
-      await axiosPrivate.delete(`/usuarios/${userToDelete.id}/`)
+      await axiosPrivate.delete(`${API_ROUTES.USUARIOS.ROOT}${userToDelete.id}/`)
 
       toast({
         title: "Éxito",

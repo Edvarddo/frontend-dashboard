@@ -18,7 +18,7 @@ import { useToast } from "../../hooks/use-toast"
 import { ModalEliminarCategoria } from "../ModalEliminarCategoria"
 import { Spinner } from "@radix-ui/themes"
 import { operations } from "@/lib/constants"
-
+import { API_ROUTES } from "@/api/apiRoutes"
 // Datos de ejemplo para departamentos
 const departamentosData = [
   { id: 1, nombre: "Secretaría General" },
@@ -150,7 +150,7 @@ const GestionCategoria = ({ onVolver }) => {
         setLoading(true)
         try {
           // backend
-          await axiosPrivate.patch(`/categorias/${formData.id}/`, formData)
+          await axiosPrivate.patch(`${API_ROUTES.CATEGORIAS.ROOT}${formData.id}/`, formData)
           // frontend
           setCategorias((prev) => prev.map((cat) => (cat.id === formData.id ? { ...cat, ...formData } : cat)))
           toast({
@@ -181,7 +181,7 @@ const GestionCategoria = ({ onVolver }) => {
           fecha_creacion: new Date().toISOString().split("T")[0],
         }
         try {
-          const response = await axiosPrivate.post("/categorias/", nuevaCategoria)
+          const response = await axiosPrivate.post(API_ROUTES.CATEGORIAS.ROOT, nuevaCategoria)
           setCategorias((prev) => [...prev, response.data])
           toast({
             title: "Categoría creada",
@@ -217,7 +217,7 @@ const GestionCategoria = ({ onVolver }) => {
   const handleEliminarCategoria = (id) => {
     // conectar con api la eliminacion y proporcionar el id
     axiosPrivate
-      .delete(`/categorias/${id}/`)
+      .delete(`${API_ROUTES.CATEGORIAS.ROOT}${id}/`)
       .then(() => {
         setCategorias((prev) => prev.filter((cat) => cat.id !== id))
         toast({
@@ -279,12 +279,12 @@ const GestionCategoria = ({ onVolver }) => {
   }
   // Vamos a obtener las categorias de la api
   const fetchCategorias = async () => {
-    const response = await axiosPrivate.get("/categorias/")
+    const response = await axiosPrivate.get(API_ROUTES.CATEGORIAS.ROOT)
     console.log(response.data)
     setCategorias(response.data)
   }
   const fetchDepartamentos = async () => {
-    const response = await axiosPrivate.get("/departamentos-municipales/")
+    const response = await axiosPrivate.get(API_ROUTES.DEPARTAMENTOS.ROOT)
     console.log(response.data)
     setDepartamentos(response.data)
   }

@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import MapaFrioComponente from "./MapaFrioComponente"
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
-
+import { API_ROUTES } from "@/api/apiRoutes"
 // Error Boundary para manejar errores sin romper el componente
 class MapaFrioErrorBoundary extends Component {
   constructor(props) {
@@ -116,7 +116,7 @@ const MapaFrioSeccion = ({
   const obtenerJuntaEficiente = useCallback(async () => {
     try {
       setLoadingJuntaEficiente(true)
-      const response = await axiosPrivate.get('/junta-mas-eficiente/')
+      const response = await axiosPrivate.get(API_ROUTES.STATS.JUNTA_MAS_EFICIENTE)
       console.log('Junta más eficiente:', response.data)
       setJuntaEficiente(response.data)
     } catch (error) {

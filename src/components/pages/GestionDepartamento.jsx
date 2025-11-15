@@ -15,7 +15,7 @@ import TopBar from "../TopBar"
 import { useToast } from "../../hooks/use-toast"
 import useAxiosPrivate from "../../hooks/useAxiosPrivate"
 import { operations } from "@/lib/constants"
-
+import { API_ROUTES } from "@/api/apiRoutes"
 // Datos de ejemplo para departamentos
 const departamentosData = [
   {
@@ -150,7 +150,7 @@ const GestionDepartamento = ({ onVolver }) => {
       if (modoEdicion) {
         // try-catch format
         try {
-          await axiosPrivate.put(`/departamentos-municipales/${formData.id}/`, formData)
+          await axiosPrivate.put(`${API_ROUTES.DEPARTAMENTOS.ROOT}${formData.id}/`, formData)
           setDepartamentos((prev) =>
             prev.map((dept) =>
               dept.id === formData.id
@@ -179,7 +179,7 @@ const GestionDepartamento = ({ onVolver }) => {
       } else {
         // try-catch format
         try {
-          const response = await axiosPrivate.post("/departamentos-municipales/", formData)
+          const response = await axiosPrivate.post(API_ROUTES.DEPARTAMENTOS.ROOT, formData)
           console.log("Departamento creado:", response.data)
           setDepartamentos((prev) => [...prev, response.data])
           toast({
@@ -218,7 +218,7 @@ const GestionDepartamento = ({ onVolver }) => {
     try {
       if (departamentoAEliminar) {
         // backend
-        const response = await axiosPrivate.delete(`/departamentos-municipales/${departamentoAEliminar.id}/`)
+        const response = await axiosPrivate.delete(`${API_ROUTES.DEPARTAMENTOS.ROOT}${departamentoAEliminar.id}/`)
         console.log("Response from backend:", response)
         setDepartamentos((prev) => prev.filter((dept) => dept.id !== departamentoAEliminar.id))
         setModalEliminar(false)
@@ -269,14 +269,14 @@ const GestionDepartamento = ({ onVolver }) => {
     total: departamentos.length,
     activos: departamentos.filter((dept) => dept.estado === "Activo").length,
     inactivos: departamentos.filter((dept) => dept.estado === "Inactivo").length,
-    totalEmpleados: departamentos.reduce((sum, dept) => sum + dept.empleados, 0),
+    totalEmpleados: departamentos.reduce((sum, dept) => sum + dept.funcionarios_count, 0),
   }
   const fetchDepartamentos = async () => {
     setLoading(true)
     try {
       console.log("Cargando departamentos...")
 
-      const response = await axiosPrivate.get("/departamentos-municipales/")
+      const response = await axiosPrivate.get(API_ROUTES.DEPARTAMENTOS.ROOT)
       console.log("Departamentos cargados:", response.data)
       setDepartamentos(response.data)
     } catch (error) {

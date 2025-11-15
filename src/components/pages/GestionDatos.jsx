@@ -8,6 +8,7 @@ import GestionJuntaVecinal from "./GestionJuntaVecinal"
 import GestionCategoria from "./GestionCategoria"
 import GestionDepartamento from "./GestionDepartamento"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
+import { API_ROUTES } from "@/api/apiRoutes"
 
 // --- Adaptador: normaliza llaves del backend -> front
 const adaptEstadisticas = (raw) => ({
@@ -138,7 +139,7 @@ const GestionDatos = ({ onNavigate }) => {
     const fetchEstadisticas = async () => {
       try {
         setLoading(true)
-        const response = await axiosPrivate.get("/estadisticas-gestion-datos/", { signal: ctrl.signal })
+        const response = await axiosPrivate.get(API_ROUTES.STATS.ESTADISTICAS_GESTION_DATOS, { signal: ctrl.signal })
         setEstadisticasDatos(adaptEstadisticas(response.data))
       } catch (error) {
         if (error.name !== "CanceledError" && error.name !== "AbortError") {

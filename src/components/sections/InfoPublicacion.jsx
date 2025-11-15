@@ -23,6 +23,7 @@ import FormRespuestaMunicipal from './FormRespuestaMunicipal'
 import ListaRespuestaMunicipal from './ListaRespuestaMunicipal'
 import { format, addHours, isAfter } from 'date-fns'
 import { toast } from '@/hooks/use-toast'
+import {API_ROUTES} from '../../api/apiRoutes'
 
 const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -53,7 +54,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     "No Resuelto": 5
   }
   const getDepartaments = () => {
-    axiosPrivate.get('departamentos-municipales/')
+    axiosPrivate.get(API_ROUTES.DEPARTAMENTOS.ROOT)
       .then(response => {
         setDepartaments(response.data)
         console.log('Departaments:', response.data)
@@ -117,7 +118,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const createMunicipalResponse = async (newResponse) => {
     try {
       console.log('newResponse:', newResponse)
-      const response = await axiosPrivate.post('respuestas-municipales/', {
+      const response = await axiosPrivate.post(API_ROUTES.RESPUESTAS_MUNICIPALES.ROOT, {
         ...newResponse,
         publicacion: id
       })
@@ -149,7 +150,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const fetchResponses = async () => {
     setResponsesLoading(true)
     try {
-      const response = await axiosPrivate.get(`respuestas-municipales/por-publicacion/${id}/`)
+      const response = await axiosPrivate.get(API_ROUTES.RESPUESTAS_MUNICIPALES.DETAIL(id))
       setResponses(response.data)
     } catch (error) {
       if (error.status === 404) {
@@ -165,7 +166,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
 
 
     try {
-      const response = await axiosPrivate.patch(`respuestas-municipales/${id}/`, updatedResponse)
+      const response = await axiosPrivate.patch(API_ROUTES.RESPUESTAS_MUNICIPALES.ROOT_ID(id), updatedResponse)
       fetchResponses()
       toast({
         title: "Respuesta actualizada",
@@ -191,14 +192,14 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
     try {
       const lastResponse = responses[responses.length - 1];
 
-      await axiosPrivate.delete(`respuestas-municipales/${id}/`)
+      await axiosPrivate.delete(API_ROUTES.RESPUESTAS_MUNICIPALES.ROOT_ID(id))
 
 
       // Cambiar el estado de la publicación al estado anterior
       const previousStatus = lastResponse.situacion_inicial;
       const previousStatusId = situationMap[previousStatus];
 
-      await axiosPrivate.patch(`publicaciones/${publicacion.id}/`, { situacion: previousStatusId })
+      await axiosPrivate.patch(API_ROUTES.PUBLICACIONES.DETAIL(publicacion.id), { situacion: previousStatusId })
 
       // Actualizar el estado en el frontend
       setPublicacion(prev => ({ ...prev, situacion: { nombre: previousStatus } }))
@@ -240,7 +241,7 @@ const InfoPublicacion = ({ loading, publicacion, id, setPublicacion }) => {
   const confirmDepartmentChange = async () => {
     if (tempDepartment) {
       try {
-        await axiosPrivate.patch(`publicaciones/${id}/`, { departamento: tempDepartment.id });
+        await axiosPrivate.patch(API_ROUTES.PUBLICACIONES.DETAIL(id), { departamento: tempDepartment.id });
         setPublicacion(prev => ({ ...prev, departamento: tempDepartment }));
         toast({
           title: "Departamento actualizado",

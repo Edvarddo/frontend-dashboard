@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast"
 import FileUpload from '../FileUpload'; // Importa el nuevo componente
 import useFileHandling from '../../hooks/useFileHandling'; // Importa el nuevo hook
 import useAuth from '../../hooks/useAuth';
+import { API_ROUTES } from '../../api/apiRoutes'
 const stateOrder = ["Pendiente", "Recibido", "En curso", "Resuelto", "No Resuelto"]
 const finalStates = ["Resuelto", "No Resuelto"]
 
@@ -60,7 +61,7 @@ export function MunicipalResponseForm({
   }, [previousStatus])
 
   const changeStatus = async () => {
-    const url = `publicaciones/${id}/`
+    const url = API_ROUTES.PUBLICACIONES.DETAIL(id)
     try {
       const response = await axiosPrivate.patch(url, { situacion: situationMap[currentStatus] })
       setPublicacion({ ...publicacion, situacion: { nombre: statusConfig[currentStatus].label } })
@@ -115,7 +116,7 @@ export function MunicipalResponseForm({
         formData.append('descripcion', `Evidencia para ${fileData.name}`);
 
         try {
-          await axiosPrivate.post('/evidencia-respuesta/', formData, {
+          await axiosPrivate.post(API_ROUTES.EVIDENCIA_RESPUESTA.ROOT, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (progressEvent) => {
               const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)

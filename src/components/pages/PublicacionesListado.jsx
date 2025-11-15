@@ -14,7 +14,8 @@ import axios from "axios"
 import TopBar from "../TopBar"
 import { BASE_URL } from '../../api/axios'
 import useAxiosPrivate from '../../hooks/useAxiosPrivate'
-
+// IMPORTEMOS EL ARCHIVO APIROUTES DE LA CARPETA API
+import { API_ROUTES } from '../../api/apiRoutes'
 
 import Filters from "../Filters"
 
@@ -67,7 +68,7 @@ export default function PublicacionesListado({
   const [isValid, setIsValid] = useState(false)
   const [filterError, setFilterError] = useState(null)
 
-  const api_url = import.meta.env.VITE_URL_PROD_VERCEL
+  
   const fetchURLS = async (urls) => {
     try {
       const [categorias, juntasVecinales, departamentos, osituaciones] = await Promise.all(
@@ -89,12 +90,12 @@ export default function PublicacionesListado({
     }
   }
   useEffect(() => {
-
+  // USEMOS EL ARCHIVO APIROUTES DE LA CARPETA API
     fetchURLS([
-      `categorias/`,
-      `juntas-vecinales/`,
-      `departamentos-municipales/`,
-      `situaciones-publicaciones/`
+      API_ROUTES.CATEGORIAS.ROOT,
+      API_ROUTES.JUNTAS_VECINALES.ROOT,
+      API_ROUTES.DEPARTAMENTOS.ROOT,
+      API_ROUTES.SITUACIONES_PUBLICACIONES.ROOT
     ])
     console.log(BASE_URL, axiosPrivate)
 
@@ -120,7 +121,7 @@ export default function PublicacionesListado({
   const handleDownload = async () => {
     try {
       const token = localStorage.getItem("authToken"); // Obtén el token desde el almacenamiento local
-      const response = await axios.get(`${api_url}export-to-excel/?${filtros}`, {
+      const response = await axios.get(`${API_ROUTES.PUBLICACIONES.EXPORT_TO_EXCEL}?${filtros}`, {
         headers: {
           Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
         },
@@ -172,7 +173,7 @@ export default function PublicacionesListado({
 
     const filtros = getQueryParams()
     // return;
-    let url = `${api_url}publicaciones/?${filtros}`
+    let url = `${API_ROUTES.PUBLICACIONES.ROOT}?${filtros}`
     console.log(url)
 
     console.log(filtros)

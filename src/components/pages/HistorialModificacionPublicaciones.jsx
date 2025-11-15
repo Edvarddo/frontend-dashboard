@@ -33,6 +33,7 @@ import TopBar from "../TopBar"
 import { useNavigate } from "react-router-dom"
 import useAxiosPrivate from "../../hooks/useAxiosPrivate"
 import useAuth from "../../hooks/useAuth"
+import {API_ROUTES} from "@/api/apiRoutes"
 
 const HistorialModificacionPublicaciones = () => {
   const [modificacionesData, setModificacionesData] = useState([])
@@ -79,7 +80,7 @@ const HistorialModificacionPublicaciones = () => {
     try {
       console.log("Fetching modificaciones data for department ID:", departamentoId)
       const response = await axiosPrivate.get(
-        `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/con-historial/?departamento=${departamento}`,
+        `${API_ROUTES.PUBLICACIONES.CON_HISTORIAL}?departamento=${departamento}`,
       )
       console.log("Modificaciones data fetched:", response.data)
       console.log(response.data.results)
@@ -93,7 +94,7 @@ const HistorialModificacionPublicaciones = () => {
     try {
       console.log(`[v0] Fetching modificaciones for user ${userId}`)
       const response = await axiosPrivate.get(
-        `${import.meta.env.VITE_URL_PROD_VERCEL}historial-modificaciones/?autor=${userId}`,
+        `${API_ROUTES.HISTORIAL_MODIFICACIONES.ROOT}?autor=${userId}`,
       )
       console.log(`[v0] Modificaciones for user ${userId} fetched:`, response.data)
       console.log("[v0] modificacionesDataPorUsuario results:", response?.data?.results)
@@ -108,7 +109,7 @@ const HistorialModificacionPublicaciones = () => {
     try {
       console.log("Fetching users for department ID:", departamentoId)
       const response = await axiosPrivate.get(
-        `${import.meta.env.VITE_URL_PROD_VERCEL}usuario-departamento/?departamento=${departamentoId}`,
+        `${API_ROUTES.USUARIO_DEPARTAMENTO.ROOT}?departamento=${departamentoId}`,
       )
       console.log("Users fetched for department:", response.data)
       setMiembrosEquipo(response.data)
@@ -120,9 +121,7 @@ const HistorialModificacionPublicaciones = () => {
   const getStats = async () => {
     try {
       console.log("Fetching stats for department ID:", departamentoId)
-      const response = await axiosPrivate.get(
-        `${import.meta.env.VITE_URL_PROD_VERCEL}estadisticas-historial-modificaciones/`,
-      )
+      const response = await axiosPrivate.get(API_ROUTES.STATS.ESTADISTICAS_HISTORIAL_MODIFICACIONES)
       console.log("Stats fetched:", response.data)
       setStatsData(response.data)
     } catch (error) {

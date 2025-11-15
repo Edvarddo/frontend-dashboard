@@ -4,7 +4,7 @@ import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import { format } from "date-fns"
 import MapaCalorSeccion from '../sections/MapaCalorSeccion'
 import MapaFrioSeccion from '../sections/MapaFrioSeccion'
-
+import { API_ROUTES } from '@/api/apiRoutes'
 // para los filtros utilizar esto: https://clubdelamusica-pruebas.com/api/v1/publicaciones-por-junta-vecinal?categoria=[Seguridad] (ejemplo)
 // para los filtros utilizar esto: https://clubdelamusica-pruebas.com/api/v1/publicaciones-por-junta-vecinal?junta_vecinal=[Junta 1] (ejemplo)
 
@@ -27,7 +27,7 @@ const Mapa = () => {
   // get data para mapa de calor
   const fetchData = useCallback(async (queryParams) => {
     setIsLoading(true);
-    const url = queryParams ? `/publicaciones-por-junta-vecinal/?${queryParams}` : '/publicaciones-por-junta-vecinal/';
+    const url = queryParams ? `${API_ROUTES.PUBLICACIONES.POR_JUNTA}?${queryParams}` : API_ROUTES.PUBLICACIONES.POR_JUNTA;
     try {
       const response = await axiosPrivate.get(url);
       console.log(response.data);
@@ -42,7 +42,7 @@ const Mapa = () => {
   // get data para mapa de frío (publicaciones resueltas)
   const fetchDataFrio = useCallback(async (queryParams) => {
     setIsLoading(true);
-    const url = queryParams ? `/publicaciones-resueltas-por-junta-vecinal/?${queryParams}` : '/publicaciones-resueltas-por-junta-vecinal/';
+    const url = queryParams ? `${API_ROUTES.PUBLICACIONES.RESUELTAS_POR_JUNTA}?${queryParams}` : API_ROUTES.PUBLICACIONES.RESUELTAS_POR_JUNTA;
     try {
       const response = await axiosPrivate.get(url);
       console.log('Datos frío:', response.data);
@@ -56,7 +56,7 @@ const Mapa = () => {
 
   const fetchJuntas = useCallback(async () => {
     try {
-      const response = await axiosPrivate.get('/juntas-vecinales/');
+      const response = await axiosPrivate.get(API_ROUTES.JUNTAS_VECINALES.ROOT);
       const transformedJuntas = response.data.map(junta => ({
         id: junta.id,
         nombre: junta.nombre_junta,
@@ -70,7 +70,7 @@ const Mapa = () => {
 
   const fetchCategorias = useCallback(async () => {
     try {
-      const response = await axiosPrivate.get('/categorias/');
+      const response = await axiosPrivate.get(API_ROUTES.CATEGORIAS.ROOT);
       console.log(response.data);
       const transformedCategorias = response.data.map(categoria => ({
         id: categoria.id,

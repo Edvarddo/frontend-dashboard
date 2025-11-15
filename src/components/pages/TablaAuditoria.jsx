@@ -39,6 +39,7 @@ import TopBar from '../TopBar'
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import { set } from "date-fns"
 import Spinner from "../Spinner"
+import { API_ROUTES } from "@/api/apiRoutes"
 const TablaAuditoria = ({ setIsOpened, isOpened }) => {
   const axiosPrivate = useAxiosPrivate()
   const [loading, setLoading] = useState(true)
@@ -338,7 +339,7 @@ const TablaAuditoria = ({ setIsOpened, isOpened }) => {
     // Simular llamada a API
     setLoading(true);
     try {
-      const response = await axiosPrivate.get('/auditoria/?pagesize=10');
+      const response = await axiosPrivate.get(`${API_ROUTES.AUDITORIA.ROOT}?pagesize=10`);
       setAuditData(response.data.results);
       setAuditLogs(response.data.results);
       setAuditLogsOriginales(response.data.results);

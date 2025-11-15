@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 
 import useAxiosPrivate from '../hooks/useAxiosPrivate'
 import { capitalizeFirstLetter } from "@/lib/utils"
-
+import { API_ROUTES } from '@/api/apiRoutes'
 const TablaPublicaciones = ({
   currentPage,
   publicacionesPorPagina,
@@ -49,7 +49,7 @@ const TablaPublicaciones = ({
   }
 
   useEffect(() => {
-    const baseUrl = `${import.meta.env.VITE_URL_PROD_VERCEL}publicaciones/`
+    const baseUrl = API_ROUTES.PUBLICACIONES.ROOT
     const limitPerPage = publicacionesPorPagina ? `&pagesize=${publicacionesPorPagina}` : ''
     // Si existe la url con filtros se aplica la petición con ella
     if (url){

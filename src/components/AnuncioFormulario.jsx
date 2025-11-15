@@ -22,6 +22,7 @@ import { format, set } from 'date-fns'
 import { es } from 'date-fns/locale'
 import FileUpload from './FileUpload'; // Importa el nuevo componente
 import useFileHandling from '../hooks/useFileHandling'; // Importa el nuevo hook
+import { API_ROUTES } from "@/api/apiRoutes"
 
 const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   const axiosPrivate = useAxiosPrivate()
@@ -83,7 +84,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
       };
 
       const anuncioResponse = await axiosPrivate.post(
-        "anuncios-municipales/",
+        API_ROUTES.ANUNCIOS.ROOT,
         anuncioData
       );
 
@@ -99,7 +100,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
           formData.append('nombre', image?.file?.name);
           formData.append('peso', image?.file?.size);
 
-          await axiosPrivate.post("/imagenes-anuncios/", formData, {
+          await axiosPrivate.post(API_ROUTES.IMAGENES_ANUNCIOS.ROOT, formData, {
             headers: {
               "Content-Type": "multipart/form-data",
             },
@@ -149,7 +150,7 @@ const AnuncioFormulario = ({ setIsOpened, isOpened }) => {
   }
 
   useEffect(() => {
-    fetchURLS('categorias/')
+    fetchURLS(API_ROUTES.CATEGORIAS.ROOT)
   }, [])
 
   return (
