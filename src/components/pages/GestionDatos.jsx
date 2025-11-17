@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useCallback, useState, useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { MapPin, Tag, Building2, BarChart3, Settings, ArrowRight, Plus, Eye, Edit } from "lucide-react"
 import TopBar from "../TopBar"
 import GestionJuntaVecinal from "./GestionJuntaVecinal"
@@ -9,6 +10,7 @@ import GestionCategoria from "./GestionCategoria"
 import GestionDepartamento from "./GestionDepartamento"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { API_ROUTES } from "@/api/apiRoutes"
+
 
 // --- Adaptador: normaliza llaves del backend -> front
 const adaptEstadisticas = (raw) => ({
@@ -32,7 +34,7 @@ const adaptEstadisticas = (raw) => ({
 
 // --- Placeholder simple para carga (si no usas Skeleton de shadcn)
 const LoadingBar = () => (
-  <div className="h-8 w-24 rounded bg-white/30 animate-pulse" />
+  <div className="h-8 w-24 rounded bg-green-100 animate-pulse" />
 )
 
 const GestionDatosMain = () => {
@@ -68,7 +70,7 @@ const GestionDatosMain = () => {
 
 const GestionDatos = ({ onNavigate }) => {
   const axiosPrivate = useAxiosPrivate()
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [estadisticasDatos, setEstadisticasDatos] = useState(adaptEstadisticas({}))
   const [seccionSeleccionada, setSeccionSeleccionada] = useState("juntas-vecinales")
 
@@ -135,22 +137,52 @@ const GestionDatos = ({ onNavigate }) => {
 
   // Fetch con cancelación + adaptación de datos
   useEffect(() => {
+    console.log("Fetching estadísticas de gestión de datos...")
     const ctrl = new AbortController()
+    let isMounted = true
+
     const fetchEstadisticas = async () => {
+      const startTime = Date.now()
       try {
         setLoading(true)
-        const response = await axiosPrivate.get(API_ROUTES.STATS.ESTADISTICAS_GESTION_DATOS, { signal: ctrl.signal })
+        const response = await axiosPrivate.get(
+          API_ROUTES.STATS.ESTADISTICAS_GESTION_DATOS,
+          { signal: ctrl.signal }
+        )
+
+        if (!isMounted) return
+
         setEstadisticasDatos(adaptEstadisticas(response.data))
       } catch (error) {
-        if (error.name !== "CanceledError" && error.name !== "AbortError") {
+        if (
+          error.name !== "CanceledError" &&
+          error.name !== "AbortError"
+        ) {
           console.error("Error al obtener estadísticas:", error)
         }
       } finally {
-        setLoading(false)
+        if (!isMounted) return
+
+        const elapsed = Date.now() - startTime
+        const MIN_DURATION = 500 // ms
+
+        // Garantiza que el skeleton se vea al menos 500ms
+        if (elapsed < MIN_DURATION) {
+          setTimeout(() => {
+            if (isMounted) setLoading(false)
+          }, MIN_DURATION - elapsed)
+        } else {
+          setLoading(false)
+        }
       }
     }
+
     fetchEstadisticas()
-    return () => ctrl.abort()
+
+    return () => {
+      isMounted = false
+      ctrl.abort()
+    }
   }, [axiosPrivate])
 
   // Ícono capitalizado (evita <seccionActual.icono/> en minúscula)
@@ -158,60 +190,72 @@ const GestionDatos = ({ onNavigate }) => {
 
   return (
     <>
-      <TopBar title="Gestión de Datos" icon="bx bx-database" isOpened={true} setIsOpened={() => {}} />
+      <TopBar title="Gestión de Datos" icon="bx bx-database" isOpened={true} setIsOpened={() => { }} />
 
       <div className="p-6 bg-gray-50 min-h-screen">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Panel de Gestión de Datos</h1>
-          <p className="text-gray-600">
-            Administra las juntas vecinales, categorías y departamentos del sistema municipal
-          </p>
-        </div>
 
-        {/* Tarjetas de estadísticas generales */}
+        {/* Tarjetas de estadísticas generales + Skeleton o loading bar*/}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-green-600 to-green-700 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100">Total Juntas Vecinales</p>
-                  <p className="text-3xl font-bold">
-                    {loading ? <LoadingBar /> : estadisticasDatos.juntasVecinales.total}
-                  </p>
-                </div>
-                <MapPin className="h-12 w-12 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
+          {
+            loading ? (
+              <>
+                <Skeleton className="h-28 w-full rounded-lg" />
+                <Skeleton className="h-28 w-full rounded-lg" />
+                <Skeleton className="h-28 w-full rounded-lg" />
+              </>
+            ) : null
+          }
+          {
+            !loading && (
+              <>
+                <Card className="bg-gradient-to-r from-green-600 to-green-700 text-white">
+                  {
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-green-100">Total Juntas Vecinales</p>
+                          <p className="text-3xl font-bold">
+                            {loading ? <LoadingBar /> : estadisticasDatos.juntasVecinales.total}
+                          </p>
+                        </div>
+                        <MapPin className="h-12 w-12 text-green-200" />
+                      </div>
+                    </CardContent>
+                  }
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100">Total Categorías</p>
-                  <p className="text-3xl font-bold">
-                    {loading ? <LoadingBar /> : estadisticasDatos.categorias.total}
-                  </p>
-                </div>
-                <Tag className="h-12 w-12 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
+                </Card>
 
-          <Card className="bg-gradient-to-r from-green-400 to-green-500 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100">Total Departamentos</p>
-                  <p className="text-3xl font-bold">
-                    {loading ? <LoadingBar /> : estadisticasDatos.departamentos.total}
-                  </p>
-                </div>
-                <Building2 className="h-12 w-12 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
+                <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100">Total Categorías</p>
+                        <p className="text-3xl font-bold">
+                          {loading ? <LoadingBar /> : estadisticasDatos.categorias.total}
+                        </p>
+                      </div>
+                      <Tag className="h-12 w-12 text-green-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-r from-green-400 to-green-500 text-white">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100">Total Departamentos</p>
+                        <p className="text-3xl font-bold">
+                          {loading ? <LoadingBar /> : estadisticasDatos.departamentos.total}
+                        </p>
+                      </div>
+                      <Building2 className="h-12 w-12 text-green-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )
+          }
+
         </div>
 
         {/* Layout principal */}
@@ -231,18 +275,29 @@ const GestionDatos = ({ onNavigate }) => {
                       <button
                         key={seccion.id}
                         onClick={() => setSeccionSeleccionada(seccion.id)}
-                        className={`w-full text-left p-4 flex items-center gap-3 transition-colors ${
-                          isSelected
-                            ? "bg-green-50 border-r-4 border-green-600 text-green-700"
-                            : "hover:bg-gray-50 text-gray-700"
-                        }`}
+                        className={`w-full text-left p-4 flex items-center gap-3 transition-colors ${isSelected
+                          ? "bg-green-50 border-r-4 border-green-600 text-green-700"
+                          : "hover:bg-gray-50 text-gray-700"
+                          }`}
                       >
                         <IconoSeccion className={`h-5 w-5 ${isSelected ? "text-green-600" : "text-gray-500"}`} />
                         <div className="flex-1">
                           <div className="font-medium">{seccion.titulo}</div>
-                          <div className="text-sm text-gray-500">
-                            {seccion.estadisticas?.total ?? 0} elementos
-                          </div>
+                          {
+                            loading ? (
+                              <LoadingBar />
+                            ) : null
+                          }
+                          {
+                            !loading && (
+                              <>
+                                <div className="text-sm text-gray-500">
+                                  {seccion.estadisticas?.total ?? 0} elementos
+                                </div>
+                              </>
+                            )
+                          }
+
                         </div>
                         {isSelected && <ArrowRight className="h-4 w-4 text-green-600" />}
                       </button>
@@ -270,57 +325,66 @@ const GestionDatos = ({ onNavigate }) => {
 
               <CardContent className="space-y-6">
                 {/* Estadísticas detalladas */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {seccionActual.estadisticas?.total ?? 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Total</div>
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* add skeleton */}
+                  {
+                    loading ? (
+                      <>
+                        <Skeleton className="h-20 w-full rounded-lg" />
+                        <Skeleton className="h-20 w-full rounded-lg" />
+                        <Skeleton className="h-20 w-full rounded-lg" />
+                      </>
+                    ) : null
+                  }
+                  {
+                    !loading && (
 
-                  {seccionActual.id === "juntas-vecinales" && (
-                    <>
-                      <div className="bg-green-50 p-4 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-green-700">
-                          {seccionActual.estadisticas?.habilitadas ?? 0}
+                      <>
+                        <div className="bg-gray-50 p-4 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {seccionActual.estadisticas?.total ?? 0}
+                          </div>
+                          <div className="text-sm text-gray-600">Total</div>
                         </div>
-                        <div className="text-sm text-green-600">Habilitadas</div>
-                      </div>
-                      <div className="bg-yellow-50 p-4 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-yellow-700">
-                          {seccionActual.estadisticas?.pendientes ?? 0}
-                        </div>
-                        <div className="text-sm text-yellow-600">Pendientes</div>
-                      </div>
-                      <div className="bg-red-50 p-4 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-red-700">
-                          {seccionActual.estadisticas?.deshabilitadas ?? 0}
-                        </div>
-                        <div className="text-sm text-red-600">Deshabilitadas</div>
-                      </div>
-                    </>
-                  )}
 
-                  {(seccionActual.id === "categorias" || seccionActual.id === "departamentos") && (
-                    <>
-                      <div className="bg-green-50 p-4 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-green-700">
-                          {seccionActual.estadisticas?.activos ?? 0}
-                        </div>
-                        <div className="text-sm text-green-600">Activos</div>
-                      </div>
-                      <div className="bg-red-50 p-4 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-red-700">
-                          {seccionActual.estadisticas?.deshabilitados ?? 0}
-                        </div>
-                        <div className="text-sm text-red-600">Deshabilitados</div>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-gray-700">-</div>
-                        <div className="text-sm text-gray-600">-</div>
-                      </div>
-                    </>
-                  )}
+                        {seccionActual.id === "juntas-vecinales" && (
+                          <>
+                            <div className="bg-green-50 p-4 rounded-lg text-center">
+                              <div className="text-2xl font-bold text-green-700">
+                                {seccionActual.estadisticas?.habilitadas ?? 0}
+                              </div>
+                              <div className="text-sm text-green-600">Habilitados</div>
+                            </div>
+
+                            <div className="bg-red-50 p-4 rounded-lg text-center">
+                              <div className="text-2xl font-bold text-red-700">
+                                {seccionActual.estadisticas?.deshabilitadas ?? 0}
+                              </div>
+                              <div className="text-sm text-red-600">Deshabilitados</div>
+                            </div>
+                          </>
+                        )}
+
+                        {(seccionActual.id === "categorias" || seccionActual.id === "departamentos") && (
+                          <>
+                            <div className="bg-green-50 p-4 rounded-lg text-center">
+                              <div className="text-2xl font-bold text-green-700">
+                                {seccionActual.estadisticas?.activos ?? 0}
+                              </div>
+                              <div className="text-sm text-green-600">Habilitados</div>
+                            </div>
+                            <div className="bg-red-50 p-4 rounded-lg text-center">
+                              <div className="text-2xl font-bold text-red-700">
+                                {seccionActual.estadisticas?.deshabilitados ?? 0}
+                              </div>
+                              <div className="text-sm text-red-600">Deshabilitados</div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )
+                  }
+
                 </div>
 
                 {/* Información adicional */}
