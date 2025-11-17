@@ -540,19 +540,19 @@ const GestionCategoria = ({ onVolver }) => {
             {/* Tabla */}
             <div className="rounded-md border">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Departamento</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Publicaciones</TableHead>
-                    <TableHead>Fecha Creación</TableHead>
-                    <TableHead>Acciones</TableHead>
+                <TableHeader className>
+                  <TableRow className="bg-green-50">
+                    <TableHead className="text-center text-green-700 font-bold">ID</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Nombre</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Descripción</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Departamento</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Estado</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Publicaciones</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Fecha Creación</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="text-center">
                   {categoriasFiltradas.length > 0 ? (
                     categoriasFiltradas.map((categoria) => (
                       <TableRow key={categoria.id}>
@@ -564,12 +564,8 @@ const GestionCategoria = ({ onVolver }) => {
                         <TableCell>{categoria.departamento.nombre}</TableCell>
                         <TableCell>
                           <Badge
-                            variant={categoria.estado === "Activa" ? "default" : "secondary"}
-                            className={
-                              categoria.estado === "Activa"
-                                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                : "bg-red-100 text-red-800 hover:bg-red-200"
-                            }
+                            variant={categoria.estado === "habilitado" ? "default" : "secondary"}
+
                           >
                             {categoria.estado}
                           </Badge>
@@ -578,7 +574,7 @@ const GestionCategoria = ({ onVolver }) => {
                           <Badge variant="outline">{categoria.cantidad_publicaciones}</Badge>
                         </TableCell>
                         <TableCell>{formatDate(categoria.fecha_creacion)}</TableCell>
-                        <TableCell>
+                        <TableCell className="flex justify-center"  >
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditarCategoria(categoria)}>
                               <Edit className="h-4 w-4" />

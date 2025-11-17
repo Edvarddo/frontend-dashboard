@@ -639,16 +639,16 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           <CardContent>
             <div className="rounded-md border">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Fecha de Creación</TableHead>
-                    <TableHead>Acciones</TableHead>
+                <TableHeader >
+                  <TableRow className="bg-green-50 bold-text">
+                    <TableHead className="text-center text-green-700 font-bold">Nombre</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Dirección</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Estado</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Fecha de Creación</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="text-center">
                   {datosFiltrados.length > 0 ? (
                     datosFiltrados.map((junta) => (
                       <TableRow key={junta.id}>
@@ -661,16 +661,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                             variant={
                               junta.estado === "habilitado"
                                 ? "default"
-                                : junta.estado === "Pendiente"
-                                  ? "secondary"
-                                  : "destructive"
+                                : "secondary"
                             }
                           >
                             {junta.estado}
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(junta.fecha_creacion)}</TableCell>
-                        <TableCell>
+                        <TableCell className="flex justify-center">
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditClick(junta)}>
                               <Edit className="h-4 w-4" />

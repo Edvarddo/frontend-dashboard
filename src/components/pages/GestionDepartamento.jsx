@@ -475,22 +475,22 @@ const GestionDepartamento = ({ onVolver }) => {
             {/* Tabla */}
             <div className="rounded-md border">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Empleados</TableHead>
-                    {/* <TableHead>Categorías</TableHead> */}
-                    <TableHead>Fecha Creación</TableHead>
-                    <TableHead>Acciones</TableHead>
+                <TableHeader className="text-center">
+                  <TableRow className="bg-green-50 text-center">
+                    <TableHead className="text-center text-green-700 font-bold">ID</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Nombre</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Descripción</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Estado</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Empleados</TableHead>
+                    {/* <TableHead className="text-center">Categorías</TableHead> */}
+                    <TableHead className="text-center text-green-700 font-bold">Fecha Creación</TableHead>
+                    <TableHead className="text-center text-green-700 font-bold">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {departamentosFiltrados.length > 0 ? (
                     departamentosFiltrados.map((departamento) => (
-                      <TableRow key={departamento.id}>
+                      <TableRow key={departamento.id} className="text-center"> 
                         <TableCell className="font-medium">{departamento.id}</TableCell>
                         <TableCell className="font-medium">{departamento.nombre}</TableCell>
                         <TableCell className="max-w-xs truncate">
@@ -498,12 +498,8 @@ const GestionDepartamento = ({ onVolver }) => {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={departamento.estado === "Activo" ? "default" : "secondary"}
-                            className={
-                              departamento.estado === "Activo"
-                                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                : "bg-red-100 text-red-800 hover:bg-red-200"
-                            }
+                            variant={departamento.estado === "habilitado" ? "default" : "secondary"}
+                            
                           >
                             {departamento.estado}
                           </Badge>
@@ -519,7 +515,7 @@ const GestionDepartamento = ({ onVolver }) => {
                           </Badge>
                         </TableCell> */}
                         <TableCell>{formatDate(departamento.fecha_creacion)}</TableCell>
-                        <TableCell>
+                        <TableCell className="flex justify-center">
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditarDepartamento(departamento)}>
                               <Edit className="h-4 w-4" />
