@@ -36,10 +36,11 @@ import CuentaUsuario from "./components/pages/CuentaUsuario"
 import Kanban from "./components/pages/Kanban"
 import DetalleModificacionPublicacion from "./components/pages/DetalleModificacionPublicacion"
 
-const PrivLayout = ({ children, isOpened, setIsOpened }) => {
+const PrivLayout = ({ isOpened, setIsOpened }) => {
   const navigate = useNavigate()
   const { isTokenExpired, setIsTokenExpired, logout } = useAuth()
   const [showExpiredDialog, setShowExpiredDialog] = useState(false)
+
   useEffect(() => {
     if (isTokenExpired) {
       setShowExpiredDialog(true)
@@ -47,34 +48,50 @@ const PrivLayout = ({ children, isOpened, setIsOpened }) => {
   }, [isTokenExpired])
 
   const handleExpiredToken = () => {
-    // const navigate = useNavigate();
     setShowExpiredDialog(false)
     setIsTokenExpired(false)
     logout()
     navigate("/login")
   }
+
   return (
     <>
+      {/* diálogo de sesión expirada */}
       <AlertDialog open={showExpiredDialog} onOpenChange={setShowExpiredDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Sesión Expirada</AlertDialogTitle>
-            <AlertDialogDescription>Tu sesión ha expirado. Por favor, inicia sesión nuevamente.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Tu sesión ha expirado. Por favor, inicia sesión nuevamente.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleExpiredToken}>Aceptar</AlertDialogAction>
+            <AlertDialogAction onClick={handleExpiredToken}>
+              Aceptar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Sidebar isOpened={isOpened} />
-      <div className={`content ${!isOpened ? "overflow-hidden" : ""}`}>
-        <div className="bg-gray-100 min-h-screen min-w-[400px]">
+
+      {/* LAYOUT PRINCIPAL */}
+      <div className="flex min-h-screen bg-gray-100">
+        {/* SIDEBAR FIJO */}
+        <Sidebar isOpened={isOpened} setIsOpened={setIsOpened} />
+
+        {/* CONTENIDO PRINCIPAL */}
+        <main
+          className={`
+            flex-1 min-h-screen transition-all duration-200
+            ${isOpened ? "ml-72" : "ml-0"}
+          `}
+        >
           <Outlet />
-        </div>
+        </main>
       </div>
     </>
   )
 }
+
 
 function App() {
   const [isOpened, setIsOpened] = useState(true)

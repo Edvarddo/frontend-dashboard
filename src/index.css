@@ -136,15 +136,15 @@
   width: 90px;
 }
 
-.menu {
+/* .menu {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  /* Permite que el menú ocupe el espacio restante y controle el overflow */
+
   flex: 1;
   min-height: 0;
   overflow: hidden;
-}
+} */
 
 /* Nueva clase para el área scrolleable del menú */
 .menu-scrollable {
@@ -175,7 +175,7 @@
   background: #9ca3af;
 }
 
-.menu .menu-list {
+/* .menu .menu-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -240,12 +240,12 @@
   justify-content: center;
   min-width: 60px;
   font-size: 1.25rem;
-  /* transition: var(--trans-03) */
+   transition: var(--trans-03);
 }
 
 .menu li:hover .icon {
-  /* scale : 1.3; */
-}
+  scale : 1.3;
+} 
 
 /* Estilos para la nueva sección de usuario */
 .user-section {
