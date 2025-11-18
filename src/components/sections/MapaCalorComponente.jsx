@@ -12,12 +12,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 })
 
-const MapaCalorComponente = ({ data, isModal = false }) => {
+const MapaCalorComponente = ({ data, isModal = false, categorias }) => {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const heatLayerRef = useRef(null)
   const markersRef = useRef([])
-
+  console.log("RENDERIZANDO MAPA CALOR 22222", categorias);
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
 
@@ -87,23 +87,96 @@ const MapaCalorComponente = ({ data, isModal = false }) => {
         bubblingMouseEvents: false,
       }).addTo(mapInstanceRef.current)
 
+       
+      const pendientes = item.Junta_Vecinal.pendientes || 0
+      const urgentes = item.Junta_Vecinal.urgentes || 0
+
+      const criticidadNivel =
+        urgentes >= 6 ? "Alta" :
+          urgentes >= 3 ? "Media" :
+            "Baja"
+
+      const criticidadClass =
+        urgentes >= 6
+          ? "bg-red-100 text-red-700 border-red-200"
+          : urgentes >= 3
+            ? "bg-orange-100 text-orange-700 border-orange-200"
+            : "bg-emerald-100 text-emerald-700 border-emerald-200"
+
       const tooltipContent = `
-        <div class="p-3 bg-white shadow-lg min-w-[250px] rounded-lg border-2 border-red-200">
-          <h3 class="font-bold mb-2 text-red-800 text-lg">${item.Junta_Vecinal.nombre || "Sin nombre"}</h3>
-          <div class="space-y-1 text-sm">
-            <p class="text-red-700"><strong>🚨 Total pendientes:</strong> ${item.Junta_Vecinal.pendientes || 0}</p>
-            <p class="text-orange-700"><strong>⚠️ Casos urgentes:</strong> ${item.Junta_Vecinal.urgentes || 0}</p>
-            <p class="text-yellow-700"><strong>⏱️ Tiempo promedio:</strong> ${item.tiempo_promedio_pendiente || "N/A"}</p>
-            <hr class="border-red-200 my-2">
-            <p class="text-red-600"><strong>🏥 Asistencia Social:</strong> ${item["Asistencia Social"] || 0}</p>
-            <p class="text-orange-600"><strong>🛣️ Mantención de Calles:</strong> ${item["Mantención de Calles"] || 0}</p>
-            <p class="text-yellow-600"><strong>🛡️ Seguridad:</strong> ${item.Seguridad || 0}</p>
-            <p class="text-pink-600"><strong>🌳 Áreas verdes:</strong> ${item["Áreas verdes"] || 0}</p>
-            <hr class="border-red-200 my-2">
-            <p class="text-red-500 text-xs"><strong>📅 Última publicación:</strong> ${item.ultima_publicacion ? new Date(item.ultima_publicacion).toLocaleDateString("es-AR") : "N/A"}</p>
-          </div>
+  <div class="heatmap-tooltip relative z-[9999]">
+    <div class="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl border border-red-200 px-4 py-3 min-w-[260px]">
+
+      <!-- HEADER -->
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <h3 class="font-semibold text-red-800 text-sm leading-snug">
+          ${item.Junta_Vecinal.nombre || "Sin nombre"}
+        </h3>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${criticidadClass}">
+          ● Criticidad ${criticidadNivel}
+        </span>
+      </div>
+
+      <!-- MÉTRICAS PRINCIPALES -->
+      <div class="grid grid-cols-3 gap-2 text-[11px] mb-2">
+        <div class="flex flex-col items-center rounded-md bg-red-50 px-2 py-1">
+          <span class="text-[10px] text-red-500 font-medium">Pendientes</span>
+          <span class="text-sm font-bold text-red-700">${pendientes}</span>
         </div>
-      `
+        <div class="flex flex-col items-center rounded-md bg-orange-50 px-2 py-1">
+          <span class="text-[10px] text-orange-500 font-medium">Urgentes</span>
+          <span class="text-sm font-bold text-orange-700">${urgentes}</span>
+        </div>
+        <div class="flex flex-col items-center rounded-md bg-amber-50 px-2 py-1">
+          <span class="text-[10px] text-amber-600 font-medium">Promedio</span>
+          <span class="text-[11px] font-semibold text-amber-700">
+            ${item.tiempo_promedio_pendiente || "N/A"}
+          </span>
+        </div>
+      </div>
+
+      <!-- CATEGORÍAS -->
+      <div class="border-t border-red-100 pt-2 mt-1">
+        <p class="text-[10px] uppercase tracking-wide text-red-400 font-semibold mb-1">
+          Categorías
+        </p>
+        <div class="space-y-1 text-[11px]">
+          ${categorias
+          .map(cat => {
+            const cantidad = item[cat.nombre] || 0
+            const isZero = cantidad === 0
+            return `
+                <div class="flex items-center justify-between gap-2">
+                  <span class="flex items-center gap-1 text-red-700 ${isZero ? "opacity-50" : ""}">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                    ${cat.nombre}
+                  </span>
+                  <span class="font-semibold ${isZero ? "text-red-300" : "text-red-700"}">
+                    ${cantidad}
+                  </span>
+                </div>
+              `
+          })
+          .join("")}
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="border-t border-red-100 mt-2 pt-1 flex items-center justify-between text-[10px] text-red-500">
+        <span class="inline-flex items-center gap-1">
+          <span>📅</span>
+          <span>Última publicación</span>
+        </span>
+        <span class="font-semibold text-red-600">
+          ${item.ultima_publicacion
+          ? new Date(item.ultima_publicacion).toLocaleDateString("es-AR")
+          : "N/A"
+        }
+        </span>
+      </div>
+    </div>
+  </div>
+`
 
       marker.bindTooltip(tooltipContent, {
         permanent: false,

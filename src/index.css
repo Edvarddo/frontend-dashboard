@@ -413,3 +413,7 @@
 .leaflet-control-attribution {
   display: none;
 }
+
+
+/* MAPA TOOLTIP  */
+/* Aumentar z-index del tooltip sobre el resto de la UI */

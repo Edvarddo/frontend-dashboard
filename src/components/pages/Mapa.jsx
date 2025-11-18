@@ -30,7 +30,7 @@ const Mapa = () => {
     const url = queryParams ? `${API_ROUTES.PUBLICACIONES.POR_JUNTA}?${queryParams}` : API_ROUTES.PUBLICACIONES.POR_JUNTA;
     try {
       const response = await axiosPrivate.get(url);
-      console.log(response.data);
+      console.log("Datos calor:", response.data);
       setData(response.data);
     } catch (error) {
       console.error(error);
@@ -71,7 +71,7 @@ const Mapa = () => {
   const fetchCategorias = useCallback(async () => {
     try {
       const response = await axiosPrivate.get(API_ROUTES.CATEGORIAS.ROOT);
-      console.log(response.data);
+      console.log("CATEGORIAS",response.data);
       const transformedCategorias = response.data.map(categoria => ({
         id: categoria.id,
         nombre: categoria.nombre,
