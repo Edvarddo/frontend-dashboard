@@ -4,25 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Plus, ChevronDown, ChevronUp, Eye, Edit, Trash2, Calendar, Tag, MapPin, Users, Clock, ChevronLeft, ChevronRight, X, Upload } from 'lucide-react'
-import Image from '../../assets/placeholder.svg'
+import { Plus, ChevronDown, ChevronUp, Edit, Trash2, Calendar, Tag, Users } from 'lucide-react'
 import TopBar from "../TopBar"
 import { useNavigate } from 'react-router-dom'
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
-import axios, { axiosPrivate } from '@/api/axios'
 import { Skeleton } from '../ui/skeleton'
 import ImageCarousel from '../ImageCarousel'
 import ImageGallery from '../ImageGallery'
 import { useToast } from "../../hooks/use-toast"
 import EditAnuncioModal from '../EditAnuncioModal'
-import { format, addHours, isAfter } from 'date-fns'
-import { DialogClose } from '@radix-ui/react-dialog'
 import { API_ROUTES } from '../../api/apiRoutes'
+
+// Importaciones de la nueva lógica de paginación
+import { usePaginatedFetch } from '@/hooks/usePaginatedFetch'
+import Paginador from '../Paginador' // Ajusta la ruta según donde guardaste Paginador.jsx
 
 const estadoColors = {
   'Publicado': 'bg-green-100 text-green-800',
@@ -31,15 +27,32 @@ const estadoColors = {
 
 const Anuncio = ({ setIsOpened, isOpened }) => {
   const [expandedId, setExpandedId] = useState(null)
-  const [listadoAnuncios, setListadoAnuncios] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
   const [editingAnuncio, setEditingAnuncio] = useState(null)
   const [categorias, setCategorias] = useState([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
+
   const { toast } = useToast()
   const axiosPrivate = useAxiosPrivate()
   const navigate = useNavigate()
+
+  // Integración del Hook de Paginación
+  // Configuramos initialPageSize en 5 para mantener tu diseño original
+  const {
+    data: listadoAnuncios,
+    totalItems,
+    loading: isLoading,
+    currentPage,
+    itemsPerPage,
+    setPage,
+    setPageSize,
+    refresh // Función para recargar datos tras editar/eliminar
+  } = usePaginatedFetch({
+    baseUrl: API_ROUTES.ANUNCIOS.ROOT,
+    initialPageSize: 5
+  })
+
+  // Cálculo de total de páginas para el renderizado manual si fuera necesario,
+  // aunque el componente Paginador lo calcula internamente si se lo pasamos.
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
 
   const extractCategoriesValues = (categories) => {
     return categories.map((category) => ({
@@ -48,9 +61,10 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
     }))
   }
 
-  const fetchURLS = async (urls) => {
+  // Carga de categorías (independiente de la paginación)
+  const fetchCategories = async () => {
     try {
-      const response = await axiosPrivate.get(urls)
+      const response = await axiosPrivate.get('categorias/')
       const categories = extractCategoriesValues(response.data)
       setCategorias(categories)
     } catch (error) {
@@ -59,7 +73,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   }
 
   useEffect(() => {
-    fetchURLS('categorias/')
+    fetchCategories()
   }, [])
 
   const toggleExpand = (id) => {
@@ -70,48 +84,27 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
     setIsOpened(!isOpened)
   }
 
-  const fetchAnuncios = (page = 1) => {
-    setIsLoading(true)
-    axiosPrivate.get(`${API_ROUTES.ANUNCIOS.ROOT}?page=${page}`)
-      .then((response) => {
-        // console.log(response?.data)
-        setListadoAnuncios(response?.data?.results)
-        setTotalPages(Math.ceil(response?.data?.count / 5)) // Assuming 5 items per page
-        setIsLoading(false)
-      })
-      .catch((error) => {
-        console.error(error)
-        setIsLoading(false)
-      })
-  }
-
-  useEffect(() => {
-    fetchAnuncios(currentPage)
-  }, [currentPage])
-
   const handleEditClick = (anuncio) => {
     setEditingAnuncio(anuncio)
   }
 
   const handleSaveEdit = (editedAnuncio) => {
-    // console.log(editedAnuncio)
     axiosPrivate.patch(API_ROUTES.ANUNCIOS.DETAIL(editedAnuncio.id), editedAnuncio)
       .then(response => {
-        // console.log(response)
         toast({
           title: "Anuncio actualizado",
           description: "El anuncio ha sido actualizado exitosamente.",
           duration: 5000,
           className: "bg-green-500 text-white",
         })
-        fetchAnuncios(currentPage)
+        refresh() // Recargamos la tabla usando el hook
         setEditingAnuncio(null)
       })
       .catch(error => {
         console.error("Error updating anuncio:", error)
         toast({
           title: "Error",
-          description: "Hubo un problema al actualizar el anuncio. Por favor, intente nuevamente.",
+          description: "Hubo un problema al actualizar el anuncio.",
           variant: "destructive",
           duration: 5000,
         })
@@ -119,13 +112,11 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   }
 
   const deleteImage = async (listIndex) => {
-    // console.log("Imagen a eliminar:", listIndex);
     listIndex.forEach(async (index) => {
       try {
-        const res = await axiosPrivate.delete(`${API_ROUTES.IMAGENES_ANUNCIOS.ROOT}${index}/`)
-        // console.log("Imagen eliminada:", res);
+        await axiosPrivate.delete(`${API_ROUTES.IMAGENES_ANUNCIOS.ROOT}${index}/`)
       } catch (error) {
-        // console.error("Error deleting image:", error)
+        console.error("Error deleting image:", error)
       }
     })
   }
@@ -138,12 +129,9 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
       formData.append("imagen", image?.file);
       formData.append("extension", image?.file?.name?.split(".")?.pop());
       try {
-        const res = await axiosPrivate.post(API_ROUTES.IMAGENES_ANUNCIOS.ROOT, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          }
+        await axiosPrivate.post(API_ROUTES.IMAGENES_ANUNCIOS.ROOT, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
-        // console.log("Imagen subida:", res);
       } catch (error) {
         console.error("Error uploading image:", error)
       }
@@ -151,29 +139,6 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
   }
 
   const handleDeleteAnuncio = (anuncioId) => {
-    // const anuncio = listadoAnuncios.find(a => a.id === anuncioId);
-    // const publicationDate = new Date(anuncio.fecha);
-    // const deletionDeadline = addHours(publicationDate, 1);
-    // const now = new Date();
-    // console.log("Fecha de publicación:", publicationDate);
-    // console.log("Fecha de eliminación:", deletionDeadline);
-    // console.log("Fecha actual:", now);
-
-    // console.log(isAfter(now, deletionDeadline ));
-    // console.log(isAfter(publicationDate, deletionDeadline ));
-
-
-    // return;
-    // if (isAfter(now, deletionDeadline)) {
-    //   toast({
-    //     title: "No se puede eliminar",
-    //     description: "El tiempo de eliminación ha expirado. No se puede eliminar anuncios después de 1 hora de su publicación.",
-    //     duration: 5000,
-    //     className: "bg-red-500 text-white",
-    //   });
-    //   return;
-    // }
-
     axiosPrivate.delete(API_ROUTES.ANUNCIOS.DETAIL(anuncioId))
       .then(() => {
         toast({
@@ -182,18 +147,19 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
           duration: 5000,
           className: "bg-green-500 text-white",
         })
-        setListadoAnuncios(prevAnuncios => prevAnuncios.filter(a => a.id !== anuncioId))
+
+        // Lógica inteligente de navegación tras borrar:
+        // Si borramos el último ítem de una página (y no es la primera), volvemos atrás.
         if (listadoAnuncios.length === 1 && currentPage > 1) {
-          setCurrentPage(prev => prev - 1)
+          setPage(currentPage - 1)
         } else {
-          fetchAnuncios(currentPage)
+          refresh()
         }
       })
       .catch(error => {
-        // console.error("Error deleting anuncio:", error)
         toast({
           title: "Error",
-          description: "Hubo un problema al eliminar el anuncio. Por favor, intente nuevamente.",
+          description: "Hubo un problema al eliminar el anuncio.",
           variant: "destructive",
           duration: 5000,
         })
@@ -211,9 +177,11 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
             <Plus className="mr-2 h-4 w-4" /> Crear anuncio
           </Button>
         </div>
+
         <div className="space-y-4">
           {isLoading ? (
-            [...Array(5)].map((_, index) => (
+            // Mostramos skeletons según itemsPerPage configurado
+            [...Array(itemsPerPage)].map((_, index) => (
               <Skeleton key={index} className="w-full h-24" />
             ))
           ) : (
@@ -266,18 +234,13 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                         {anuncio.imagenes.length > 1 && (
                           <Dialog>
                             <DialogTrigger asChild className=''>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-2 "
-                              >
+                              <Button variant="outline" size="sm" className="mt-2">
                                 Ver todas las imágenes ({anuncio.imagenes.length})
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl w-full p-2  ">
+                            <DialogContent className="max-w-4xl w-full p-2">
                               <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
                             </DialogContent>
-
                           </Dialog>
                         )}
                       </div>
@@ -329,8 +292,7 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Está seguro de eliminar este anuncio?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente el anuncio
-                                y removerá los datos de nuestros servidores.
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el anuncio.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -349,31 +311,22 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
             ))
           )}
         </div>
-        <div className="mt-4 flex justify-center">
-          <Button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="mr-2 bg-emerald-600 hover:bg-emerald-700"
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Anterior
-          </Button>
-          <span className="mx-2 self-center">
-            Página {currentPage} de {totalPages}
-          </span>
-          <Button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="ml-2 bg-emerald-600 hover:bg-emerald-700"
-          >
-            Siguiente
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Button>
-        </div>
+
+        {/* Componente de Paginación Reutilizable */}
+        <Paginador
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setPageSize}
+          loading={isLoading}
+          // Opcional: Si quieres restringir las opciones de página como en el original
+          pageSizeOptions={[5, 10, 20]}
+        />
       </div>
     </>
   )
 }
 
 export default Anuncio
-
