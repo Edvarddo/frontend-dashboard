@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     const [departamento, setDepartamento] = useState(localStorage.getItem('departamento') || null);
     const [isTokenExpired, setIsTokenExpired] = useState(false);
     const [departamentoId, setDepartamentoId] = useState(localStorage.getItem('departamentoId') || null);
-
+    const [authMessage, setAuthMessage] = useState('');
 
     const login = (token, refreshToken, admin) => {
         localStorage.setItem('authToken', token);
@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }) => {
         setRol(null);
         setDepartamento(null);
         setDepartamentoId(null);
+        setAuthMessage('');
     };
 
     return (
@@ -70,6 +71,9 @@ export const AuthProvider = ({ children }) => {
                 setDepartamento,
                 departamentoId,
                 setDepartamentoId,
+                authMessage,
+                setAuthMessage,
+                setUserDetails
 
             }}>
             {children}

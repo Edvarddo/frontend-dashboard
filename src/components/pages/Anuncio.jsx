@@ -165,107 +165,215 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
         })
       })
   }
+  const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/de06451wd/"
 
+  const getImageUrl = (path) => {
+    if (!path) return ""
+    if (path.startsWith("http")) return path
+    return `${CLOUDINARY_BASE_URL}${path.replace(/^\/+/, "")}`
+  }
   return (
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de Anuncios" />
+
       <div className="p-8">
+        {/* Botón crear anuncio */}
         <div className="flex justify-end items-center mb-6">
           <Button
             onClick={() => navigate('/anuncio-formulario')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
             <Plus className="mr-2 h-4 w-4" /> Crear anuncio
           </Button>
         </div>
 
-        <div className="space-y-4">
-          {isLoading ? (
-            // Mostramos skeletons según itemsPerPage configurado
-            [...Array(itemsPerPage)].map((_, index) => (
-              <Skeleton key={index} className="w-full h-24" />
-            ))
-          ) : (
-            listadoAnuncios?.map((anuncio) => (
-              <Collapsible
-                key={anuncio.id}
-                open={expandedId === anuncio.id}
-              >
-                <Card>
-                  <CardHeader className="p-4">
-                    <div className="flex items-center justify-between w-full">
-                      <CardTitle className="text-lg">{anuncio.titulo}</CardTitle>
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-0"
-                          onClick={() => toggleExpand(anuncio.id)}
-                        >
-                          {expandedId === anuncio.id ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </CollapsibleTrigger>
+        {isLoading ? (
+          <div className="space-y-6">
+            {[...Array(4)].map((_, index) => (
+              <Skeleton key={index} className="w-full h-60" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {listadoAnuncios?.map((anuncio) => {
+              const isExpanded = expandedId === anuncio.id
+              const descripcionLarga = anuncio.descripcion || ""
+              const descripcionCorta =
+                descripcionLarga.length > 260
+                  ? descripcionLarga.slice(0, 260) + "..."
+                  : descripcionLarga
+
+              const tieneImagenes = anuncio.imagenes && anuncio.imagenes.length > 0
+              const esUnaImagen = anuncio.imagenes && anuncio.imagenes.length === 1
+              const masDeUnaImagen = anuncio.imagenes && anuncio.imagenes.length > 1
+
+              // Si quieres seguir usando URLs completas para <img>, puedes dejar esto,
+              // pero NO lo usaremos para ImageGallery.
+              const imagesWithUrl = (anuncio.imagenes || []).map((img) => ({
+                ...img,
+                imagen: getImageUrl(img.imagen),
+              }))
+
+              // 🔥 ESTE ES EL IMPORTANTE PARA IMAGEGALLERY
+              // Deja solo el path, sin repetir el baseURL
+              const imagesGallery = (anuncio.imagenes || []).map((img) => ({
+                ...img,
+                imagen: img.imagen.startsWith("http")
+                  ? img.imagen.replace("https://res.cloudinary.com/de06451wd/", "")
+                  : img.imagen,
+              }))
+
+              return (
+                <Card
+                  key={anuncio.id}
+                  className="overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all"
+                >
+                  {/* BLOQUE DE IMAGEN */}
+                  <div className="relative w-full h-64 bg-slate-100 overflow-hidden">
+                    {tieneImagenes ? (
+                      esUnaImagen ? (
+                        <img
+                          src={getImageUrl(anuncio.imagenes[0].imagen)}
+                          alt={anuncio.titulo}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full">
+                          <ImageCarousel
+                            images={anuncio.imagenes}
+                            title={anuncio.titulo}
+                            className="h-full w-full"
+                          />
+                        </div>
+                      )
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm">
+                        Sin imágenes
+                      </div>
+                    )}
+
+                    {/* Badges sobre la imagen */}
+                    <div className="absolute bottom-3 left-3 flex gap-2">
+                      <Badge className={estadoColors[anuncio.estado]}>
+                        {anuncio.estado}
+                      </Badge>
+
+                      <Badge
+                        variant="outline"
+                        className="bg-white/80 backdrop-blur flex items-center gap-1"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {anuncio.categoria?.nombre}
+                      </Badge>
                     </div>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Badge className={estadoColors[anuncio.estado]}>{anuncio.estado}</Badge>
-                      <span className="text-sm text-gray-500 flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" /> {
-                          new Date(anuncio.fecha).toLocaleDateString('es-CL', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })
-                        }
-                      </span>
-                      <span className="text-sm text-gray-500 flex items-center">
-                        <Tag className="h-4 w-4 mr-1" /> {anuncio.categoria.nombre}
+                  </div>
+
+                  <CardHeader className="p-6 pb-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <CardTitle className="text-xl font-semibold">
+                        {anuncio.titulo}
+                      </CardTitle>
+
+                      <span className="text-xs text-slate-500 flex items-center whitespace-nowrap ml-4">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {new Date(anuncio.fecha).toLocaleDateString("es-CL", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                   </CardHeader>
-                  <CollapsibleContent>
-                    {anuncio.imagenes && anuncio.imagenes.length > 0 && (
-                      <div className="px-4 pb-4 ">
-                        <div className=' flex justify-center'>
-                          <ImageCarousel images={anuncio.imagenes} title={anuncio.titulo} />
-                        </div>
-                        {anuncio.imagenes.length > 1 && (
+
+                  <CardContent className="px-6 pb-6 pt-2">
+                    {/* Descripción */}
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      {isExpanded ? descripcionLarga : descripcionCorta}
+                    </p>
+
+                    {descripcionLarga.length > 260 && (
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-emerald-700 hover:text-emerald-800"
+                          onClick={() => toggleExpand(anuncio.id)}
+                        >
+                          {isExpanded ? "Ver menos" : "Ver más"}
+                          {isExpanded ? (
+                            <ChevronUp className="ml-1 h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="ml-1 h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Acciones de imágenes */}
+                    {tieneImagenes && (
+                      <div className="mt-3 flex gap-2 flex-wrap">
+                        {/* Solo 1 imagen -> maximizar */}
+                        {esUnaImagen && (
                           <Dialog>
-                            <DialogTrigger asChild className=''>
-                              <Button variant="outline" size="sm" className="mt-2">
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Ver imagen ampliada
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl w-full p-2">
+                              <ImageGallery
+                                images={imagesGallery}  // 👈 AQUÍ EL CAMBIO
+                                title={anuncio.titulo}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                        )}
+
+                        {/* Varias imágenes -> galería completa */}
+                        {masDeUnaImagen && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
                                 Ver todas las imágenes ({anuncio.imagenes.length})
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl w-full p-2">
-                              <ImageGallery images={anuncio.imagenes} title={anuncio.titulo} />
+                              <ImageGallery
+                                images={imagesGallery}  // 👈 AQUÍ TAMBIÉN
+                                title={anuncio.titulo}
+                              />
                             </DialogContent>
                           </Dialog>
                         )}
                       </div>
                     )}
-                    <CardContent className="p-4 pt-0">
-                      <div className="mb-4">
-                        <h4 className="font-semibold mb-2">Descripción</h4>
-                        <p className="text-sm text-gray-700">
-                          {anuncio.descripcion.length > 200
-                            ? anuncio.descripcion.substring(0, 200) + '...'
-                            : anuncio.descripcion}
-                        </p>
+
+                    {/* Footer: responsable + acciones */}
+                    <div className="mt-6 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Users className="h-3 w-3" />
+                        <span>Municipalidad de Calama</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <h4 className="font-semibold mb-1">Responsable</h4>
-                          <p className="text-sm text-gray-700 flex items-center">
-                            <Users className="h-4 w-4 mr-1" /> {"Municipalidad de calama"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex justify-end space-x-2">
-                        <Dialog open={!!editingAnuncio} onOpenChange={() => setEditingAnuncio(anuncio)}>
+
+                      <div className="flex gap-2">
+                        {/* Editar */}
+                        <Dialog
+                          open={!!editingAnuncio && editingAnuncio?.id === anuncio.id}
+                          onOpenChange={(open) => {
+                            if (!open) setEditingAnuncio(null)
+                          }}
+                        >
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => handleEditClick(anuncio)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditClick(anuncio)}
+                            >
                               <Edit className="h-4 w-4 mr-2" />
                               Editar
                             </Button>
@@ -281,37 +389,46 @@ const Anuncio = ({ setIsOpened, isOpened }) => {
                             />
                           </DialogContent>
                         </Dialog>
+
+                        {/* Eliminar */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Eliminar
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>¿Está seguro de eliminar este anuncio?</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                ¿Está seguro de eliminar este anuncio?
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente el anuncio.
+                                Esta acción no se puede deshacer.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteAnuncio(anuncio.id)}>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteAnuncio(anuncio.id)}
+                              >
                                 Eliminar
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
-                    </CardContent>
-                  </CollapsibleContent>
+                    </div>
+                  </CardContent>
                 </Card>
-              </Collapsible>
-            ))
-          )}
-        </div>
-
+              )
+            })}
+          </div>
+        )}
         {/* Componente de Paginación Reutilizable */}
         <Paginador
           currentPage={currentPage}

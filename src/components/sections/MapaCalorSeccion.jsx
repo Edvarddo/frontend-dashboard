@@ -25,6 +25,7 @@ import {
 import MapaCalorComponente from "./MapaCalorComponente"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { API_ROUTES } from "@/api/apiRoutes"
+import { cn } from "@/lib/utils"
 // Error Boundary para manejar errores sin romper el componente
 class MapaCalorErrorBoundary extends Component {
   constructor(props) {
@@ -84,6 +85,8 @@ const MapaCalorSeccion = ({
   setIsValid,
   isValid
 }) => {
+  console.log(backendData)
+  console.log("categorias", categorias)
   const [filtros, setFiltros] = useState({
     fechaInicio: "",
     fechaFin: "",
@@ -95,7 +98,7 @@ const MapaCalorSeccion = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [juntaCritica, setJuntaCritica] = useState(null)
   const [loadingJuntaCritica, setLoadingJuntaCritica] = useState(false)
-
+  const [selectedJunta, setSelectedJunta] = useState(null)
   const axiosPrivate = useAxiosPrivate()
 
   // Función para obtener la junta más crítica del backend
@@ -263,6 +266,7 @@ const MapaCalorSeccion = ({
         <SidebarInset>
           <div className="p-6">
             <Card className="bg-white shadow-xl border-0">
+              {/* HEADER */}
               <CardHeader className="bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -663,95 +667,192 @@ const MapaCalorSeccion = ({
 
                 {/* Tabla de estadísticas de problemáticas */}
                 <Card className="border-red-200">
-                  <CardHeader className="bg-gradient-to-r from-red-100 to-orange-100">
-                    <CardTitle className="text-red-800 flex items-center gap-2">
-                      <AlertTriangle className="w-6 h-6" />
-                      Estadísticas de Problemáticas por Junta Vecinal
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-red-50">
-                            <TableHead className="text-red-800 font-semibold">Junta Vecinal</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Asistencia Social</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Mantención de Calles</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Seguridad</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Áreas Verdes</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Total Pendientes</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Casos Urgentes</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Tiempo Promedio</TableHead>
-                            <TableHead className="text-red-800 font-semibold">Última Publicación</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {hasData ? (
-                            data.map((item, index) => (
-                              <TableRow key={index} className="hover:bg-red-50">
-                                <TableCell className="font-medium text-red-900">
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-red-600" />
-                                    {item.Junta_Vecinal.nombre || "Sin nombre"}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                    {item["Asistencia Social"] || 0}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                                    {item["Mantención de Calles"] || 0}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                                    {item.Seguridad || 0}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className="bg-pink-50 text-pink-700 border-pink-200">
-                                    {item["Áreas verdes"] || 0}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center font-bold text-red-700">
-                                  {item.Junta_Vecinal.pendientes || 0}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge
-                                    className={`${(item.Junta_Vecinal.urgentes || 0) >= 6
-                                      ? "bg-red-100 text-red-800 border-red-300"
-                                      : (item.Junta_Vecinal.urgentes || 0) >= 3
-                                        ? "bg-orange-100 text-orange-800 border-orange-300"
-                                        : "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                      }`}
-                                  >
-                                    {item.Junta_Vecinal.urgentes || 0}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center text-red-700">{item.tiempo_promedio_pendiente || "N/A"}</TableCell>
-                                <TableCell className="text-center text-red-600">
-                                  {item.ultima_publicacion ? formatearFecha(item.ultima_publicacion) : "N/A"}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={9} className="h-32 text-center">
-                                <div className="flex flex-col items-center justify-center text-red-500">
-                                  <Search className="w-12 h-12 text-red-300 mb-3" />
-                                  <div className="text-lg font-medium mb-1">No hay datos para mostrar</div>
-                                  <div className="text-sm">Los filtros aplicados no retornaron resultados</div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
+  <CardHeader className="bg-gradient-to-r from-red-100 to-orange-100">
+    <CardTitle className="text-red-800 flex items-center gap-2">
+      <AlertTriangle className="w-6 h-6" />
+      Estadísticas de Problemáticas por Junta Vecinal
+    </CardTitle>
+  </CardHeader>
+
+  <CardContent className="p-4">
+    {hasData ? (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* LISTA DE JUNTAS (MAESTRO) */}
+        <div className="lg:col-span-1">
+          <Card className="h-full border-red-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-red-800">
+                Juntas Vecinales
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 max-h-[380px] overflow-y-auto space-y-2">
+              {data.map((item) => (
+                <button
+                  key={item.Junta_Vecinal.id ?? item.Junta_Vecinal.nombre}
+                  onClick={() => setSelectedJunta(item)}
+                  className={`w-full flex items-center justify-between rounded-lg px-3 py-2 border text-left transition
+                    ${
+                      selectedJunta?.Junta_Vecinal?.nombre ===
+                      item.Junta_Vecinal.nombre
+                        ? "border-red-400 bg-red-50"
+                        : "border-red-100 hover:bg-red-50/70"
+                    }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-red-600" />
+                    <span className="text-xs sm:text-sm font-medium text-red-800 line-clamp-2">
+                      {item.Junta_Vecinal.nombre || "Sin nombre"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[11px] text-red-500 font-semibold">
+                      {item.Junta_Vecinal.pendientes ?? 0} pend.
+                    </span>
+                    <Badge
+                      className={`
+                        px-1.5 py-0 h-5 text-[10px]
+                        ${
+                          (item.Junta_Vecinal.urgentes || 0) >= 6
+                            ? "bg-red-100 text-red-800 border-red-300"
+                            : (item.Junta_Vecinal.urgentes || 0) >= 3
+                            ? "bg-orange-100 text-orange-800 border-orange-300"
+                            : "bg-yellow-100 text-yellow-800 border-yellow-300"
+                        }
+                      `}
+                    >
+                      {item.Junta_Vecinal.urgentes ?? 0} urg.
+                    </Badge>
+                  </div>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* DETALLE JUNTA (DETALLE) */}
+        <div className="lg:col-span-2">
+          {selectedJunta ? (
+            <Card className="border-red-200">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-red-600" />
+                    <div>
+                      <CardTitle className="text-base sm:text-lg text-red-800">
+                        {selectedJunta.Junta_Vecinal.nombre}
+                      </CardTitle>
+                      <p className="text-xs text-red-500">
+                        Detalle de problemáticas y categorías
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  {/* mini resumen total publicaciones */}
+                  <div className="text-right text-xs text-red-500">
+                    <span className="block font-semibold">
+                      {selectedJunta.Junta_Vecinal.total_publicaciones ?? 0} publ.
+                    </span>
+                    <span>
+                      {selectedJunta.Junta_Vecinal.pendientes ?? 0} pendientes
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {/* MÉTRICAS PRINCIPALES */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+                    <CardContent className="p-3 text-center">
+                      <div className="text-[11px] text-red-600">
+                        Total Pendientes
+                      </div>
+                      <div className="text-xl font-bold text-red-700">
+                        {selectedJunta.Junta_Vecinal.pendientes ?? 0}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                    <CardContent className="p-3 text-center">
+                      <div className="text-[11px] text-orange-600">
+                        Casos Urgentes
+                      </div>
+                      <div className="text-xl font-bold text-orange-700">
+                        {selectedJunta.Junta_Vecinal.urgentes ?? 0}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200">
+                    <CardContent className="p-3 text-center">
+                      <div className="text-[11px] text-pink-600">
+                        Tiempo Promedio
+                      </div>
+                      <div className="text-sm font-semibold text-pink-700">
+                        {selectedJunta.tiempo_promedio_pendiente || "N/A"}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+                    <CardContent className="p-3 text-center">
+                      <div className="text-[11px] text-yellow-700">
+                        Última Publicación
+                      </div>
+                      <div className="text-sm font-semibold text-yellow-800">
+                        {selectedJunta.ultima_publicacion
+                          ? formatearFecha(selectedJunta.ultima_publicacion)
+                          : "N/A"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* TABLA DE CATEGORÍAS DE ESTA JUNTA */}
+                <div className="border border-red-100 rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-red-50">
+                        <TableHead className="text-red-800">
+                          Categoría
+                        </TableHead>
+                        <TableHead className="text-right text-red-800">
+                          Cantidad
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {categorias.map((cat) => (
+                        <TableRow key={cat.id}>
+                          <TableCell className="text-sm">
+                            {cat.nombre}
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-semibold text-red-700">
+                            {selectedJunta[cat.nombre] ?? 0}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-dashed border-red-200 h-full flex items-center justify-center">
+              <p className="text-sm text-red-500">
+                Selecciona una junta vecinal para ver el detalle.
+              </p>
+            </Card>
+          )}
+        </div>
+      </div>
+    ) : (
+      <div className="h-32 flex items-center justify-center text-red-500">
+        No hay datos para mostrar.
+      </div>
+    )}
+  </CardContent>
+</Card>
               </CardContent>
             </Card>
           </div>

@@ -109,9 +109,9 @@ const MapaFrioSeccion = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [juntaEficiente, setJuntaEficiente] = useState(null)
   const [loadingJuntaEficiente, setLoadingJuntaEficiente] = useState(false)
-
+  const [selectedJuntaFrio, setSelectedJuntaFrio] = useState(null)
   const axiosPrivate = useAxiosPrivate()
-
+  console.log("RENDERIZANDO MAPA FRIO SECCION", categorias);
   // Función para obtener la junta más eficiente del backend
   const obtenerJuntaEficiente = useCallback(async () => {
     try {
@@ -487,7 +487,7 @@ const MapaFrioSeccion = ({
                               </DialogTitle>
                             </DialogHeader>
                             <div className="flex-1 relative overflow-y-auto">
-                              <MapaFrioComponente data={data} isModal={true} />
+                              <MapaFrioComponente data={data} isModal={true} categorias={categorias} />
                               <div
                                 className={`absolute top-0 right-0 h-full p-1 bg-background border-l border-blue-200 shadow-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[300px]" : "w-[40px]"
                                   }`}
@@ -548,7 +548,7 @@ const MapaFrioSeccion = ({
                           </div>
                         </DialogContent>
                       </Dialog>
-                    </div>
+                    </div> 
                   </CardHeader>
                   <CardContent className="p-0">
                     {isLoading ? (
@@ -559,7 +559,7 @@ const MapaFrioSeccion = ({
                         </div>
                       </div>
                     ) : (
-                      <MapaFrioComponente data={data} isModal={false} />
+                      <MapaFrioComponente data={data} isModal={false} categorias={categorias} />
                     )}
                   </CardContent>
                 </Card>
@@ -569,80 +569,164 @@ const MapaFrioSeccion = ({
                   <CardHeader className="bg-gradient-to-r from-blue-100 to-cyan-100">
                     <CardTitle className="text-blue-800 flex items-center gap-2">
                       <CheckCircle className="w-6 h-6" />
-                      Estadísticas de Resolución por Junta Vecinal
+                      Estadísticas de Resolución por Junta Vecinal (Mapa de Frío)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-blue-50">
-                            <TableHead className="text-blue-800 font-semibold">Junta Vecinal</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Asistencia Social</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Mantención de Calles</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Seguridad</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Áreas Verdes</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Total Resueltas</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Eficiencia</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Tiempo Promedio</TableHead>
-                            <TableHead className="text-blue-800 font-semibold">Última Resolución</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.map((item, index) => (
-                            <TableRow key={index} className="hover:bg-blue-50">
-                              <TableCell className="font-medium text-blue-900">
+
+                  <CardContent className="p-4">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                      {/* MAESTRO – LISTA DE JUNTAS */}
+                      <div className="lg:col-span-1">
+                        <Card className="h-full border-blue-200">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold text-blue-800">
+                              Juntas Vecinales
+                            </CardTitle>
+                          </CardHeader>
+
+                          <CardContent className="pt-0 max-h-[380px] overflow-y-auto space-y-2">
+
+                            {data.map((item) => (
+                              <button
+                                key={item.Junta_Vecinal.nombre}
+                                onClick={() => setSelectedJuntaFrio(item)}
+                                className={`w-full flex items-center justify-between rounded-lg px-3 py-2 border text-left transition
+                  ${selectedJuntaFrio?.Junta_Vecinal?.nombre ===
+                                    item.Junta_Vecinal.nombre
+                                    ? "border-blue-400 bg-blue-50"
+                                    : "border-blue-100 hover:bg-blue-50/70"
+                                  }`}
+                              >
                                 <div className="flex items-center gap-2">
                                   <MapPin className="w-4 h-4 text-blue-600" />
-                                  {item.Junta_Vecinal.nombre}
+                                  <span className="text-xs sm:text-sm font-medium text-blue-900 line-clamp-2">
+                                    {item.Junta_Vecinal.nombre}
+                                  </span>
                                 </div>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  {item["Asistencia Social"] || 0}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200">
-                                  {item["Mantención de Calles"] || 0}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                                  {item.Seguridad || 0}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
-                                  {item["Áreas verdes"] || 0}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center font-bold text-blue-700">
-                                {item.Junta_Vecinal?.total_resueltas || 0}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge
-                                  className={`${(item.Junta_Vecinal?.eficiencia || 0) >= 90
-                                    ? "bg-green-100 text-green-800 border-green-300"
-                                    : (item.Junta_Vecinal?.eficiencia || 0) >= 80
-                                      ? "bg-blue-100 text-blue-800 border-blue-300"
-                                      : "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                    }`}
-                                >
-                                  {item.Junta_Vecinal?.eficiencia || 0}%
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center text-blue-700">
-                                {item.tiempo_promedio_resolucion || "0 días"}
-                              </TableCell>
-                              <TableCell className="text-center text-blue-600">
-                                {formatearFecha(item.ultima_resolucion)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+
+                                <div className="flex flex-col items-end text-[11px] text-blue-700">
+                                  <span className="font-semibold">
+                                    {item.Junta_Vecinal.total_resueltas ?? 0} res.
+                                  </span>
+                                  <span className="text-blue-500">
+                                    {item.Junta_Vecinal.eficiencia ?? 0}%
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* DETALLE (FRÍO) */}
+                      <div className="lg:col-span-2">
+
+                        {selectedJuntaFrio ? (
+                          <Card className="border-blue-200">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-5 h-5 text-blue-600" />
+                                  <div>
+                                    <CardTitle className="text-base sm:text-lg text-blue-800">
+                                      {selectedJuntaFrio.Junta_Vecinal.nombre}
+                                    </CardTitle>
+                                    <p className="text-xs text-blue-500">
+                                      Análisis de resoluciones y eficiencia operativa
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="text-right text-xs text-blue-600">
+                                  <span className="block font-semibold">
+                                    {selectedJuntaFrio.Junta_Vecinal.total_resueltas ?? 0} resueltas
+                                  </span>
+                                </div>
+                              </div>
+                            </CardHeader>
+
+                            <CardContent className="space-y-4">
+
+                              {/* TARJETAS MÉTRICAS */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+                                <Card className="bg-blue-50 border-blue-200">
+                                  <CardContent className="p-3 text-center">
+                                    <div className="text-[11px] text-blue-600">Total Resueltas</div>
+                                    <div className="text-xl font-bold text-blue-800">
+                                      {selectedJuntaFrio.Junta_Vecinal.total_resueltas ?? 0}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="bg-cyan-50 border-cyan-200">
+                                  <CardContent className="p-3 text-center">
+                                    <div className="text-[11px] text-cyan-600">Eficiencia</div>
+                                    <div className="text-xl font-bold text-cyan-700">
+                                      {selectedJuntaFrio.Junta_Vecinal.eficiencia ?? 0}%
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="bg-indigo-50 border-indigo-200">
+                                  <CardContent className="p-3 text-center">
+                                    <div className="text-[11px] text-indigo-600">Tiempo Promedio</div>
+                                    <div className="text-sm font-semibold text-indigo-700">
+                                      {selectedJuntaFrio.tiempo_promedio_resolucion}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="bg-teal-50 border-teal-200">
+                                  <CardContent className="p-3 text-center">
+                                    <div className="text-[11px] text-teal-700">Última Resolución</div>
+                                    <div className="text-sm font-semibold text-teal-800">
+                                      {formatearFecha(selectedJuntaFrio.ultima_resolucion)}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                              </div>
+
+                              {/* TABLA DE CATEGORÍAS RESUELTAS */}
+                              <div className="border border-blue-100 rounded-lg overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="bg-blue-50">
+                                      <TableHead className="text-blue-800">Categoría</TableHead>
+                                      <TableHead className="text-right text-blue-800">Resueltas</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+
+                                  <TableBody>
+                                    {categorias.map((cat) => (
+                                      <TableRow key={cat.id}>
+                                        <TableCell className="text-sm">{cat.nombre}</TableCell>
+                                        <TableCell className="text-right text-sm font-semibold text-blue-700">
+                                          {selectedJuntaFrio[cat.nombre] ?? 0}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <Card className="border-dashed border-blue-200 h-full flex items-center justify-center">
+                            <p className="text-sm text-blue-500">
+                              Selecciona una junta vecinal para ver el detalle.
+                            </p>
+                          </Card>
+                        )}
+
+                      </div>
                     </div>
+
                   </CardContent>
                 </Card>
               </CardContent>
