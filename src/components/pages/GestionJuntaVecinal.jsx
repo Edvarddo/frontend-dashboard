@@ -627,12 +627,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   className="pl-10"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar datos
-                </Button>
-              </div>
             </div>
           </CardHeader>
 

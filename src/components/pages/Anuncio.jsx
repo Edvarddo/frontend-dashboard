@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Plus, ChevronDown, ChevronUp, Edit, Trash2, Calendar, Tag, Users } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, Edit, Trash2, Calendar, Tag, Users, Eye } from 'lucide-react'
 import TopBar from "../TopBar"
 import { useNavigate } from 'react-router-dom'
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
