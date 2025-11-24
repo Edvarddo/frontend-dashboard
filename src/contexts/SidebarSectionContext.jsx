@@ -13,6 +13,7 @@ import {
   Megaphone,
   PlusCircle,
   Users,
+  Tag,
 } from "lucide-react";
 const SidebarSectionContext = createContext();
 
@@ -20,7 +21,7 @@ export const SidebarSectionProvider = ({ children }) => {
 
   const { rol } = useAuth()
 
-   const allSections = [
+const allSections = [
   // --------------------------
   // 1. INICIO
   // --------------------------
@@ -62,10 +63,29 @@ export const SidebarSectionProvider = ({ children }) => {
         link: "/respuestas-municipales",
         icon: <FileText className="w-4 h-4" />,
       },
+
+      // 🔥 GESTIÓN DE DATOS (HUB + NIETOS)
       {
         title: "Gestión de Datos",
-        link: "/gestion-datos",
         icon: <FileText className="w-4 h-4" />,
+        link: "/gestion-datos",        // → HUB
+        children: [
+          {
+            title: "Categorías",
+            link: "/gestion-datos/categorias",
+            icon: <Tag className="w-4 h-4" />,
+          },
+          {
+            title: "Departamentos",
+            link: "/gestion-datos/departamentos",
+            icon: <Building2 className="w-4 h-4" />,
+          },
+          {
+            title: "Juntas Vecinales",
+            link: "/gestion-datos/juntas-vecinales",
+            icon: <Users className="w-4 h-4" />,
+          },
+        ],
       },
     ],
   },
@@ -105,16 +125,23 @@ export const SidebarSectionProvider = ({ children }) => {
   {
     title: "Administración",
     icon: <Users className="w-5 h-5" />,
+    isAdminOnly: true,
     children: [
       {
         title: "Cuentas de Usuario",
         link: "/cuentas-usuario",
         icon: <Users className="w-4 h-4" />,
       },
+      {
+        title: "Tabla de Auditoría",
+        link: "/auditoria",
+        icon: <FileText className="w-4 h-4" />,
+      },
     ],
-    isAdminOnly: true,
   },
-];
+]
+
+
 
   const sections = useMemo(() => {
     return allSections.filter(section => {
