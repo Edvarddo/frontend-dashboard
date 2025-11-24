@@ -23,6 +23,7 @@ import {
   ZoomInIcon,
   PlayIcon,
   FileSpreadsheetIcon,
+  StarIcon,
 } from "lucide-react"
 import { format } from "date-fns"
 import EditMunicipalResponseModal from "../EditMunicipalResponseModal"
@@ -111,6 +112,41 @@ const getFileTypeColor = (extension) => {
   }
   return "bg-gray-100 text-gray-800 border-gray-300"
 }
+
+
+const RatingDisplay = ({ puntuacion }) => {
+  // Si la puntuación es 0, mostramos el texto de estado
+  if (!puntuacion || puntuacion === 0) {
+    return (
+      <div className="flex items-center gap-2 mt-2">
+        <span className="text-xs font-medium text-gray-500 italic flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+          <StarIcon className="w-3 h-3 text-gray-400" />
+          Sin retroalimentación del vecino
+        </span>
+      </div>
+    );
+  }
+
+  // Si hay puntuación (1-5), mostramos las estrellas
+  return (
+    <div className="flex items-center gap-1 mt-2">
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, index) => (
+          <StarIcon
+            key={index}
+            className={`w-4 h-4 ${index < puntuacion
+              ? "text-yellow-400 fill-yellow-400" // Estrella llena
+              : "text-gray-300"                   // Estrella vacía
+              }`}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-gray-600 font-medium ml-1">
+        ({puntuacion}/5)
+      </span>
+    </div>
+  );
+};
 
 
 // Componente para mostrar un archivo individual
@@ -383,6 +419,10 @@ export function MunicipalResponsesList({ responses, loading, onEditResponse, onD
                     >
                       {response.situacion_posterior}
                     </Badge>
+                  </div>
+
+                  <div className="mb-2">
+                    <RatingDisplay puntuacion={response.puntuacion} />
                   </div>
 
                   <div>

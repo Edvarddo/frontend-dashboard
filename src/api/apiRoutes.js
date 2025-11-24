@@ -64,6 +64,7 @@ export const API_ROUTES = {
   JUNTAS_VECINALES: {
     ROOT: "juntas-vecinales/",
     DETAIL: (id) => `juntas-vecinales/${id}/`,
+    PAGINATED: "juntas-vecinales-paginated/",
   },
 
   // ----- EVIDENCIAS -----

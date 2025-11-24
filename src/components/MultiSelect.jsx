@@ -1,17 +1,3 @@
-// import { useState } from "react"
-// import { addDays, format } from "date-fns"
-// import { Calendar as CalendarIcon } from "lucide-react"
-// // import { DateRange } from "react-day-picker"
-// import { es } from 'date-fns/locale'
-// import { cn } from "@/lib/utils"
-// import { Button } from "@/components/ui/button"
-// import { Calendar } from "@/components/ui/calendar"
-// import {
-//   Popover,
-//   PopoverContent,
-//   PopoverTrigger,
-// } from "@/components/ui/popover"
-// MULTI SELECTOR
 import { cva } from "class-variance-authority";
 import {
   CheckIcon,
@@ -65,7 +51,7 @@ const MultiSelect = forwardRef(
   (
     {
       title,
-      options ,
+      options,
       onValueChange,
       variant,
       defaultValue,
@@ -117,9 +103,7 @@ const MultiSelect = forwardRef(
     };
 
     const handleClear = () => {
-      // onValueChange([]);
-      // console.log(defaultValue)
-      if (defaultValue) return;
+      onValueChange([]);
       setSelectedValues([]);
     };
 
@@ -320,11 +304,13 @@ const MultiSelect = forwardRef(
             onClick={() => setIsAnimating(!isAnimating)}
           />
         )}
-        
+
       </Popover>
     );
   }
-);
+)
 
+
+MultiSelect.displayName = "MultiSelect";
 
 export default MultiSelect

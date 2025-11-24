@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 })
 
-const MapaFrioComponente = ({ data, isModal = false, categorias}) => {
+const MapaFrioComponente = ({ data, isModal = false, categorias }) => {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const heatLayerRef = useRef(null)
@@ -50,6 +50,24 @@ const MapaFrioComponente = ({ data, isModal = false, categorias}) => {
       mapInstanceRef.current.removeLayer(heatLayerRef.current)
     }
 
+    const generarEstrellasHTML = (puntuacion) => {
+      const stars = [];
+      const score = Math.round(puntuacion || 0);
+
+      for (let i = 1; i <= 5; i++) {
+        const filled = i <= score;
+        // SVG de estrella (Lucide icon style)
+        const colorClass = filled ? "text-yellow-400 fill-yellow-400" : "text-gray-300";
+        const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="${filled ? '#facc15' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star ${colorClass}">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      `;
+        stars.push(svg);
+      }
+      return `<div class="flex gap-0.5">${stars.join('')}</div>`;
+    };
+
     // Crear puntos para el mapa de frío (colores fríos)
     const points = data.map((item) => [
       item.Junta_Vecinal.latitud,
@@ -84,6 +102,11 @@ const MapaFrioComponente = ({ data, isModal = false, categorias}) => {
       const eficiencia = item.Junta_Vecinal?.eficiencia || 0
       const tiempoProm = item.tiempo_promedio_resolucion || "0 días"
 
+      // Nuevos datos de satisfacción
+      const calificacion = item.Junta_Vecinal?.calificacion_promedio || 0
+      const totalValoraciones = item.Junta_Vecinal?.total_valoraciones || 0
+      const estrellasHTML = generarEstrellasHTML(calificacion);
+
       const nivelDesempeno =
         eficiencia >= 90 ? "Excelente" :
           eficiencia >= 75 ? "Bueno" :
@@ -98,7 +121,7 @@ const MapaFrioComponente = ({ data, isModal = false, categorias}) => {
             : eficiencia >= 50
               ? "bg-amber-100 text-amber-700 border-amber-200"
               : "bg-red-100 text-red-700 border-red-200"
-const tooltipContent = `
+      const tooltipContent = `
   <div class="coldmap-tooltip relative z-[9999]">
     <div class="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl border border-blue-200 px-4 py-3 min-w-[260px]">
 
@@ -110,6 +133,17 @@ const tooltipContent = `
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${nivelClass}">
           ● Desempeño ${nivelDesempeno}
         </span>
+      </div>
+
+      <div class="bg-yellow-50/50 rounded-lg p-2 mb-2 border border-yellow-100">
+               <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-semibold text-yellow-700 uppercase">Satisfacción Vecinal</span>
+                  <span class="text-[10px] text-yellow-600 font-bold">${calificacion.toFixed(1)} / 5.0</span>
+               </div>
+               <div class="flex justify-between items-center mt-1">
+                  ${estrellasHTML}
+                  <span class="text-[9px] text-gray-500">(${totalValoraciones} votos)</span>
+               </div>
       </div>
 
       <!-- MÉTRICAS PRINCIPALES -->
@@ -137,9 +171,9 @@ const tooltipContent = `
         </p>
         <div class="space-y-1 text-[11px]">
           ${categorias?.map(cat => {
-            const cantidad = item[cat.nombre] || 0
-            const isZero = cantidad === 0
-            return `
+        const cantidad = item[cat.nombre] || 0
+        const isZero = cantidad === 0
+        return `
               <div class="flex items-center justify-between gap-2">
                 <span class="flex items-center gap-1 text-blue-700 ${isZero ? "opacity-50" : ""}">
                   <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"></span>
@@ -150,7 +184,7 @@ const tooltipContent = `
                 </span>
               </div>
             `
-          }).join("")}
+      }).join("")}
         </div>
       </div>
 
@@ -161,11 +195,10 @@ const tooltipContent = `
           <span>Última resolución</span>
         </span>
         <span class="font-semibold text-blue-700">
-          ${
-            item.ultima_resolucion
-              ? new Date(item.ultima_resolucion).toLocaleDateString("es-AR")
-              : "Sin fecha"
-          }
+          ${item.ultima_resolucion
+          ? new Date(item.ultima_resolucion).toLocaleDateString("es-AR")
+          : "Sin fecha"
+        }
         </span>
       </div>
     </div>

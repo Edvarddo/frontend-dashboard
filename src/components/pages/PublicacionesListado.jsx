@@ -8,8 +8,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { set } from "date-fns"
 import { CalendarIcon, ArrowLeftIcon, FilterIcon, DownloadIcon, HomeIcon, FileTextIcon, BellIcon, BarChartIcon } from "lucide-react"
-import DatePicker from "../DatePicker"
-import MultiSelect from "../MultiSelect"
 import axios from "axios"
 import TopBar from "../TopBar"
 import { BASE_URL } from '../../api/axios'
@@ -17,7 +15,10 @@ import useAxiosPrivate from '../../hooks/useAxiosPrivate'
 // IMPORTEMOS EL ARCHIVO APIROUTES DE LA CARPETA API
 import { API_ROUTES } from '../../api/apiRoutes'
 
-import Filters from "../Filters"
+import useFilters from '../../hooks/useFilters'
+import FilterContainer from '../filters/FilterContainer'
+import FilterMultiSelect from '../filters/FilterMultiSelect'
+import FilterDatePicker from '../filters/FilterDatePicker'
 
 export default function PublicacionesListado({
   isOpened,
@@ -27,7 +28,6 @@ export default function PublicacionesListado({
   // PARAMETROS URL
   const [currentPage, setCurrentPage] = useState(1)
   const [url, setUrl] = useState(null)
-  const [filtros, setFiltros] = useState(null)
   const [publicacionesPorPagina, setPublicacionesPorPagina] = useState(5)
 
   // OPCIONES SELECT
@@ -35,40 +35,23 @@ export default function PublicacionesListado({
   const [juntasVecinales, setJuntasVecinales] = useState([])
   const [departamentos, setDepartamentos] = useState([])
   const [situaciones, setSituaciones] = useState([])
-  // const situaciones = [
-  //   "Recibido",
-  //   "En curso",
-  //   "Resuelto"
-  // ]
-  // const situaciones = [
-  //   { nombre: "Recibido", value: "recibido" },
-  //   { nombre: "En curso", value: "en_curso" },
-  //   { nombre: "Resuelto", value: "resuelto" }
-  // ]
 
-  // VALORES SELECCIONADOS FILTROS
-  const [selectedCategoria, setSelectedCategoria] = useState(null)
-  const [selectedSituacion, setSelectedSituacion] = useState(null)
-  const [selectedJunta, setSelectedJunta] = useState(null)
-  const [selecteDepto, setSelectedDepto] = useState(null)
-  const [dateRange, setDateRange] = useState({ from: null, to: null })
-  const [clearValues, setClearValues] = useState(false)
   const [isDownloadAvailable, setIsDownloadAvailable] = useState(false)
-  // object filtros
-  const [filtrosObj, setFiltrosObj] = useState({
-    categoria: [],
-    junta: [],
-    situacion: [],
-    departamentos: [],
-    iniDate: null,
-    endDate: null
-  })
   const [loading, setLoading] = useState(false)
   // VALIDACIÓN
   const [isValid, setIsValid] = useState(false)
   const [filterError, setFilterError] = useState(null)
 
-  
+  // Use the new hook
+  const { filters, setFilter, resetFilters, getQueryParams } = useFilters({
+    categoria: [],
+    junta_vecinal: [],
+    situacion: [],
+    departamento: [],
+    fecha_publicacion: { from: null, to: null }
+  });
+
+
   const fetchURLS = async (urls) => {
     try {
       const [categorias, juntasVecinales, departamentos, osituaciones] = await Promise.all(
@@ -90,7 +73,7 @@ export default function PublicacionesListado({
     }
   }
   useEffect(() => {
-  // USEMOS EL ARCHIVO APIROUTES DE LA CARPETA API
+    // USEMOS EL ARCHIVO APIROUTES DE LA CARPETA API
     fetchURLS([
       API_ROUTES.CATEGORIAS.ROOT,
       API_ROUTES.JUNTAS_VECINALES.ROOT,
@@ -100,28 +83,16 @@ export default function PublicacionesListado({
     console.log(BASE_URL, axiosPrivate)
 
   }, [])
-  // useEffect(() => {
-  //   const category = selectedCategoria ? "categoria=" + selectedCategoria + "&" : "",
-  //     junta = selectedJunta ? "junta_vecinal=" + selectedJunta + "&" : "",
-  //     situation = selectedSituacion ? "situacion=" + selectedSituacion + "&" : "",
-  //     departamento = selecteDepto ? "departamento=" + selecteDepto + "&" : "",
-  //     iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
-  //     endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
-  //     limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina + "&" : ""
-  //   const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
-  //   setFiltros(filtros)
-  // }, [selectedCategoria, selectedJunta, selectedSituacion, dateRange, publicacionesPorPagina, selecteDepto])
 
-  useEffect(() => {
-
-  }, [filtrosObj])
   const handleOpenSidebar = () => {
     setIsOpened(!isOpened)
   }
+
   const handleDownload = async () => {
     try {
       const token = localStorage.getItem("authToken"); // Obtén el token desde el almacenamiento local
-      const response = await axios.get(`${API_ROUTES.PUBLICACIONES.EXPORT_TO_EXCEL}?${filtros}`, {
+      const queryParams = getQueryParams();
+      const response = await axios.get(`${API_ROUTES.PUBLICACIONES.EXPORT_TO_EXCEL}?${queryParams}`, {
         headers: {
           Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
         },
@@ -146,88 +117,73 @@ export default function PublicacionesListado({
       console.error("Error al descargar el archivo:", error);
     }
   };
-  const getQueryParams = () => {
-    // crear los parametros de consulta desde el objeto filtrosObj
-    const categoriesParams = filtrosObj.categoria.join(",")
-    const juntasParams = filtrosObj.junta.join(",")
-    const situacionesParams = filtrosObj.situacion.join(",")
-    const departamentosParams = filtrosObj.departamentos.join(",")
-
-
-
-    const category = filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : "",
-      junta = filtrosObj.junta.length > 0 ? "junta_vecinal=" + juntasParams + "&" : "",
-      situation = filtrosObj.situacion.length > 0 ? "situacion=" + situacionesParams + "&" : "",
-      departamento = filtrosObj.departamentos.length > 0 ? "departamento=" + departamentosParams + "&" : "",
-      iniDate = dateRange?.from ? "fecha_publicacion_after=" + format(dateRange?.from, "yyyy-MM-dd") + "&" : "",
-      endDate = dateRange?.to ? "fecha_publicacion_before=" + format(dateRange?.to, "yyyy-MM-dd") + "&" : "",
-      limitPerPage = publicacionesPorPagina ? "pagesize=" + publicacionesPorPagina : ""
-
-
-    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}${limitPerPage}`
-    // borrar ultimo & si existe
-    return filtros
-  }
 
   const aplicarFiltros = () => {
+    const queryParams = getQueryParams();
+    const limitPerPage = publicacionesPorPagina ? `&pagesize=${publicacionesPorPagina}` : "";
+    let url = `${API_ROUTES.PUBLICACIONES.ROOT}?${queryParams}${limitPerPage}`;
 
-    const filtros = getQueryParams()
-    // return;
-    let url = `${API_ROUTES.PUBLICACIONES.ROOT}?${filtros}`
-    console.log(url)
-
-    console.log(filtros)
-    console.log(filtrosObj.categoria.length)
-
-    setUrl(url)
-    setFiltros(filtros)
-    setCurrentPage(1)
+    console.log(url);
+    setUrl(url);
+    setCurrentPage(1);
   }
-  const limpiarFiltros = () => {
-    setSelectedCategoria(null)
-    setSelectedSituacion(null)
-    setSelectedJunta(null)
-    setSelectedDepto(null)
-    setDateRange({ from: null, to: null })
-    setUrl(null)
-    setFiltrosObj({
-      categoria: [],
-      junta: [],
-      situacion: [],
-      departamentos: [],
-      iniDate: null,
-      endDate: null
-    })
-    setClearValues(!clearValues)
 
+  const limpiarFiltrosHandler = () => {
+    resetFilters();
+    setUrl(null);
   }
 
   return (
-
-
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Listado de publicaciones" />
       <main className=" p-4  bg-gray-100 ">
         <div className="m-4">
-          <Filters
-            clearValues={clearValues}
-            categorias={categorias}
-            situaciones={situaciones}
-            juntasVecinales={juntasVecinales}
-            departamentos={departamentos}
-            setFiltrosObj={setFiltrosObj}
-            filtrosObj={filtrosObj}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            setIsValid={setIsValid}
-            isValid={isValid}
-            loading={loading}
-            handleDownload={handleDownload}
-            limpiarFiltros={limpiarFiltros}
-            aplicarFiltros={aplicarFiltros}
-            showDownload={true}
-            isDownloadAvailable={isDownloadAvailable}
-          />
+          <FilterContainer>
+            <FilterMultiSelect
+              label="Categoría"
+              options={categorias}
+              value={filters.categoria}
+              onChange={(val) => setFilter('categoria', val)}
+            />
+            <FilterMultiSelect
+              label="Estado de la publicación"
+              options={situaciones}
+              value={filters.situacion}
+              onChange={(val) => setFilter('situacion', val)}
+            />
+            <FilterDatePicker
+              label="Rango de fechas"
+              dateRange={filters.fecha_publicacion}
+              setDateRange={(val) => setFilter('fecha_publicacion', val)}
+              setIsValid={setIsValid}
+            />
+            <FilterMultiSelect
+              label="Junta vecinal"
+              options={juntasVecinales}
+              value={filters.junta_vecinal}
+              onChange={(val) => setFilter('junta_vecinal', val)}
+            />
+            <FilterMultiSelect
+              label="Departamento"
+              options={departamentos}
+              value={filters.departamento}
+              onChange={(val) => setFilter('departamento', val)}
+            />
+          </FilterContainer>
+
+          <div className="flex justify-between flex-wrap mb-6 btn-section p-1 bg-white rounded-b-lg shadow-md -mt-2 px-6 pb-6">
+            <Button disabled={loading || !isDownloadAvailable} variant="outline" onClick={handleDownload} className="mb-3 bg-blue-500 hover:bg-blue-600 filter-btn w-full md:w-[unset]">
+              <span className="text-white flex justify-items-center justify-center">
+                <Download className="mr-2 h-4 w-4" />
+                Descargar datos
+              </span>
+            </Button>
+
+            <div className="filter-btn-cont w-full md:w-[unset]">
+              <Button onClick={limpiarFiltrosHandler} className="w-full mb-2 mr-2 md:w-[unset] filter-btn" variant="outline">Limpiar filtros</Button>
+              <Button disabled={isValid} onClick={aplicarFiltros} className="w-full md:w-[unset] bg-green-500 hover:bg-green-600 text-white filter-btn">Aplicar filtros</Button>
+            </div>
+          </div>
 
         </div>
         <div className="bg-white m-4  p-6 rounded-lg shadow-md">
@@ -248,9 +204,5 @@ export default function PublicacionesListado({
       </main>
 
     </>
-
-
-
-
   )
 }

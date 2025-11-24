@@ -23,10 +23,39 @@ import {
   Calendar,
   MapPin,
   AlertTriangle,
+  Star,
 } from "lucide-react"
 import MapaFrioComponente from "./MapaFrioComponente"
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
 import { API_ROUTES } from "@/api/apiRoutes"
+
+
+// --- COMPONENTE DE PUNTUACIÓN (ESTRELLAS) ---
+const RatingDisplay = ({ puntuacion, totalVotos }) => {
+  if (!puntuacion || puntuacion === 0) {
+    return <span className="text-[10px] text-gray-400 italic">Sin votos</span>;
+  }
+
+  return (
+    <div className="flex flex-col items-end">
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, index) => (
+          <Star
+            key={index}
+            className={`w-3 h-3 ${index < Math.round(puntuacion)
+              ? "text-yellow-400 fill-yellow-400"
+              : "text-gray-300"
+              }`}
+          />
+        ))}
+      </div>
+      <span className="text-[10px] text-gray-500 font-medium">
+        {puntuacion.toFixed(1)} ({totalVotos})
+      </span>
+    </div>
+  );
+};
+
 // Error Boundary para manejar errores sin romper el componente
 class MapaFrioErrorBoundary extends Component {
   constructor(props) {
@@ -186,6 +215,9 @@ const MapaFrioSeccion = ({
           total_resueltas: item.Junta_Vecinal?.total_resueltas ?? 0,
           eficiencia: item.Junta_Vecinal?.eficiencia ?? 0,
           intensidad_frio: item.Junta_Vecinal?.intensidad_frio ?? (item.Junta_Vecinal?.eficiencia || 0) / 100,
+          // Mapear la calificación promedio y el total de valoraciones
+          calificacion_promedio: item.Junta_Vecinal?.calificacion_promedio ?? 0,
+          total_valoraciones: item.Junta_Vecinal?.total_valoraciones ?? 0,
         },
         // Usar valores del backend o valores por defecto
         tiempo_promedio_resolucion: item.tiempo_promedio_resolucion || "0 días",
@@ -548,7 +580,7 @@ const MapaFrioSeccion = ({
                           </div>
                         </DialogContent>
                       </Dialog>
-                    </div> 
+                    </div>
                   </CardHeader>
                   <CardContent className="p-0">
                     {isLoading ? (
@@ -581,42 +613,49 @@ const MapaFrioSeccion = ({
                       <div className="lg:col-span-1">
                         <Card className="h-full border-blue-200">
                           <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-semibold text-blue-800">
-                              Juntas Vecinales
-                            </CardTitle>
+                            <div className="flex justify-between items-center">
+                              <CardTitle className="text-sm font-semibold text-blue-800">
+                                Juntas Vecinales
+                              </CardTitle>
+                              <span className="text-xs text-gray-500">Satisfacción</span>
+                            </div>
                           </CardHeader>
 
-                          <CardContent className="pt-0 max-h-[380px] overflow-y-auto space-y-2">
-
+                          <CardContent className="pt-0 max-h-[450px] overflow-y-auto space-y-2 px-2">
                             {data.map((item) => (
                               <button
                                 key={item.Junta_Vecinal.nombre}
                                 onClick={() => setSelectedJuntaFrio(item)}
-                                className={`w-full flex items-center justify-between rounded-lg px-3 py-2 border text-left transition
-                  ${selectedJuntaFrio?.Junta_Vecinal?.nombre ===
-                                    item.Junta_Vecinal.nombre
-                                    ? "border-blue-400 bg-blue-50"
-                                    : "border-blue-100 hover:bg-blue-50/70"
+                                className={`w-full flex items-center justify-between rounded-lg px-3 py-3 border text-left transition-all
+            ${selectedJuntaFrio?.Junta_Vecinal?.nombre === item.Junta_Vecinal.nombre
+                                    ? "border-blue-400 bg-blue-50 shadow-sm ring-1 ring-blue-200"
+                                    : "border-blue-100 hover:bg-blue-50/50 hover:border-blue-300"
                                   }`}
                               >
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-blue-600" />
-                                  <span className="text-xs sm:text-sm font-medium text-blue-900 line-clamp-2">
-                                    {item.Junta_Vecinal.nombre}
-                                  </span>
+                                {/* Izquierda: Nombre e Info Básica */}
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className={`p-2 rounded-full ${selectedJuntaFrio === item ? 'bg-blue-200' : 'bg-blue-100'}`}>
+                                    <MapPin className="w-4 h-4 text-blue-600" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="text-sm font-semibold text-blue-900 block truncate">
+                                      {item.Junta_Vecinal.nombre}
+                                    </span>
+                                    <span className="text-xs text-blue-600">
+                                      {item.Junta_Vecinal.total_resueltas} resueltas
+                                    </span>
+                                  </div>
                                 </div>
 
-                                <div className="flex flex-col items-end text-[11px] text-blue-700">
-                                  <span className="font-semibold">
-                                    {item.Junta_Vecinal.total_resueltas ?? 0} res.
-                                  </span>
-                                  <span className="text-blue-500">
-                                    {item.Junta_Vecinal.eficiencia ?? 0}%
-                                  </span>
+                                {/* Derecha: Componente de Estrellas */}
+                                <div className="pl-2 flex-shrink-0">
+                                  <RatingDisplay
+                                    puntuacion={item.Junta_Vecinal.calificacion_promedio}
+                                    totalVotos={item.Junta_Vecinal.total_valoraciones}
+                                  />
                                 </div>
                               </button>
                             ))}
-
                           </CardContent>
                         </Card>
                       </div>
