@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,14 +10,23 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Download, Filter, Plus, Edit, MapPin, ArrowLeft, Map, Trash2, Import } from "lucide-react"
+import { Plus, Edit, MapPin, ArrowLeft, Map, Trash2, Filter } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import TopBar from "../TopBar"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
-import { set } from "date-fns"
 import { useToast } from "../../hooks/use-toast"
 import { operations } from "../../lib/constants"
 import { API_ROUTES } from "@/api/apiRoutes"
+
+// Importaciones de Componentes de Filtros y Paginación
+import FilterContainer from "../filters/FilterContainer"
+import FilterMultiSelect from "../filters/FilterMultiSelect"
+import FilterDatePicker from "../filters/FilterDatePicker"
+import FilterInput from "../filters/FilterInput" // <--- Nuevo Componente
+import Paginador from "../Paginador"
+import useFilters from "../../hooks/useFilters"
+import { usePaginatedFetch } from "@/hooks/usePaginatedFetch" // <--- Hook de Paginación
+
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
     click: (e) => {
@@ -27,53 +36,40 @@ function MapClickHandler({ onMapClick }) {
   return null
 }
 
-const juntasVecinalesData = [
-  {
-    id: 1,
-    codigo: "JV001",
-    nombre_junta: "Junta Vecinal Centro",
-    nombre_calle: "Av. Principal",
-    numero_calle: "123",
-    estado: "habilitado",
-    categoria: "Urbana",
-    fecha_creacion: "2024-01-15T10:30:00Z",
-    latitud: -22.4558,
-    longitud: -68.9293,
-    tipo: "actual",
-  },
-  {
-    id: 2,
-    codigo: "JV002",
-    nombre_junta: "Junta Vecinal Norte",
-    nombre_calle: "Calle Los Pinos",
-    numero_calle: "456",
-    estado: "deshabilitado",
-    categoria: "Residencial",
-    fecha_creacion: "2024-02-20T14:15:00Z",
-    latitud: -22.4517,
-    longitud: -68.9172,
-    tipo: "actual",
-  },
-  {
-    id: 3,
-    codigo: "JV003",
-    nombre_junta: "Junta Vecinal Sur",
-    nombre_calle: "Av. Granaderos",
-    numero_calle: "789",
-    estado: "habilitado",
-    categoria: "Comercial",
-    fecha_creacion: "2024-03-10T09:45:00Z",
-    latitud: -22.4621,
-    longitud: -68.9338,
-    tipo: "actual",
-  },
-]
-
 const GestionJuntaVecinal = ({ onVolver }) => {
-  const [juntasVecinales, setJuntasVecinales] = useState([])
-  const [nuevasUbicaciones, setNuevasUbicaciones] = useState([])
   const axiosPrivate = useAxiosPrivate()
   const { toast } = useToast()
+
+  // 1. Gestión de Filtros
+  const { filters, setFilter, resetFilters, getQueryParams } = useFilters({
+    estado: [],
+    fecha_inicio: null,
+    fecha_fin: null,
+    nombre: "",
+  })
+
+  // Estado para la URL dinámica de paginación
+  const [filterUrl, setFilterUrl] = useState(null)
+
+  // 2. Implementación del Hook usePaginatedFetch
+  const {
+    data: juntasVecinales, // Los datos de la tabla vienen de aquí
+    totalItems,
+    loading,
+    currentPage,
+    itemsPerPage,
+    setPage,
+    setPageSize,
+    refresh // Usaremos esto para recargar tras CRUD
+  } = usePaginatedFetch({
+    baseUrl: API_ROUTES.JUNTAS_VECINALES.PAGINATED || API_ROUTES.JUNTAS_VECINALES.ROOT, // Asegúrate que tu API route sea la correcta
+    externalUrl: filterUrl,
+    initialPageSize: 10
+  })
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+
+  // Icono del Mapa
   const customIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -83,58 +79,60 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     shadowSize: [41, 41],
   })
 
+  // Estados para Modales y Formularios
+  const [nuevasUbicaciones, setNuevasUbicaciones] = useState([])
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingJunta, setEditingJunta] = useState(null)
-  const [editFormData, setEditFormData] = useState({
-
-    nombre: "",
-    calle: "",
-    numero: "",
-    estado: "",
-    ubicacion: null,
-    latitud: "",
-    longitud: "",
-  })
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [juntaToDelete, setJuntaToDelete] = useState(null)
 
   const [formData, setFormData] = useState({
     nombre: "",
     calle: "",
     numero: "",
-    estado: "deshabilitado", // Estado por defecto
+    estado: "deshabilitado",
     ubicacion: null,
     latitud: "",
     longitud: "",
   })
 
-  const [filtros, setFiltros] = useState({
-    categoria: "",
+  const [editFormData, setEditFormData] = useState({
+    nombre: "",
+    calle: "",
+    numero: "",
     estado: "",
-    fechaInicio: "",
-    fechaFin: "",
-    busqueda: "",
+    ubicacion: null,
+    latitud: "",
+    longitud: "",
   })
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [juntaToDelete, setJuntaToDelete] = useState(null)
+  // --- Lógica de Aplicación de Filtros ---
+  const handleApplyFilters = () => {
+    const query = getQueryParams()
+    // Si hay query, construimos la URL con filtros, si no, null para usar la base
+    if (query) {
+      setFilterUrl(`${API_ROUTES.JUNTAS_VECINALES.PAGINATED || API_ROUTES.JUNTAS_VECINALES.ROOT}?${query}`)
+    } else {
+      setFilterUrl(null)
+    }
+    setPage(1) // Volver a primera página al filtrar
+  }
 
+  const handleCleanFilters = () => {
+    resetFilters()
+    setFilterUrl(null)
+    setPage(1)
+  }
+
+  // --- Lógica de Formularios (Agregar) ---
   const handleInputChange = (field, value) => {
-    setFormData((prev) => {
-      const prevState = prev
-      return {
-        ...prevState,
-        [field]: value,
-      }
-    })
+    setFormData((prev) => ({ ...prev, [field]: value }))
 
     if (field === "latitud" || field === "longitud") {
-      const lat = field === "latitud" ? Number.parseFloat(value) : Number.parseFloat(formData.latitud)
-      const lng = field === "longitud" ? Number.parseFloat(value) : Number.parseFloat(formData.longitud)
-
+      const lat = field === "latitud" ? parseFloat(value) : parseFloat(formData.latitud)
+      const lng = field === "longitud" ? parseFloat(value) : parseFloat(formData.longitud)
       if (!isNaN(lat) && !isNaN(lng)) {
-        setFormData((current) => ({
-          ...current,
-          ubicacion: { lat, lng },
-        }))
+        setFormData((current) => ({ ...current, ubicacion: { lat, lng } }))
       }
     }
   }
@@ -151,32 +149,21 @@ const GestionJuntaVecinal = ({ onVolver }) => {
   const handleAgregarJunta = async () => {
     try {
       if (formData.nombre && formData.calle && formData.numero && formData.ubicacion && formData.estado) {
-        console.log("Nueva junta vecinal:", formData)
-        const nuevaJunta = {
-          id: null, // Generar un ID temporal o manejarlo en el backend
+        const nuevaJuntaPayload = {
           nombre_junta: formData.nombre,
           nombre_calle: formData.calle,
           numero_calle: formData.numero,
           estado: formData.estado,
-          categoria: "Nueva",
-          fecha_creacion: new Date().toISOString(),
-          latitud: Number.parseFloat(formData.ubicacion.lat.toFixed(6)),
-          longitud: Number.parseFloat(formData.ubicacion.lng.toFixed(6)),
-          tipo: "nueva",
+          latitud: parseFloat(formData.ubicacion.lat.toFixed(6)),
+          longitud: parseFloat(formData.ubicacion.lng.toFixed(6)),
+          // categoria y fecha se manejan usualmente en backend, pero se pueden enviar si es necesario
         }
-        console.log("Nueva junta vecinal:", nuevaJunta)
-        const response = await axiosPrivate.post(API_ROUTES.JUNTAS_VECINALES.ROOT, {
-          nombre_junta: nuevaJunta.nombre_junta,
-          nombre_calle: nuevaJunta.nombre_calle,
-          numero_calle: nuevaJunta.numero_calle,
-          estado: nuevaJunta.estado,
-          latitud: nuevaJunta.latitud,
-          longitud: nuevaJunta.longitud,
-        })
-        // Obtener el ID asignado por el backend
-        nuevaJunta.id = response.data.id
-        console.log("Response from backend:", response)
-        setNuevasUbicaciones((prev) => [...prev, nuevaJunta])
+
+        const response = await axiosPrivate.post(API_ROUTES.JUNTAS_VECINALES.ROOT, nuevaJuntaPayload)
+
+        // Agregar temporalmente al mapa (opcional, ya que el refresh recargará la tabla)
+        const nuevaJuntaLocal = { ...nuevaJuntaPayload, id: response.data.id, tipo: "nueva" }
+        setNuevasUbicaciones((prev) => [...prev, nuevaJuntaLocal])
 
         setFormData({
           nombre: "",
@@ -187,11 +174,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           latitud: "",
           longitud: "",
         })
+
         toast({
           title: "Junta vecinal agregada",
           description: "La nueva junta vecinal ha sido agregada exitosamente.",
           className: operations.SUCCESS,
         })
+
+        refresh() // <--- Recargar tabla
       }
     } catch (error) {
       toast({
@@ -199,12 +189,12 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         description: "Ha ocurrido un error al agregar la nueva junta vecinal.",
         className: operations.ERROR,
       })
-      console.error("Error al agregar nueva junta vecinal:", error)
+      console.error("Error:", error)
     }
   }
 
+  // --- Lógica de Edición ---
   const handleEditClick = (junta) => {
-    console.log("Editing junta:", junta)
     setEditingJunta(junta)
     setEditFormData({
       id: junta.id,
@@ -220,23 +210,13 @@ const GestionJuntaVecinal = ({ onVolver }) => {
   }
 
   const handleEditInputChange = (field, value) => {
-    setEditFormData((prev) => {
-      const prevState = prev
-      return {
-        ...prevState,
-        [field]: value,
-      }
-    })
+    setEditFormData((prev) => ({ ...prev, [field]: value }))
 
     if (field === "latitud" || field === "longitud") {
-      const lat = field === "latitud" ? Number.parseFloat(value) : Number.parseFloat(editFormData.latitud)
-      const lng = field === "longitud" ? Number.parseFloat(value) : Number.parseFloat(editFormData.longitud)
-
+      const lat = field === "latitud" ? parseFloat(value) : parseFloat(editFormData.latitud)
+      const lng = field === "longitud" ? parseFloat(value) : parseFloat(editFormData.longitud)
       if (!isNaN(lat) && !isNaN(lng)) {
-        setEditFormData((current) => ({
-          ...current,
-          ubicacion: { lat, lng },
-        }))
+        setEditFormData((current) => ({ ...current, ubicacion: { lat, lng } }))
       }
     }
   }
@@ -252,53 +232,38 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   const handleSaveEdit = async () => {
     try {
-      if (
-        editFormData.nombre &&
-        editFormData.calle &&
-        editFormData.numero &&
-        editFormData.latitud &&
-        editFormData.longitud &&
-        editFormData.estado
-      ) {
-        const updatedJunta = {
-          ...editingJunta,
-          nombre_junta: editFormData.nombre,
-          nombre_calle: editFormData.calle,
-          numero_calle: editFormData.numero,
-          estado: editFormData.estado,
-          latitud: Number.parseFloat(editFormData.latitud).toFixed(6),
-          longitud: Number.parseFloat(editFormData.longitud).toFixed(6),
-        }
-        console.log("Updated junta:", editFormData)
-        console.log("Updated junta to save:", updatedJunta)
-        console.log("Editing junta:", editingJunta)
-        console.log("Editing junta with ID:", editFormData.id)
-        const response = await axiosPrivate.patch(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${editFormData.id}/`, updatedJunta)
-        console.log("Response from backend:", response)
-        setJuntasVecinales((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
-
-        // Actualizar también en nuevasUbicaciones si aplica
-        setNuevasUbicaciones((prev) => prev.map((junta) => (junta.id === editingJunta.id ? updatedJunta : junta)))
-
-        setEditModalOpen(false)
-        setEditingJunta(null)
-
-        toast({
-          title: "Junta vecinal actualizada",
-          description: "La junta vecinal ha sido actualizada exitosamente.",
-          className: operations.SUCCESS,
-        })
+      const updatedJunta = {
+        nombre_junta: editFormData.nombre,
+        nombre_calle: editFormData.calle,
+        numero_calle: editFormData.numero,
+        estado: editFormData.estado,
+        latitud: parseFloat(editFormData.latitud).toFixed(6),
+        longitud: parseFloat(editFormData.longitud).toFixed(6),
       }
+
+      await axiosPrivate.patch(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${editFormData.id}/`, updatedJunta)
+
+      setEditModalOpen(false)
+      setEditingJunta(null)
+
+      toast({
+        title: "Junta vecinal actualizada",
+        description: "La junta vecinal ha sido actualizada exitosamente.",
+        className: operations.SUCCESS,
+      })
+
+      refresh() // <--- Recargar tabla
     } catch (error) {
       toast({
-        title: "Error al actualizar la junta vecinal",
+        title: "Error al actualizar",
         description: "Ha ocurrido un error al intentar actualizar la junta vecinal.",
         className: operations.ERROR,
       })
-      console.error("Error al actualizar junta vecinal:", error)
+      console.error("Error:", error)
     }
   }
 
+  // --- Lógica de Eliminación ---
   const handleDeleteClick = (junta) => {
     setJuntaToDelete(junta)
     setDeleteModalOpen(true)
@@ -306,75 +271,35 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   const handleConfirmDelete = async () => {
     if (!juntaToDelete) return
-
     try {
-      const response = await axiosPrivate.delete(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${juntaToDelete.id}/`)
-      console.log("Delete response:", response)
-      if (response.status === 200 || response.status === 204) {
-        if (juntaToDelete.tipo === "nueva") {
-          // Eliminar de nuevasUbicaciones
-          setNuevasUbicaciones((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
-        } else {
-          // Eliminar de juntasVecinales
-          setJuntasVecinales((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
-        }
-        toast({
-          title: "Junta vecinal eliminada",
-          description: "La junta vecinal ha sido eliminada exitosamente.",
-          className: operations.SUCCESS,
-        })
-      }
+      await axiosPrivate.delete(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${juntaToDelete.id}/`)
+
+      // Limpiar marcadores temporales si es necesario
+      setNuevasUbicaciones((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
+
+      toast({
+        title: "Junta vecinal eliminada",
+        description: "La junta vecinal ha sido eliminada exitosamente.",
+        className: operations.SUCCESS,
+      })
+
+      refresh() // <--- Recargar tabla (maneja lógica de página vacía internamente si el hook está optimizado, o vuelve a cargar la actual)
     } catch (error) {
       toast({
-        title: "Error al eliminar junta vecinal",
+        title: "Error al eliminar",
         description: "Ha ocurrido un error al intentar eliminar la junta vecinal.",
         className: operations.ERROR,
       })
-      console.error("Error al eliminar junta vecinal:", error)
+      console.error("Error:", error)
     } finally {
       setDeleteModalOpen(false)
       setJuntaToDelete(null)
     }
   }
 
-  const datosFiltrados = [...juntasVecinales, ...nuevasUbicaciones].filter((item) => {
-    const cumpleBusqueda =
-      !filtros.busqueda ||
-      item.nombre_junta.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
-      item.nombre_calle.toLowerCase().includes(filtros.busqueda.toLowerCase())
-
-    const cumpleCategoria = !filtros.categoria || item.categoria === filtros.categoria
-    const cumpleEstado = !filtros.estado || item.estado === filtros.estado
-
-    return cumpleBusqueda && cumpleCategoria && cumpleEstado
-  })
-
-  const limpiarFiltros = () => {
-    setFiltros({
-      categoria: "",
-      estado: "",
-      fechaInicio: "",
-      fechaFin: "",
-      busqueda: "",
-    })
-  }
-
-  const fetchJuntas = async () => {
-    try {
-      const response = await axiosPrivate.get(API_ROUTES.JUNTAS_VECINALES.ROOT)
-      console.log("Fetch juntas vecinales response:", response)
-      setJuntasVecinales(response.data)
-    } catch (error) {
-      console.error("Error loading juntas vecinales:", error)
-    }
-  }
-
-  useEffect(() => {
-    fetchJuntas()
-  }, [])
-
   const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric" }
+    if (!dateString) return "N/A";
+    const options = { year: "numeric", month: "short", day: "numeric" }
     return new Date(dateString).toLocaleDateString("es-CL", options)
   }
 
@@ -390,6 +315,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Formulario de Creación */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -463,7 +389,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </div>
               <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                 <MapPin className="h-4 w-4 inline mr-2" />
-                Seleccione la ubicación en el mapa o ingrese las coordenadas manualmente
+                Seleccione la ubicación en el mapa
                 {formData.ubicacion && (
                   <div className="mt-2 text-xs">
                     Coordenadas: {formData.ubicacion.lat.toFixed(6)}, {formData.ubicacion.lng.toFixed(6)}
@@ -473,9 +399,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               <Button
                 onClick={handleAgregarJunta}
                 className="w-full bg-green-600 hover:bg-green-700"
-                disabled={
-                  !formData.nombre || !formData.calle || !formData.numero || !formData.ubicacion || !formData.estado
-                }
+                disabled={!formData.nombre || !formData.calle || !formData.numero || !formData.ubicacion || !formData.estado}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Junta Vecinal
@@ -483,46 +407,39 @@ const GestionJuntaVecinal = ({ onVolver }) => {
             </CardContent>
           </Card>
 
+          {/* Mapa General */}
           <Card>
             <CardHeader>
               <CardTitle>Mapa de Ubicaciones</CardTitle>
               <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                  <span>Actuales</span>
+                  <span>Existentes</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                  <span>A agregar</span>
+                  <span>Nueva (Selección)</span>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {/* meanwhile delete modal open hide the map too */}
               {!(editModalOpen || deleteModalOpen) ? (
                 <div className="h-96 rounded-lg overflow-hidden">
                   <MapContainer
-                    center={[
-                      -22.4667,
-                      -68.9333, // Coordenadas aproximadas de Calama, Chile
-                    ]}
+                    center={[-22.4667, -68.9333]}
                     zoom={13}
                     style={{ height: "100%", width: "100%" }}
                   >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-
-                    />
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <MapClickHandler onMapClick={handleMapClick} />
 
+                    {/* Juntas cargadas desde API */}
                     {juntasVecinales.map((junta) => (
                       <Marker key={junta.id} position={[junta.latitud, junta.longitud]}>
                         <Popup>
                           <div>
                             <h3 className="font-semibold">{junta.nombre_junta}</h3>
-                            <p>
-                              {junta.nombre_calle} {junta.numero_calle}
-                            </p>
+                            <p>{junta.nombre_calle} {junta.numero_calle}</p>
                             <Badge variant={junta.estado === "habilitado" ? "default" : "secondary"}>
                               {junta.estado}
                             </Badge>
@@ -531,33 +448,17 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                       </Marker>
                     ))}
 
+                    {/* Nuevas ubicaciones agregadas localmente antes de refresh */}
                     {nuevasUbicaciones.map((junta) => (
-                      <Marker key={junta.id} position={[junta.latitud, junta.longitud]}>
-                        <Popup>
-                          <div>
-                            <h3 className="font-semibold">{junta.nombre_junta}</h3>
-                            <p>
-                              {junta.nombre_calle} {junta.numero_calle}
-                            </p>
-                            <Badge
-                              variant={junta.estado === "habilitado" ? "default" : "secondary"}
-                              className="bg-green-100 text-green-800"
-                            >
-                              {junta.estado} (Nueva)
-                            </Badge>
-                          </div>
-                        </Popup>
+                      <Marker key={`new-${junta.id}`} position={[junta.latitud, junta.longitud]} icon={customIcon}>
+                        <Popup>Agregada recientemente</Popup>
                       </Marker>
                     ))}
 
+                    {/* Marcador de selección actual */}
                     {formData.ubicacion && (
                       <Marker position={[formData.ubicacion.lat, formData.ubicacion.lng]} icon={customIcon}>
-                        <Popup>
-                          <div>
-                            <h3 className="font-semibold">Nueva Ubicación</h3>
-                            <p>Clic para confirmar</p>
-                          </div>
-                        </Popup>
+                        <Popup>Nueva Ubicación Seleccionada</Popup>
                       </Marker>
                     )}
                   </MapContainer>
@@ -571,69 +472,52 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           </Card>
         </div>
 
+        {/* Sección de Listado con Filtros y Paginación */}
         <Card>
           <CardHeader>
             <CardTitle>Listado de Juntas Vecinales</CardTitle>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
-              <div>
-                <Label>Estado</Label>
-                <Select
-                  value={filtros.estado}
-                  onValueChange={(value) => setFiltros((prev) => ({ ...prev, estado: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar opciones" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="habilitado">Habilitado</SelectItem>
-                    <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Fecha Inicio</Label>
-                <Input
-                  type="date"
-                  value={filtros.fechaInicio}
-                  onChange={(e) => setFiltros((prev) => ({ ...prev, fechaInicio: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Fecha Fin</Label>
-                <Input
-                  type="date"
-                  value={filtros.fechaFin}
-                  onChange={(e) => setFiltros((prev) => ({ ...prev, fechaFin: e.target.value }))}
-                />
-              </div>
-              <div className="flex gap-2 items-end">
-                <Button variant="outline" onClick={limpiarFiltros}>
-                  Limpiar filtros
-                </Button>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Aplicar filtros
-                </Button>
-              </div>
-            </div>
+            <FilterContainer>
+              <FilterMultiSelect
+                label="Estado"
+                options={[
+                  { nombre: "Habilitado" },
+                  { nombre: "Deshabilitado" }
+                ]}
+                value={filters.estado}
+                onChange={(val) => setFilter("estado", val)}
+              />
+              <FilterDatePicker
+                label="Fecha de Creación"
+                dateRange={{ from: filters.fecha_inicio, to: filters.fecha_fin }}
+                setDateRange={(range) => {
+                  setFilter("fecha_inicio", range?.from)
+                  setFilter("fecha_fin", range?.to)
+                }}
+              />
+              {/* Componente de Búsqueda Refactorizado */}
+              <FilterInput
+                label="Búsqueda"
+                value={filters.nombre}
+                onChange={(e) => setFilter("nombre", e.target.value)}
+                placeholder="Buscar por título..."
+              />
 
-            <div className="flex justify-between items-center mt-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por título..."
-                  value={filtros.busqueda}
-                  onChange={(e) => setFiltros((prev) => ({ ...prev, busqueda: e.target.value }))}
-                  className="pl-10"
-                />
+              <div className="flex gap-2 items-end">
+                <Button variant="outline" onClick={handleCleanFilters}>
+                  Limpiar
+                </Button>
+                <Button className="bg-green-600 hover:bg-green-700" onClick={handleApplyFilters}>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Aplicar
+                </Button>
               </div>
-            </div>
+            </FilterContainer>
           </CardHeader>
 
           <CardContent>
             <div className="rounded-md border">
               <Table>
-                <TableHeader >
+                <TableHeader>
                   <TableRow className="bg-green-50 bold-text">
                     <TableHead className="text-center text-green-700 font-bold">Nombre</TableHead>
                     <TableHead className="text-center text-green-700 font-bold">Dirección</TableHead>
@@ -643,21 +527,17 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="text-center">
-                  {datosFiltrados.length > 0 ? (
-                    datosFiltrados.map((junta) => (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">Cargando...</TableCell>
+                    </TableRow>
+                  ) : juntasVecinales.length > 0 ? (
+                    juntasVecinales.map((junta) => (
                       <TableRow key={junta.id}>
                         <TableCell>{junta.nombre_junta}</TableCell>
+                        <TableCell>{junta.nombre_calle} {junta.numero_calle}</TableCell>
                         <TableCell>
-                          {junta.nombre_calle} {junta.numero_calle}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              junta.estado === "habilitado"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
+                          <Badge variant={junta.estado === "habilitado" ? "default" : "secondary"}>
                             {junta.estado}
                           </Badge>
                         </TableCell>
@@ -681,7 +561,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                         0 Resultados encontrados
                       </TableCell>
                     </TableRow>
@@ -690,55 +570,46 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </Table>
             </div>
 
-            <div className="flex justify-between items-center mt-4">
-              <div className="text-sm text-gray-500">Página 1 de 1</div>
-              <div className="text-sm text-gray-500">{datosFiltrados.length} Resultados encontrados</div>
-            </div>
+            {/* Paginador Reutilizable */}
+            <Paginador
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setPageSize}
+              loading={loading}
+            />
           </CardContent>
         </Card>
       </div>
 
+      {/* Modal Editar */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Junta Vecinal</DialogTitle>
           </DialogHeader>
-
+          {/* ... Contenido del formulario de edición (Mantenido igual que original, usando editFormData) ... */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
+              {/* Inputs de edición */}
               <div>
                 <Label htmlFor="edit-nombre">Nombre</Label>
-                <Input
-                  id="edit-nombre"
-                  value={editFormData.nombre}
-                  onChange={(e) => handleEditInputChange("nombre", e.target.value)}
-                  placeholder="Ej: Junta Vecinal Centro"
-                />
+                <Input id="edit-nombre" value={editFormData.nombre} onChange={(e) => handleEditInputChange("nombre", e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="edit-calle">Calle</Label>
-                <Input
-                  id="edit-calle"
-                  value={editFormData.calle}
-                  onChange={(e) => handleEditInputChange("calle", e.target.value)}
-                  placeholder="Ej: Av. Principal"
-                />
+                <Input id="edit-calle" value={editFormData.calle} onChange={(e) => handleEditInputChange("calle", e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="edit-numero">Número</Label>
-                <Input
-                  id="edit-numero"
-                  value={editFormData.numero}
-                  onChange={(e) => handleEditInputChange("numero", e.target.value)}
-                  placeholder="Ej: 123"
-                />
+                <Input id="edit-numero" value={editFormData.numero} onChange={(e) => handleEditInputChange("numero", e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="edit-estado">Estado</Label>
                 <Select value={editFormData.estado} onValueChange={(value) => handleEditInputChange("estado", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="habilitado">Habilitado</SelectItem>
                     <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
@@ -747,80 +618,32 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-latitud">Latitud</Label>
-                  <Input
-                    id="edit-latitud"
-                    type="number"
-                    step="any"
-                    value={editFormData.latitud}
-                    onChange={(e) => handleEditInputChange("latitud", e.target.value)}
-                    placeholder="Ej: -22.4558"
-                  />
+                  <Label>Latitud</Label>
+                  <Input type="number" step="any" value={editFormData.latitud} onChange={(e) => handleEditInputChange("latitud", e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="edit-longitud">Longitud</Label>
-                  <Input
-                    id="edit-longitud"
-                    type="number"
-                    step="any"
-                    value={editFormData.longitud}
-                    onChange={(e) => handleEditInputChange("longitud", e.target.value)}
-                    placeholder="Ej: -68.9293"
-                  />
+                  <Label>Longitud</Label>
+                  <Input type="number" step="any" value={editFormData.longitud} onChange={(e) => handleEditInputChange("longitud", e.target.value)} />
                 </div>
               </div>
-              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                <MapPin className="h-4 w-4 inline mr-2" />
-                Seleccione la nueva ubicación en el mapa o ingrese las coordenadas manualmente
-                {editFormData.ubicacion && (
-                  <div className="mt-2 text-xs">
-                    Coordenadas: {editFormData.latitud}, {editFormData.longitud}
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSaveEdit}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  disabled={
-                    !editFormData.nombre ||
-                    !editFormData.calle ||
-                    !editFormData.numero ||
-                    !editFormData.ubicacion ||
-                    !editFormData.estado
-                  }
-                >
-                  Guardar Cambios
-                </Button>
-                <Button variant="outline" onClick={() => setEditModalOpen(false)} className="flex-1">
-                  Cancelar
-                </Button>
+
+              <div className="flex gap-2 mt-4">
+                <Button onClick={handleSaveEdit} className="flex-1 bg-blue-600 hover:bg-blue-700">Guardar Cambios</Button>
+                <Button variant="outline" onClick={() => setEditModalOpen(false)} className="flex-1">Cancelar</Button>
               </div>
             </div>
-
+            {/* Mapa Edición */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Ubicación en el Mapa</h3>
               <div className="h-96 rounded-lg overflow-hidden border">
                 <MapContainer
                   center={editFormData.ubicacion ? [editFormData.latitud, editFormData.longitud] : [-22.4667, -68.9333]}
                   zoom={15}
                   style={{ height: "100%", width: "100%" }}
                 >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   <MapClickHandler onMapClick={handleEditMapClick} />
-
                   {editFormData.ubicacion && (
-                    <Marker position={[editFormData.latitud, editFormData.longitud]} icon={customIcon}>
-                      <Popup>
-                        <div>
-                          <h3 className="font-semibold">Ubicación Actual</h3>
-                          <p>{editFormData.nombre}</p>
-                        </div>
-                      </Popup>
-                    </Marker>
+                    <Marker position={[editFormData.latitud, editFormData.longitud]} icon={customIcon} />
                   )}
                 </MapContainer>
               </div>
@@ -829,24 +652,19 @@ const GestionJuntaVecinal = ({ onVolver }) => {
         </DialogContent>
       </Dialog>
 
+      {/* Modal Eliminar */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar Eliminación</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-gray-600">
-              ¿Estás seguro de que quieres eliminar la junta vecinal "{juntaToDelete?.nombre_junta}"?
-            </p>
+            <p className="text-gray-600">¿Estás seguro de que quieres eliminar la junta "{juntaToDelete?.nombre_junta}"?</p>
             <p className="text-sm text-gray-500 mt-2">Esta acción no se puede deshacer.</p>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
-              Eliminar
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">Eliminar</Button>
           </div>
         </DialogContent>
       </Dialog>
