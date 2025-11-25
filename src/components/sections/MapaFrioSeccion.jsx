@@ -216,6 +216,7 @@ const MapaFrioSeccion = ({
           eficiencia: item.Junta_Vecinal?.eficiencia ?? 0,
           intensidad_frio: item.Junta_Vecinal?.intensidad_frio ?? (item.Junta_Vecinal?.eficiencia || 0) / 100,
           // Mapear la calificación promedio y el total de valoraciones
+          // Accedemos a 'item.calificacion_promedio' (raíz) en lugar de 'item.Junta_Vecinal.calificacion_promedio'
           calificacion_promedio: item.Junta_Vecinal?.calificacion_promedio ?? 0,
           total_valoraciones: item.Junta_Vecinal?.total_valoraciones ?? 0,
         },
@@ -650,8 +651,8 @@ const MapaFrioSeccion = ({
                                 {/* Derecha: Componente de Estrellas */}
                                 <div className="pl-2 flex-shrink-0">
                                   <RatingDisplay
-                                    puntuacion={item.Junta_Vecinal.calificacion_promedio}
-                                    totalVotos={item.Junta_Vecinal.total_valoraciones}
+                                    puntuacion={item.Junta_Vecinal?.calificacion_promedio}
+                                    totalVotos={item.Junta_Vecinal?.total_valoraciones}
                                   />
                                 </div>
                               </button>

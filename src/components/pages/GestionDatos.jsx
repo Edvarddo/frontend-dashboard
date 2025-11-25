@@ -13,12 +13,62 @@ import { API_ROUTES } from "@/api/apiRoutes"
 
 
 // --- Adaptador: normaliza llaves del backend -> front
+// Considerando formato sin tener en cuenta pendientes
+/**
+ * 
+
+categorias
+: 
+{total: 4, habilitados: 1, pendientes: 2, deshabilitados: 1}
+deshabilitados
+: 
+1
+habilitados
+: 
+1
+pendientes
+: 
+2
+total
+: 
+4
+departamentos
+: 
+{total: 4, habilitados: 2, pendientes: 1, deshabilitados: 1}
+deshabilitados
+: 
+1
+habilitados
+: 
+2
+pendientes
+: 
+1
+total
+: 
+4
+juntasVecinales
+: 
+{total: 6, habilitados: 4, pendientes: 0, deshabilitados: 2}
+deshabilitados
+: 
+2
+habilitados
+: 
+4
+pendientes
+: 
+0
+total
+: 
+6
+
+ */
 const adaptEstadisticas = (raw) => ({
   juntasVecinales: {
     total: raw?.juntasVecinales?.total ?? 0,
-    habilitadas: raw?.juntasVecinales?.activas ?? raw?.juntasVecinales?.habilitadas ?? 0,
-    pendientes: raw?.juntasVecinales?.pendientes ?? 0,
-    deshabilitadas: raw?.juntasVecinales?.inactivas ?? raw?.juntasVecinales?.deshabilitadas ?? 0,
+    habilitadas: raw?.juntasVecinales?.activos ?? raw?.juntasVecinales?.habilitados ?? 0,
+    deshabilitadas: raw?.juntasVecinales?.inactivos ?? raw?.juntasVecinales?.deshabilitados ?? 0,
   },
   categorias: {
     total: raw?.categorias?.total ?? 0,
