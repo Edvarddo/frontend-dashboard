@@ -35,6 +35,9 @@ import TablaAuditoria from "./components/pages/TablaAuditoria"
 import CuentaUsuario from "./components/pages/CuentaUsuario"
 import Kanban from "./components/pages/Kanban"
 import DetalleModificacionPublicacion from "./components/pages/DetalleModificacionPublicacion"
+import GestionCategoria from "./components/pages/GestionCategoria"
+import GestionJuntaVecinal from "./components/pages/GestionJuntaVecinal"
+import GestionDepartamento from "./components/pages/GestionDepartamento"
 
 const PrivLayout = ({ isOpened, setIsOpened }) => {
   const navigate = useNavigate()
@@ -129,6 +132,20 @@ function App() {
                 element={<RespuestasMunicipales isOpened={isOpened} setIsOpened={setIsOpened} />}
               />
               <Route path="/gestion-datos" element={<GestionDatos isOpened={isOpened} setIsOpened={setIsOpened} />} />
+              <Route
+                path="/gestion-datos/juntas-vecinales"
+                element={<GestionJuntaVecinal isOpened={isOpened} setIsOpened={setIsOpened} />}
+              />
+
+              <Route
+                path="/gestion-datos/categorias"
+                element={<GestionCategoria isOpened={isOpened} setIsOpened={setIsOpened} />}
+              />
+
+              <Route
+                path="/gestion-datos/departamentos"
+                element={<GestionDepartamento isOpened={isOpened} setIsOpened={setIsOpened} />}
+              />
               <Route
                 path="/historial-modificacion-publicaciones"
                 element={<HistorialModificacionPublicaciones isOpened={isOpened} setIsOpened={setIsOpened} />}

@@ -10,6 +10,7 @@ import GestionCategoria from "./GestionCategoria"
 import GestionDepartamento from "./GestionDepartamento"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { API_ROUTES } from "@/api/apiRoutes"
+import { useNavigate } from "react-router-dom"
 
 
 // --- Adaptador: normaliza llaves del backend -> front
@@ -88,33 +89,19 @@ const LoadingBar = () => (
 )
 
 const GestionDatosMain = () => {
-  const [vistaActual, setVistaActual] = useState("hub")
-  const [seccionActual, setSeccionActual] = useState(null)
-  const [isPending, startTransition] = useTransition()
+  const navigate = useNavigate()
 
   const handleNavegar = useCallback((seccionId, _accion) => {
-    startTransition(() => {
-      if (seccionId === "juntas-vecinales") setVistaActual("juntas-vecinales")
-      else if (seccionId === "categorias") setVistaActual("categorias")
-      else if (seccionId === "departamentos") setVistaActual("departamentos")
-      setSeccionActual(seccionId)
-    })
-  }, [])
+    if (seccionId === "juntas-vecinales") {
+      navigate("/gestion-datos/juntas-vecinales")
+    } else if (seccionId === "categorias") {
+      navigate("/gestion-datos/categorias")
+    } else if (seccionId === "departamentos") {
+      navigate("/gestion-datos/departamentos")
+    }
+  }, [navigate])
 
-  const handleVolver = useCallback(() => {
-    startTransition(() => {
-      setVistaActual("hub")
-      setSeccionActual(null)
-    })
-  }, [])
-
-  if (vistaActual === "juntas-vecinales") return <GestionJuntaVecinal onVolver={handleVolver} />
-  if (vistaActual === "categorias") return <GestionCategoria onVolver={handleVolver} />
-  if (vistaActual === "departamentos") return <GestionDepartamento onVolver={handleVolver} />
-
-  // (Opcional) Loader global mientras cambia de vista
-  // if (isPending) return <div className="p-6 text-gray-500">Cargando…</div>
-
+  // Ahora este componente solo muestra el HUB / dashboard
   return <GestionDatos onNavigate={handleNavegar} />
 }
 

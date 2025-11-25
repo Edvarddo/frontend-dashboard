@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { ChevronDown, ChevronRight, LogOut } from "lucide-react"
+import { ChevronDown, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import logo from "../assets/logo_muni.png"
 import AuthContext from "../contexts/AuthContext"
@@ -23,10 +23,23 @@ const Sidebar = ({ isOpened }) => {
   // -------- Sincronizar sección seleccionada y acordeón con la URL --------
   useEffect(() => {
     const currentParent = sections.find((section) => {
+      // Coincide con la ruta directa del padre
       if (section.link === location.pathname) return true
+
       if (section.children?.length) {
-        return section.children.some((child) => child.link === location.pathname)
+        // Coincide con algún hijo directo
+        const matchChild = section.children.some(
+          (child) => child.link === location.pathname
+        )
+        if (matchChild) return true
+
+        // Coincide con algún NIETO (child.children)
+        const matchGrandchild = section.children.some((child) =>
+          child.children?.some((grand) => grand.link === location.pathname)
+        )
+        if (matchGrandchild) return true
       }
+
       return false
     })
 
@@ -58,7 +71,9 @@ const Sidebar = ({ isOpened }) => {
   }
 
   const handleChildClick = (child) => {
-    navigate(child.link)
+    if (child.link) {
+      navigate(child.link)
+    }
   }
 
   const handleLogoutClick = () => {
@@ -85,15 +100,14 @@ const Sidebar = ({ isOpened }) => {
   return (
     <>
       <nav
-        className={
-          `
-    fixed inset-y-0 left-0 z-40
-    flex flex-col
-    bg-white border-r border-slate-200
-    transition-transform duration-200
-    w-72
-    ${isOpened ? "translate-x-0" : "-translate-x-full"}
-  `}
+        className={`
+          fixed inset-y-0 left-0 z-40
+          flex flex-col
+          bg-white border-r border-slate-200
+          transition-transform duration-200
+          w-72
+          ${isOpened ? "translate-x-0" : "-translate-x-full"}
+        `}
       >
         {/* HEADER MODERNO */}
         <div className="px-4 pt-6 pb-5 flex items-center gap-4 select-none">
@@ -132,15 +146,16 @@ const Sidebar = ({ isOpened }) => {
                   type="button"
                   onClick={() => handleParentClick(section)}
                   className={`
-          w-full flex items-center justify-between rounded-2xl px-4 py-3
-          text-left
-          transition-all duration-200 ease-out
-          ${isActiveParent
-                      ? "bg-green-600 text-white shadow-md"
-                      : "bg-white text-slate-900 hover:bg-slate-100"
+                    w-full flex items-center justify-between rounded-2xl px-4 py-3
+                    text-left
+                    transition-all duration-200 ease-out
+                    ${
+                      isActiveParent
+                        ? "bg-green-600 text-white shadow-md"
+                        : "bg-white text-slate-900 hover:bg-slate-100"
                     }
-          ${index === 0 ? "mt-1" : ""}
-        `}
+                    ${index === 0 ? "mt-1" : ""}
+                  `}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{section.icon}</span>
@@ -152,12 +167,11 @@ const Sidebar = ({ isOpened }) => {
                   {hasChildren && (
                     <span
                       className={`
-              ml-2
-              transition-transform duration-200
-              ${isOpen ? "rotate-180" : "rotate-0"}
-            `}
+                        ml-2
+                        transition-transform duration-200
+                        ${isOpen ? "rotate-180" : "rotate-0"}
+                      `}
                     >
-                      {/* puedes usar solo ChevronDown y girarlo */}
                       <ChevronDown className="h-4 w-4" />
                     </span>
                   )}
@@ -167,33 +181,101 @@ const Sidebar = ({ isOpened }) => {
                 {hasChildren && (
                   <div
                     className={`
-            ml-7 border-l border-slate-200 pl-4
-            overflow-hidden
-            transition-[max-height,opacity,margin] duration-300 ease-in-out
-            ${isOpen ? "max-h-64 opacity-100 mt-1" : "max-h-0 opacity-0 mt-0"}
-          `}
+                      ml-7 border-l border-slate-200 pl-4
+                      overflow-hidden
+                      transition-[max-height,opacity,margin] duration-300 ease-in-out
+                      ${isOpen ? "max-h-64 opacity-100 mt-1" : "max-h-0 opacity-0 mt-0"}
+                    `}
                   >
                     <div className="space-y-1 py-1">
                       {section.children.map((child) => {
-                        const isChildActive = location.pathname === child.link
+                        const hasGrandchildren =
+                          child.children && child.children.length > 0
+
+                        // 🔹 Caso 1: hijo normal (sin nietos)
+                        if (!hasGrandchildren) {
+                          const isChildActive =
+                            child.link && location.pathname === child.link
+
+                          return (
+                            <button
+                              key={child.title}
+                              type="button"
+                              onClick={() => handleChildClick(child)}
+                              className={`
+                                flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm
+                                transition-all duration-150
+                                ${
+                                  isChildActive
+                                    ? "bg-slate-100 text-slate-900 font-semibold"
+                                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                }
+                              `}
+                            >
+                              <span className="text-base">{child.icon}</span>
+                              <span>{child.title}</span>
+                            </button>
+                          )
+                        }
+
+                        // 🔹 Caso 2: hijo con NIETOS (ej: Gestión de Datos)
+                        const isGroupActive =
+                          (child.link && location.pathname === child.link) ||
+                          child.children.some(
+                            (grand) => grand.link === location.pathname
+                          )
 
                         return (
-                          <button
-                            key={child.title}
-                            type="button"
-                            onClick={() => handleChildClick(child)}
-                            className={`
-                    flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm
-                    transition-all duration-150
-                    ${isChildActive
-                                ? "bg-slate-100 text-slate-900 font-semibold"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                              }
-                  `}
-                          >
-                            <span className="text-base">{child.icon}</span>
-                            <span>{child.title}</span>
-                          </button>
+                          <div key={child.title} className="space-y-1">
+                            {/* CABECERA CLICKEABLE DEL GRUPO (va al HUB, ej: /gestion-datos) */}
+                            <button
+                              type="button"
+                              onClick={() => child.link && navigate(child.link)}
+                              className={`
+                                flex w-full items-center gap-2 rounded-xl px-2 py-2 text-xs font-semibold uppercase
+                                transition-all duration-150
+                                ${
+                                  isGroupActive
+                                    ? "bg-slate-100 text-slate-900"
+                                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
+                                }
+                              `}
+                            >
+                              <span className="text-base">{child.icon}</span>
+                              <span>{child.title}</span>
+                            </button>
+
+                            {/* lista de nietos */}
+                            <div className="space-y-1 pl-3 border-l border-slate-100">
+                              {child.children.map((grand) => {
+                                const isGrandActive =
+                                  grand.link &&
+                                  location.pathname === grand.link
+
+                                return (
+                                  <button
+                                    key={grand.title}
+                                    type="button"
+                                    onClick={() => navigate(grand.link)}
+                                    className={`
+                                      flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm
+                                      transition-all duration-150
+                                      ${
+                                        isGrandActive
+                                          ? "bg-slate-100 text-slate-900 font-semibold"
+                                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                      }
+                                    `}
+                                  >
+                                    <span className="text-base">
+                                      {grand.icon}
+                                    </span>
+                                    <span>{grand.title}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
                         )
                       })}
                     </div>
@@ -215,11 +297,11 @@ const Sidebar = ({ isOpened }) => {
               <AvatarFallback className="bg-emerald-500 text-white font-semibold">
                 {nombre
                   ? nombre
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((n) => n[0])
-                    .join("")
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((n) => n[0])
+                      .join("")
                   : "SC"}
               </AvatarFallback>
             </Avatar>
