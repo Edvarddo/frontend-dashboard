@@ -12,15 +12,22 @@ import { Input } from "@/components/ui/input"
 import { capitalizeFirstLetter } from "@/lib/utils"
 import { API_ROUTES } from '@/api/apiRoutes'
 
-// Asegúrate de que las rutas de importación sean correctas según tu proyecto
+// Hook personalizado
 import { usePaginatedFetch } from '@/hooks/usePaginatedFetch'
 import Paginador from './Paginador'
 
 const TablaPublicaciones = ({
   url,
   setDownloadIsAvailable: setParentDownloadIsAvailable,
+  departamento,            // 👈 NUEVO: nombre del departamento (string) o null si es admin
 }) => {
   const navigate = useNavigate()
+
+  // 👇 Construimos el baseUrl según si hay departamento o no
+  const baseUrlSinFiltro = API_ROUTES.PUBLICACIONES.ROOT
+  const baseUrlConDepartamento = departamento
+    ? `${baseUrlSinFiltro}?departamento=${encodeURIComponent(departamento)}`
+    : baseUrlSinFiltro
 
   // Hook personalizado: Maneja la lógica de API, URL y Paginación
   const {
@@ -34,10 +41,13 @@ const TablaPublicaciones = ({
     setPageSize,
     downloadIsAvailable
   } = usePaginatedFetch({
-    baseUrl: API_ROUTES.PUBLICACIONES.ROOT,
-    externalUrl: url,
+    baseUrl: baseUrlConDepartamento, // 👈 usamos el baseUrl con depto si aplica
+    externalUrl: url,                // si el padre manda una URL completa, esta manda
     initialPageSize: 5
   })
+
+  console.log("URL externa recibida en TablaPublicaciones:", url)
+  console.log("Base URL usado por el hook:", baseUrlConDepartamento)
 
   // Estados locales para UI (Búsqueda y Ordenamiento en cliente)
   const [searchTerm, setSearchTerm] = useState('')
@@ -66,10 +76,8 @@ const TablaPublicaciones = ({
 
     // 2. Ordenamiento local
     processed.sort((a, b) => {
-      // Helper para acceder a propiedades anidadas (ej: 'categoria__nombre' -> a.categoria.nombre)
       const getValue = (obj, path) => {
         if (path.includes('__')) {
-          // Convierte 'categoria__nombre' en ['categoria', 'nombre'] y accede al valor
           return path.split('__').reduce((o, k) => (o || {})[k], obj)
         }
         return obj[path]
@@ -78,7 +86,6 @@ const TablaPublicaciones = ({
       const valA = getValue(a, orderBy)
       const valB = getValue(b, orderBy)
 
-      // Manejo de nulos
       if (!valA) return 1
       if (!valB) return -1
 
@@ -89,7 +96,6 @@ const TablaPublicaciones = ({
 
     setFilteredPublicaciones(processed)
   }, [publicaciones, searchTerm, orderBy, orderDirection])
-
 
   const handleSort = (column) => {
     if (orderBy === column) {
@@ -102,7 +108,9 @@ const TablaPublicaciones = ({
 
   const renderSortIcon = (column) => {
     if (orderBy !== column) return null
-    return orderDirection === 'asc' ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />
+    return orderDirection === 'asc'
+      ? <ChevronUp className="ml-2 h-4 w-4" />
+      : <ChevronDown className="ml-2 h-4 w-4" />
   }
 
   // Cálculo del total de páginas basado en el total real de items en base de datos
@@ -185,11 +193,15 @@ const TablaPublicaciones = ({
                     {capitalizeFirstLetter(pub.categoria?.nombre || 'Sin categoría')}
                   </TableCell>
                   <TableCell className="text-center">
-                    {pub.fecha_publicacion ? format(new Date(pub.fecha_publicacion), "dd-MM-yyyy HH:mm") : '-'}
+                    {pub.fecha_publicacion
+                      ? format(new Date(pub.fecha_publicacion), "dd-MM-yyyy HH:mm")
+                      : '-'}
                   </TableCell>
                   <TableCell className="text-center">
-                    {pub.junta_vecinal ?
-                      `${pub.junta_vecinal.nombre_junta?.split(" ").map(n => capitalizeFirstLetter(n)).join(" ")} ${pub.junta_vecinal.numero_calle || ''}`
+                    {pub.junta_vecinal
+                      ? `${pub.junta_vecinal.nombre_junta?.split(" ")
+                          .map(n => capitalizeFirstLetter(n))
+                          .join(" ")} ${pub.junta_vecinal.numero_calle || ''}`
                       : 'N/A'}
                   </TableCell>
                   <TableCell className="text-center">
@@ -218,7 +230,6 @@ const TablaPublicaciones = ({
         </Table>
       </div>
 
-      {/* Componente de Paginación Reutilizable */}
       <Paginador
         currentPage={currentPage}
         totalPages={totalPages}

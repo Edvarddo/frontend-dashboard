@@ -1,6 +1,6 @@
 // src/components/dashboard/Dashboard.jsx
-import { set, format } from 'date-fns'
-import { useState, useEffect, useRef } from 'react'
+import { set, format } from "date-fns"
+import { useState, useEffect, useRef, useContext } from "react"
 import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -26,15 +26,15 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
-} from 'recharts'
+  ResponsiveContainer,
+} from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
-  SelectItem
+  SelectItem,
 } from "@/components/ui/select"
 import {
   FileText,
@@ -45,23 +45,28 @@ import {
   LineChartIcon as ChartLine,
   PercentIcon,
   Table,
-  Maximize2
-} from 'lucide-react'
-import TopBar from '../TopBar'
+  // Maximize2,
+} from "lucide-react"
+import TopBar from "../TopBar"
 import Filters from "../Filters"
-import EmptyState from '../EmptyState'
-import { ResolutionRateTable } from '../sections/TablaTasaResolución'
-import { getColorForCategory } from '@/lib/utils'
-import useAxiosPrivate from '../../hooks/useAxiosPrivate'
-import axios from '@/api/axios'
-import useRefreshToken from '@/contexts/useRefreshToken'
-import { toast } from '@/hooks/use-toast'
-import { API_ROUTES } from '../../api/apiRoutes'
+import EmptyState from "../EmptyState"
+import { ResolutionRateTable } from "../sections/TablaTasaResolución"
+import { getColorForCategory } from "@/lib/utils"
+import useAxiosPrivate from "../../hooks/useAxiosPrivate"
+import axios from "@/api/axios"
+import useRefreshToken from "@/contexts/useRefreshToken"
+import { toast } from "@/hooks/use-toast"
+import { API_ROUTES } from "../../api/apiRoutes"
 import ChartDetailDialog from "../sections/ChartDetailDialog"
+import AuthContext from "../../contexts/AuthContext"
 
 const Dashboard = ({ isOpened, setIsOpened }) => {
+  // departamento es un STRING con el nombre del departamento o null/undefined si es admin
+  const { departamento } = useContext(AuthContext)
+
   const axiosPrivate = useAxiosPrivate()
   const refresh = useRefreshToken()
+  console.log("Departamento en Dashboard (string):", departamento)
 
   const [barData, setBarData] = useState([])
   const [pieData, setPieData] = useState([])
@@ -81,20 +86,33 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     return { from: startOfYear, to: now }
   })
 
-  // filtros también nace con ese rango por defecto
+  // filtros nace con rango por defecto + departamento si aplica (string)
   const [filtros, setFiltros] = useState(() => {
     const now = new Date()
     const startOfYear = set(now, { month: 0, date: 1 })
+
+    const deptParam = departamento
+      ? `departamento=${encodeURIComponent(departamento)}&`
+      : ""
+
     const iniDate = `fecha_publicacion_after=${format(startOfYear, "yyyy-MM-dd")}&`
     const endDate = `fecha_publicacion_before=${format(now, "yyyy-MM-dd")}&`
-    return `${iniDate}${endDate}`
+
+    return `${deptParam}${iniDate}${endDate}`
   })
 
   const [selectedCategoria, setSelectedCategoria] = useState(null)
   const [selectedSituacion, setSelectedSituacion] = useState(null)
   const [selectedJunta, setSelectedJunta] = useState(null)
   const [selectedDepto, setSelectedDepto] = useState(null)
-  const [selectedDeptoReporte, setSelectedDeptoReporte] = useState("General")
+
+  // Valor por defecto del depto para el reporte:
+  // - Admin → "General"
+  // - Jefe/personal → nombre del departamento (string)
+  const [selectedDeptoReporte, setSelectedDeptoReporte] = useState(
+    departamento || "General"
+  )
+
   const [clearValues, setClearValues] = useState(false)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -109,7 +127,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     situacion: [],
     departamentos: [],
     iniDate: null,
-    endDate: null
+    endDate: null,
   })
   const [loading, setLoading] = useState(false)
   const [isValid, setIsValid] = useState(false)
@@ -122,7 +140,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
 
   const fetchData = async (urls) => {
-    const authToken = localStorage.getItem('authToken')
+    const authToken = localStorage.getItem("authToken")
 
     if (!authToken) {
       setLoading(false)
@@ -152,11 +170,11 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       setJuntasVecinales(juntas || [])
       setDepartamentos(data[2] || [])
     } catch (error) {
-      console.error('Error general:', error.message)
+      console.error("Error general:", error.message)
       toast({
-        title: 'Error al cargar los datos',
-        description: 'Ocurrió un error al cargar los datos. Por favor, intenta nuevamente.',
-        status: 'error',
+        title: "Error al cargar los datos",
+        description: "Ocurrió un error al cargar los datos. Por favor, intenta nuevamente.",
+        status: "error",
       })
     } finally {
       setLoading(false)
@@ -167,15 +185,15 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     setLoading(true)
     console.log("Fetching chart data...", urls)
     try {
-      const requests = await urls.map(url => axiosPrivate(url))
+      const requests = await urls.map((url) => axiosPrivate(url))
       const responses = await Promise.all(requests)
-      const data = responses.map(response => response.data)
-
+      const data = responses.map((response) => response.data)
+      console.log("Chart data responses:", data)
       let distinctValues = []
 
       data[0]?.forEach((monthData) => {
         Object.keys(monthData).forEach((key) => {
-          if (!distinctValues.includes(key) && key !== 'name') {
+          if (!distinctValues.includes(key) && key !== "name") {
             distinctValues.push(key)
           }
         })
@@ -190,7 +208,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     } catch (error) {
       console.log(error)
     } finally {
-      console.log(cardsData)
+      console.log("CARDS DATA",cardsData)
       setLoading(false)
     }
   }
@@ -200,7 +218,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       API_ROUTES.CATEGORIAS.ROOT,
       API_ROUTES.JUNTAS_VECINALES.ROOT,
       API_ROUTES.DEPARTAMENTOS.ROOT,
-      API_ROUTES.SITUACIONES_PUBLICACIONES.ROOT
+      API_ROUTES.SITUACIONES_PUBLICACIONES.ROOT,
     ])
   }, [api_url])
 
@@ -214,7 +232,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       `${API_ROUTES.STATS.PUBLICACIONES_POR_CATEGORIA}?${filtros}`,
       `${API_ROUTES.STATS.RESUMEN_ESTADISTICAS}?${filtros}`,
       `${API_ROUTES.STATS.RESUELTOS_POR_MES}?${filtros}`,
-      `${API_ROUTES.STATS.TASA_RESOLUCION_DEPARTAMENTO}?${filtros}`
+      `${API_ROUTES.STATS.TASA_RESOLUCION_DEPARTAMENTO}?${filtros}`,
     ])
   }, [filtros, api_url])
 
@@ -222,18 +240,28 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     const categoriesParams = filtrosObj.categoria.join(",")
     const juntasParams = filtrosObj.junta.join(",")
     const situacionesParams = filtrosObj.situacion.join(",")
-    const departamentosParams = filtrosObj.departamentos.join(",")
 
     const category =
-      filtrosObj.categoria.length > 0 ? "categoria=" + categoriesParams + "&" : ""
+      filtrosObj.categoria.length > 0 ? `categoria=${categoriesParams}&` : ""
     const junta =
-      filtrosObj.junta.length > 0 ? "junta_vecinal=" + juntasParams + "&" : ""
+      filtrosObj.junta.length > 0 ? `junta_vecinal=${juntasParams}&` : ""
     const situation =
-      filtrosObj.situacion.length > 0 ? "situacion=" + situacionesParams + "&" : ""
-    const departamento =
-      filtrosObj.departamentos.length > 0
-        ? "departamento=" + departamentosParams + "&"
-        : ""
+      filtrosObj.situacion.length > 0 ? `situacion=${situacionesParams}&` : ""
+
+    // Departamento forzado si el usuario tiene uno asignado (string)
+    let departamentoParam = ""
+
+    if (departamento) {
+      // Jefe/personal → siempre se usa su propio departamento (string)
+      departamentoParam = `departamento=${encodeURIComponent(departamento)}&`
+    } else {
+      // Admin → puede filtrar por uno o varios departamentos desde la UI
+      const departamentosParams = filtrosObj.departamentos.join(",")
+      departamentoParam =
+        filtrosObj.departamentos.length > 0
+          ? `departamento=${departamentosParams}&`
+          : ""
+    }
 
     let fromDate = dateRange?.from
     let toDate = dateRange?.to
@@ -252,8 +280,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       ? "fecha_publicacion_before=" + format(toDate, "yyyy-MM-dd") + "&"
       : ""
 
-    const filtros = `${category}${junta}${situation}${departamento}${iniDate}${endDate}`
-    setFiltros(filtros)
+    const filtrosStr = `${category}${junta}${situation}${departamentoParam}${iniDate}${endDate}`
+    setFiltros(filtrosStr)
   }
 
   const limpiarFiltros = () => {
@@ -272,13 +300,18 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       situacion: [],
       departamentos: [],
       iniDate: null,
-      endDate: null
+      endDate: null,
     })
-    setClearValues(!clearValues)
+    setClearValues((prev) => !prev)
+
+    const deptParam = departamento
+      ? `departamento=${encodeURIComponent(departamento)}&`
+      : ""
 
     const iniDate = `fecha_publicacion_after=${format(startOfYear, "yyyy-MM-dd")}&`
     const endDate = `fecha_publicacion_before=${format(now, "yyyy-MM-dd")}&`
-    setFiltros(`${iniDate}${endDate}`)
+
+    setFiltros(`${deptParam}${iniDate}${endDate}`)
   }
 
   const handleOpenSidebar = () => {
@@ -296,16 +329,22 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
       const response = await axiosPrivate.get(
         `${API_ROUTES.REPORTS.GENERATE_PDF}?${filtros || ""}`,
         {
-          params: { comentarios: additionalComments, departamento_reporte: selectedDeptoReporte },
+          params: {
+            comentarios: additionalComments,
+            departamento_reporte: selectedDeptoReporte,
+          },
           responseType: "blob",
         }
       )
 
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      )
       const link = document.createElement("a")
       link.href = url
 
-      const filename = `reporte_publicaciones_${new Date().toISOString().split("T")[0]}.pdf`
+      const filename = `reporte_publicaciones_${new Date().toISOString().split("T")[0]
+        }.pdf`
       link.setAttribute("download", filename)
 
       document.body.appendChild(link)
@@ -324,7 +363,10 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   const calculateResolutionRate = () => {
     if (cardsData?.publicaciones && cardsData?.problemas_resueltos) {
-      return ((cardsData.problemas_resueltos / cardsData.publicaciones) * 100).toFixed(1)
+      return (
+        ((cardsData.problemas_resueltos / cardsData.publicaciones) * 100).toFixed(1) ||
+        0
+      )
     }
     return 0
   }
@@ -356,6 +398,9 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
     if (filtrosObj.departamentos.length > 0) {
       partes.push(`Departamentos: ${filtrosObj.departamentos.join(", ")}`)
+    } else if (departamento) {
+      // Para jefes/personal, mostrar explícitamente su departamento
+      partes.push(`Departamento asignado: ${departamento}`)
     }
 
     if (partes.length === 0) {
@@ -369,6 +414,33 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
     <>
       <TopBar handleOpenSidebar={handleOpenSidebar} title="Dashboard Municipal" />
       <div className="p-8 bg-gray-100 min-h-screen">
+        {/* HERO / MODO DEPARTAMENTO / GENERAL */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-r from-[#00A86B] to-emerald-700 text-white shadow-lg border border-emerald-900/30 px-8 py-6">
+          <h2 className="text-2xl font-semibold tracking-wide">
+            {departamento ? (
+              <>
+                Departamento —{" "}
+                <span className="font-bold">{departamento}</span>
+              </>
+            ) : (
+              "Modo General — Todos los Departamentos"
+            )}
+          </h2>
+          <p className="mt-2 text-sm text-emerald-50">
+            {departamento
+              ? "Mostrando exclusivamente los datos pertenecientes a este departamento."
+              : "Mostrando datos consolidados de todas las áreas del municipio."}
+          </p>
+
+          <div className="mt-4 inline-flex items-center gap-2">
+            <span className="px-4 py-2 rounded-full bg-white/10 border border-white/30 text-xs font-semibold tracking-wide">
+              {departamento
+                ? "ACCESO RESTRINGIDO AL DEPARTAMENTO"
+                : "VISTA GLOBAL DEL MUNICIPIO"}
+            </span>
+          </div>
+        </div>
+
         {/* Tarjetas KPI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {loading ? (
@@ -380,72 +452,76 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </>
           ) : (
             <>
-              <Card className="overflow-hidden bg-blue-50">
+              {/* Publicaciones recibidas */}
+              <Card className="overflow-hidden bg-emerald-50 border border-emerald-100">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-base font-medium text-gray-600">
+                    <CardTitle className="text-base font-medium text-emerald-800">
                       Publicaciones Recibidas
                     </CardTitle>
-                    <div className="p-2 bg-white rounded-full shadow-sm">
-                      <FileText className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 bg-white rounded-full shadow-sm border border-emerald-100">
+                      <FileText className="h-5 w-5 text-[#00A86B]" />
                     </div>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-emerald-900">
                       {cardsData?.publicaciones || 0}
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-green-50">
+              {/* Usuarios activos */}
+              <Card className="overflow-hidden bg-emerald-100 border border-emerald-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-base font-medium text-gray-600">
+                    <CardTitle className="text-base font-medium text-emerald-900">
                       Usuarios Activos
                     </CardTitle>
-                    <div className="p-2 bg-white rounded-full shadow-sm">
-                      <Users className="h-5 w-5 text-green-600" />
+                    <div className="p-2 bg-white rounded-full shadow-sm border border-emerald-200">
+                      <Users className="h-5 w-5 text-[#00A86B]" />
                     </div>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-emerald-950">
                       {cardsData?.usuarios || 0}
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-purple-50">
+              {/* Publicaciones resueltas */}
+              <Card className="overflow-hidden bg-emerald-50 border border-emerald-100">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-base font-medium text-gray-600">
+                    <CardTitle className="text-base font-medium text-emerald-800">
                       Publicaciones Resueltas
                     </CardTitle>
-                    <div className="p-2 bg-white rounded-full shadow-sm">
-                      <CheckCircle className="h-5 w-5 text-purple-600" />
+                    <div className="p-2 bg-white rounded-full shadow-sm border border-emerald-100">
+                      <CheckCircle className="h-5 w-5 text-[#00A86B]" />
                     </div>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-emerald-900">
                       {cardsData?.problemas_resueltos || 0}
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-yellow-50">
+              {/* Tasa de resolución */}
+              <Card className="overflow-hidden bg-emerald-100 border border-emerald-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <CardTitle className="text-base font-medium text-gray-600">
+                    <CardTitle className="text-base font-medium text-emerald-900">
                       Tasa de Resolución
                     </CardTitle>
-                    <div className="p-2 bg-white rounded-full shadow-sm">
-                      <PercentIcon className="h-5 w-5 text-yellow-600" />
+                    <div className="p-2 bg-white rounded-full shadow-sm border border-emerald-200">
+                      <PercentIcon className="h-5 w-5 text-[#00A86B]" />
                     </div>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-emerald-950">
                       {calculateResolutionRate()}%
                     </div>
                   </div>
@@ -456,8 +532,9 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
         </div>
 
         {/* Filtros */}
-        <div className='mb-5'>
+        <div className="mb-5">
           <Filters
+            omitionFilterDepartment={departamento ? true : false}
             clearValues={clearValues}
             categorias={categorias}
             situaciones={situaciones}
@@ -493,14 +570,6 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                     <h3 className="text-lg font-semibold">
                       Publicaciones por Mes y Categoría
                     </h3>
-                    {/* <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setEnlargedChart("bar")}
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button> */}
                   </div>
                   <ResponsiveContainer width="100%" height={300}>
                     {barData.length === 0 ? (
@@ -538,14 +607,6 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                     <h3 className="text-lg font-semibold">
                       Distribución de Publicaciones por Categoría
                     </h3>
-                    {/* <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setEnlargedChart("pie")}
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button> */}
                   </div>
                   <ResponsiveContainer width="100%" height={300}>
                     {pieData.length === 0 ? (
@@ -596,14 +657,6 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                 <h3 className="text-lg font-semibold">
                   Tendencia de Resolución de Problemas
                 </h3>
-                {/* <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setEnlargedChart("line")}
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </Button> */}
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 {lineChartData.length === 0 ? (
@@ -652,7 +705,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
         {/* Tabla tasa resolución */}
         {loading ? (
           <Skeleton className="h-96 mb-8" />
-        ) : (
+        ) :
           tasaResolucionData && Object.keys(tasaResolucionData).length === 0 ? (
             <Card className="mb-8">
               <CardContent className="p-6">
@@ -676,27 +729,43 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
               </CardContent>
             </Card>
           )
-        )}
+
+        }
 
         {/* Acciones rápidas */}
-        <Card>
+        {/* Sección de reportes ejecutivos */}
+        {/* ──────── SECCIÓN DE REPORTES – NUEVA VERSIÓN ──────── */}
+        {/* Sección de Reportes */}
+        <Card className="mb-10">
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Acciones Rápidas</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Generación de Reportes</h3>
+            </div>
+
+            {/* Botón destacado de Reportes */}
             <div className="flex flex-wrap gap-4">
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                  <Button
+                  <button
                     disabled={
                       pieData.length <= 0 &&
                       barData.length <= 0 &&
                       lineChartData.length <= 0 &&
                       Object.keys(tasaResolucionData).length === 0
                     }
-                    className="bg-green-500 hover:bg-green-600 text-white"
+                    className="
+              w-full sm:w-auto
+              px-5 py-3 rounded-lg shadow-md font-semibold text-white
+              bg-[#00A86B] hover:bg-[#00975F]
+              transition-all
+              flex items-center gap-2
+            "
                   >
-                    Generar Reporte
-                  </Button>
+                    <FileText className="h-5 w-5 text-white" />
+                    Generar Reporte PDF
+                  </button>
                 </DialogTrigger>
+
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Agregar Comentarios al Reporte</DialogTitle>
@@ -704,11 +773,13 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                       Puede agregar comentarios adicionales que se incluirán en el reporte PDF.
                     </DialogDescription>
                   </DialogHeader>
+
                   <Textarea
                     value={additionalComments}
                     onChange={(e) => setAdditionalComments(e.target.value)}
                     placeholder="Escriba sus comentarios aquí..."
                   />
+
                   {/* Seleccionar Departamento */}
                   <div className="space-y-2">
                     <label
@@ -717,6 +788,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                     >
                       Seleccionar Departamento Municipal
                     </label>
+
                     <Select
                       value={selectedDeptoReporte}
                       onValueChange={setSelectedDeptoReporte}
@@ -725,6 +797,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccione un departamento..." />
                       </SelectTrigger>
+
                       <SelectContent>
                         <SelectItem value="General">General</SelectItem>
                         {departamentos?.map((departamento) => (
@@ -738,15 +811,13 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                       </SelectContent>
                     </Select>
                   </div>
+
                   <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsModalOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                       Cancelar
                     </Button>
                     <Button
-                      className="bg-green-500 hover:bg-green-600 text-white"
+                      className="bg-[#00A86B] hover:bg-[#00975F] text-white"
                       onClick={handleModalConfirm}
                     >
                       Descargar
@@ -757,6 +828,9 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
             </div>
           </CardContent>
         </Card>
+
+
+
       </div>
 
       {/* DIALOG DE VISTA MAXIMIZADA (reutilizable) */}

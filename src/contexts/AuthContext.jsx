@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
     const [isTokenExpired, setIsTokenExpired] = useState(false);
     const [departamentoId, setDepartamentoId] = useState(localStorage.getItem('departamentoId') || null);
     const [authMessage, setAuthMessage] = useState('');
+    
 
     const login = (token, refreshToken, admin) => {
         localStorage.setItem('authToken', token);

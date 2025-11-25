@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
 const Filters = ({
+  omitionFilterDepartment,
   clearValues,
   categorias,
   situaciones,
@@ -105,7 +106,7 @@ const Filters = ({
           />
         </div>
 
-        <div>
+        <div className={omitionFilterDepartment ? "hidden" : ""}>
           <h2 className={headingClasses}>Departamento</h2>
           <MultiSelect
             clearValues={clearValues}
