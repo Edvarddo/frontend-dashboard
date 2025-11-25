@@ -21,125 +21,125 @@ export const SidebarSectionProvider = ({ children }) => {
 
   const { rol } = useAuth()
 
-const allSections = [
-  // --------------------------
-  // 1. INICIO
-  // --------------------------
-  {
-    title: "Inicio",
-    icon: <LayoutDashboard className="w-5 h-5" />,
-    link: "/dashboard",
-  },
+  const allSections = [
+    // --------------------------
+    // 1. INICIO
+    // --------------------------
+    {
+      title: "Inicio",
+      icon: <LayoutDashboard className="w-5 h-5" />,
+      link: "/dashboard",
+    },
 
-  // --------------------------
-  // 2. PUBLICACIONES Y CASOS
-  // --------------------------
-  {
-    title: "Publicaciones y Casos",
-    icon: <FileSearch className="w-5 h-5" />,
-    children: [
-      {
-        title: "Listado de Publicaciones",
-        link: "/listado-publicaciones",
-        icon: <ListTree className="w-4 h-4" />,
-      },
-      {
-        title: "Historial de Modificaciones",
-        link: "/historial-modificacion-publicaciones",
-        icon: <FileText className="w-4 h-4" />,
-      },
-    ],
-  },
+    // --------------------------
+    // 2. PUBLICACIONES Y CASOS
+    // --------------------------
+    {
+      title: "Publicaciones y Casos",
+      icon: <FileSearch className="w-5 h-5" />,
+      children: [
+        {
+          title: "Listado de Publicaciones",
+          link: "/listado-publicaciones",
+          icon: <ListTree className="w-4 h-4" />,
+        },
+        {
+          title: "Historial de Modificaciones",
+          link: "/historial-modificacion-publicaciones",
+          icon: <FileText className="w-4 h-4" />,
+        },
+      ],
+    },
 
-  // --------------------------
-  // 3. GESTIÓN MUNICIPAL
-  // --------------------------
-  {
-    title: "Gestión Municipal",
-    icon: <Building2 className="w-5 h-5" />,
-    children: [
-      {
-        title: "Respuestas Municipales",
-        link: "/respuestas-municipales",
-        icon: <FileText className="w-4 h-4" />,
-      },
+    // --------------------------
+    // 3. GESTIÓN MUNICIPAL
+    // --------------------------
+    {
+      title: "Gestión Municipal",
+      icon: <Building2 className="w-5 h-5" />,
+      children: [
+        // {
+        //   title: "Respuestas Municipales",
+        //   link: "/respuestas-municipales",
+        //   icon: <FileText className="w-4 h-4" />,
+        // },
 
-      // 🔥 GESTIÓN DE DATOS (HUB + NIETOS)
-      {
-        title: "Gestión de Datos",
-        icon: <FileText className="w-4 h-4" />,
-        link: "/gestion-datos",        // → HUB
-        children: [
-          {
-            title: "Categorías",
-            link: "/gestion-datos/categorias",
-            icon: <Tag className="w-4 h-4" />,
-          },
-          {
-            title: "Departamentos",
-            link: "/gestion-datos/departamentos",
-            icon: <Building2 className="w-4 h-4" />,
-          },
-          {
-            title: "Juntas Vecinales",
-            link: "/gestion-datos/juntas-vecinales",
-            icon: <Users className="w-4 h-4" />,
-          },
-        ],
-      },
-    ],
-  },
+        // 🔥 GESTIÓN DE DATOS (HUB + NIETOS)
+        {
+          title: "Gestión de Datos",
+          icon: <FileText className="w-4 h-4" />,
+          link: "/gestion-datos",        // → HUB
+          children: [
+            {
+              title: "Categorías",
+              link: "/gestion-datos/categorias",
+              icon: <Tag className="w-4 h-4" />,
+            },
+            {
+              title: "Departamentos",
+              link: "/gestion-datos/departamentos",
+              icon: <Building2 className="w-4 h-4" />,
+            },
+            {
+              title: "Juntas Vecinales",
+              link: "/gestion-datos/juntas-vecinales",
+              icon: <Users className="w-4 h-4" />,
+            },
+          ],
+        },
+      ],
+    },
 
-  // --------------------------
-  // 4. MAPA
-  // --------------------------
-  {
-    title: "Mapa",
-    icon: <Map className="w-5 h-5" />,
-    link: "/mapa",
-  },
+    // --------------------------
+    // 4. MAPA
+    // --------------------------
+    {
+      title: "Mapa",
+      icon: <Map className="w-5 h-5" />,
+      link: "/mapa",
+    },
 
-  // --------------------------
-  // 5. ANUNCIOS Y COMUNICACIONES
-  // --------------------------
-  {
-    title: "Anuncios y Comunicaciones",
-    icon: <Megaphone className="w-5 h-5" />,
-    children: [
-      {
-        title: "Listado de Anuncios",
-        link: "/anuncios",
-        icon: <FileText className="w-4 h-4" />,
-      },
-      {
-        title: "Crear Anuncio",
-        link: "/anuncio-formulario",
-        icon: <PlusCircle className="w-4 h-4" />,
-      },
-    ],
-  },
+    // --------------------------
+    // 5. ANUNCIOS Y COMUNICACIONES
+    // --------------------------
+    {
+      title: "Anuncios y Comunicaciones",
+      icon: <Megaphone className="w-5 h-5" />,
+      children: [
+        {
+          title: "Listado de Anuncios",
+          link: "/anuncios",
+          icon: <FileText className="w-4 h-4" />,
+        },
+        {
+          title: "Crear Anuncio",
+          link: "/anuncio-formulario",
+          icon: <PlusCircle className="w-4 h-4" />,
+        },
+      ],
+    },
 
-  // --------------------------
-  // 6. ADMINISTRACIÓN (solo admins)
-  // --------------------------
-  {
-    title: "Administración",
-    icon: <Users className="w-5 h-5" />,
-    isAdminOnly: true,
-    children: [
-      {
-        title: "Cuentas de Usuario",
-        link: "/cuentas-usuario",
-        icon: <Users className="w-4 h-4" />,
-      },
-      {
-        title: "Tabla de Auditoría",
-        link: "/auditoria",
-        icon: <FileText className="w-4 h-4" />,
-      },
-    ],
-  },
-]
+    // --------------------------
+    // 6. ADMINISTRACIÓN (solo admins)
+    // --------------------------
+    {
+      title: "Administración",
+      icon: <Users className="w-5 h-5" />,
+      isAdminOnly: true,
+      children: [
+        {
+          title: "Cuentas de Usuario",
+          link: "/cuentas-usuario",
+          icon: <Users className="w-4 h-4" />,
+        },
+        {
+          title: "Tabla de Auditoría",
+          link: "/auditoria",
+          icon: <FileText className="w-4 h-4" />,
+        },
+      ],
+    },
+  ]
 
 
 

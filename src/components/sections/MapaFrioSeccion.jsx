@@ -5,10 +5,11 @@ import { SidebarInset } from "@/components/ui/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+// Importamos los filtros unificados
+import FilterMultiSelect from "../filters/FilterMultiSelect"
+import FilterDatePicker from "../filters/FilterDatePicker"
 import {
   Search,
   Filter,
@@ -98,20 +99,6 @@ class MapaFrioErrorBoundary extends Component {
   }
 }
 
-
-// Importar el mapa dinámicamente para evitar problemas de SSR
-// const MapaFrioComponent = dynamic(() => import("./MapaFrioComponente"), {
-//   ssr: false,
-//   loading: () => (
-//     <div className="w-full h-[500px] bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg flex items-center justify-center">
-//       <div className="text-center">
-//         <Snowflake className="w-12 h-12 text-blue-400 mx-auto mb-4 animate-spin" />
-//         <div className="text-blue-600 font-medium">Cargando mapa de frío...</div>
-//       </div>
-//     </div>
-//   ),
-// })
-
 const MapaFrioSeccion = ({
   data: backendData,
   isLoading,
@@ -127,20 +114,29 @@ const MapaFrioSeccion = ({
   setIsValid,
   isValid
 }) => {
-  const [filtros, setFiltros] = useState({
-    fechaInicio: "",
-    fechaFin: "",
-    junta_vecinal: [],
-    categoria: [],
-    busqueda: "",
-  })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [juntaEficiente, setJuntaEficiente] = useState(null)
   const [loadingJuntaEficiente, setLoadingJuntaEficiente] = useState(false)
   const [selectedJuntaFrio, setSelectedJuntaFrio] = useState(null)
   const axiosPrivate = useAxiosPrivate()
-  console.log("RENDERIZANDO MAPA FRIO SECCION", categorias);
+
+  // 1. NORMALIZACIÓN DE DATOS (Igual que en Mapa Calor)
+  const rawJuntas = Array.isArray(juntas) ? juntas : (juntas?.juntas || []);
+  const rawCategorias = Array.isArray(categorias) ? categorias : (categorias?.categorias || []);
+
+  const juntaOptions = rawJuntas.map(j => ({
+    nombre: j.nombre,
+    value: j.nombre,
+    id: j.id
+  }));
+
+  const categoriaOptions = rawCategorias.map(c => ({
+    nombre: c.nombre,
+    value: c.nombre,
+    id: c.id
+  }));
+
   // Función para obtener la junta más eficiente del backend
   const obtenerJuntaEficiente = useCallback(async () => {
     try {
@@ -203,27 +199,18 @@ const MapaFrioSeccion = ({
 
   try {
     processedData = backendData?.length > 0 ? backendData.map(item => {
-      console.log('Procesando item (frío):', item);
-      console.log('Valores originales - resueltas:', item.Junta_Vecinal?.total_resueltas, 'eficiencia:', item.Junta_Vecinal?.eficiencia);
-
       return {
         ...item,
-        // Los datos ahora vienen dinámicamente del backend para resoluciones
         Junta_Vecinal: {
           ...item.Junta_Vecinal,
-          // Usar valores del backend directamente para datos de resolución
           total_resueltas: item.Junta_Vecinal?.total_resueltas ?? 0,
           eficiencia: item.Junta_Vecinal?.eficiencia ?? 0,
           intensidad_frio: item.Junta_Vecinal?.intensidad_frio ?? (item.Junta_Vecinal?.eficiencia || 0) / 100,
-          // Mapear la calificación promedio y el total de valoraciones
-          // Accedemos a 'item.calificacion_promedio' (raíz) en lugar de 'item.Junta_Vecinal.calificacion_promedio'
           calificacion_promedio: item.Junta_Vecinal?.calificacion_promedio ?? 0,
           total_valoraciones: item.Junta_Vecinal?.total_valoraciones ?? 0,
         },
-        // Usar valores del backend o valores por defecto
         tiempo_promedio_resolucion: item.tiempo_promedio_resolucion || "0 días",
         ultima_resolucion: item.ultima_resolucion || "2024-01-26",
-        // Asegurar que las categorías estén definidas con valores por defecto
         "Asistencia Social": item["Asistencia Social"] ?? 0,
         "Mantención de Calles": item["Mantención de Calles"] ?? 0,
         "Seguridad": item.Seguridad ?? 0,
@@ -231,7 +218,6 @@ const MapaFrioSeccion = ({
       }
     }) : []
 
-    // Estadísticas generales calculadas con datos reales del backend
     estadisticas = {
       totalResueltas: processedData.length > 0
         ? processedData.reduce((total, item) => total + (item.Junta_Vecinal?.total_resueltas || 0), 0)
@@ -240,7 +226,6 @@ const MapaFrioSeccion = ({
         ? (processedData.reduce((total, item) => total + (item.Junta_Vecinal?.eficiencia || 0), 0) / processedData.length).toFixed(1)
         : "0.0",
       mejorJunta:
-        // Usar la junta eficiente del endpoint específico si está disponible
         juntaEficiente?.junta_mas_eficiente ? {
           Junta_Vecinal: {
             nombre: juntaEficiente.junta_mas_eficiente.junta.nombre,
@@ -248,17 +233,15 @@ const MapaFrioSeccion = ({
             longitud: juntaEficiente.junta_mas_eficiente.junta.longitud,
             eficiencia: juntaEficiente.junta_mas_eficiente.metricas.porcentaje_resueltas,
             total_resueltas: juntaEficiente.junta_mas_eficiente.metricas.publicaciones_resueltas,
-            intensidad_frio: juntaEficiente.junta_mas_eficiente.metricas.indice_eficiencia / 100 // Normalizar a 0-1
+            intensidad_frio: juntaEficiente.junta_mas_eficiente.metricas.indice_eficiencia / 100
           },
           tiempo_promedio_resolucion: `${juntaEficiente.junta_mas_eficiente.metricas.tiempo_promedio_resolucion} días`,
-          // Simular datos de categorías para compatibilidad con la tabla
           "Asistencia Social": Math.floor(juntaEficiente.junta_mas_eficiente.metricas.total_publicaciones * 0.3),
           "Mantención de Calles": Math.floor(juntaEficiente.junta_mas_eficiente.metricas.total_publicaciones * 0.3),
           "Seguridad": Math.floor(juntaEficiente.junta_mas_eficiente.metricas.total_publicaciones * 0.2),
           "Áreas verdes": Math.floor(juntaEficiente.junta_mas_eficiente.metricas.total_publicaciones * 0.2),
           ultima_resolucion: new Date().toISOString().split('T')[0]
         } :
-          // Fallback a cálculo local si no hay datos del endpoint
           processedData.length > 0
             ? processedData.reduce(
               (mejor, item) => ((item.Junta_Vecinal?.eficiencia || 0) > (mejor?.Junta_Vecinal?.eficiencia || 0) ? item : mejor),
@@ -269,7 +252,6 @@ const MapaFrioSeccion = ({
         juntaEficiente.junta_mas_eficiente.metricas.tiempo_promedio_resolucion :
         processedData.length > 0
           ? Math.round(processedData.reduce((total, item) => {
-            // Extraer número de días del string, manejo más robusto
             const tiempoStr = item.tiempo_promedio_resolucion || "0 días";
             const dias = parseInt(tiempoStr.replace(/[^\d]/g, '')) || 0;
             return total + dias;
@@ -287,27 +269,16 @@ const MapaFrioSeccion = ({
     };
   }
 
-  // Función para formatear fechas de manera segura
   const formatearFecha = (fecha) => {
     try {
       return new Date(fecha).toLocaleDateString("es-AR")
     } catch (error) {
-      console.error('Error formateando fecha:', fecha, error);
       return "Fecha no disponible";
     }
   }
 
-  // Usar los datos del backend como fuente principal
   const data = processedData
-
-  // Verificar que tengamos datos procesados para mostrar
   const hasData = data && data.length > 0
-
-  // Debug: verificar el estado de los datos
-  console.log('Debug Frío - backendData:', backendData);
-  console.log('Debug Frío - processedData:', processedData);
-  console.log('Debug Frío - data:', data);
-  console.log('Debug Frío - hasData:', hasData);
 
   return (
     <MapaFrioErrorBoundary>
@@ -379,7 +350,7 @@ const MapaFrioSeccion = ({
                   </Card>
                 </div>
 
-                {/* Filtros para mapa de frío */}
+                {/* Filtros para mapa de frío - ACTUALIZADO CON COMPONENTES DE FILTRO */}
                 <Card className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2 text-blue-800">
@@ -388,93 +359,38 @@ const MapaFrioSeccion = ({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-blue-700">Junta vecinal</label>
-                        <Select
-                          value={selectedFilters.junta.join(",")}
-                          onValueChange={(value) => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              junta: value ? [value] : []
-                            }))
-                          }}
-                        >
-                          <SelectTrigger className="h-10 border-blue-200">
-                            <SelectValue placeholder="Seleccionar junta" />
-                          </SelectTrigger>
-                          <SelectContent style={{ zIndex: isModalOpen ? 10030 : 'auto' }}>
-                            {juntas.map((junta) => (
-                              <SelectItem key={junta.id || junta} value={junta.nombre || junta}>
-                                {junta.nombre || junta}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-blue-700">Categoría</label>
-                        <Select
-                          value={selectedFilters.categoria.join(",")}
-                          onValueChange={(value) => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              categoria: value ? [value] : []
-                            }))
-                          }}
-                        >
-                          <SelectTrigger className="h-10 border-blue-200">
-                            <SelectValue placeholder="Seleccionar categoría" />
-                          </SelectTrigger>
-                          <SelectContent style={{ zIndex: isModalOpen ? 10030 : 'auto' }}>
-                            {categorias.map((categoria) => (
-                              <SelectItem key={categoria.id || categoria} value={categoria.nombre || categoria}>
-                                {categoria.nombre || categoria}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-blue-700">Buscar junta</label>
-                        <Input
-                          placeholder="Buscar por nombre..."
-                          value={filtros.busqueda}
-                          onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                          className="h-10 border-blue-200"
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="[&>div>h2]:text-blue-700 [&>div>h2]:text-sm">
+                        <FilterMultiSelect
+                          label="Juntas Vecinales"
+                          placeholder="Seleccionar juntas..."
+                          options={juntaOptions}
+                          value={selectedFilters.junta}
+                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, junta: value }))}
+                          clearValues={clearValues}
                         />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-blue-700">Fecha desde</label>
-                        <Input
-                          type="date"
-                          value={dateRange?.from ? dateRange.from.toISOString().split('T')[0] : ''}
-                          onChange={(e) => {
-                            const newDate = e.target.value ? new Date(e.target.value) : null;
-                            setDateRange(prev => ({ ...prev, from: newDate }));
-                          }}
-                          className="h-10 border-blue-200"
+                      <div className="[&>div>h2]:text-blue-700 [&>div>h2]:text-sm">
+                        <FilterMultiSelect
+                          label="Categorías"
+                          placeholder="Seleccionar categorías..."
+                          options={categoriaOptions}
+                          value={selectedFilters.categoria}
+                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, categoria: value }))}
+                          clearValues={clearValues}
                         />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-blue-700">Fecha hasta</label>
-                        <Input
-                          type="date"
-                          value={dateRange?.to ? dateRange.to.toISOString().split('T')[0] : ''}
-                          onChange={(e) => {
-                            const newDate = e.target.value ? new Date(e.target.value) : null;
-                            setDateRange(prev => ({ ...prev, to: newDate }));
-                          }}
-                          className="h-10 border-blue-200"
+                      <div className="[&>div>h2]:text-blue-700 [&>div>h2]:text-sm">
+                        <FilterDatePicker
+                          label="Rango de fechas"
+                          dateRange={dateRange}
+                          setDateRange={setDateRange}
+                          setIsValid={setIsValid}
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 mt-4">
                       <Button onClick={applyFilters} className="bg-blue-600 hover:bg-blue-700 text-white">
                         <Search className="w-4 h-4 mr-2" />
                         Aplicar filtros
@@ -504,7 +420,7 @@ const MapaFrioSeccion = ({
                             <Maximize2 className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-[95vw] w-full h-[95vh] px-1">
+                        <DialogContent className="max-w-[95vw] w-full h-[95vh] px-1" style={{ zIndex: 10010 }}>
                           <div className="flex flex-col h-full overflow-hidden p-1">
                             <DialogHeader className="px-6 py-4 border-b bg-blue-100 flex justify-between items-center">
                               <DialogTitle className="flex justify-between items-center text-blue-800">
@@ -520,15 +436,20 @@ const MapaFrioSeccion = ({
                               </DialogTitle>
                             </DialogHeader>
                             <div className="flex-1 relative overflow-y-auto">
-                              <MapaFrioComponente data={data} isModal={true} categorias={categorias} />
+                              <MapaFrioComponente
+                                data={data}
+                                isModal={true}
+                                categorias={rawCategorias}
+                                juntas={rawJuntas}
+                              />
                               <div
-                                className={`absolute top-0 right-0 h-full p-1 bg-background border-l border-blue-200 shadow-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[300px]" : "w-[40px]"
+                                className={`absolute top-0 right-0 h-full p-1 bg-white border-l border-blue-200 shadow-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-[300px]" : "w-[40px]"
                                   }`}
-                                style={{ zIndex: 1000 }}
+                                style={{ zIndex: 10020 }}
                               >
                                 <Button
                                   size="icon"
-                                  className="absolute top-2 left-[-1rem] z-[1001] bg-blue-500 hover:bg-blue-600 text-white"
+                                  className="absolute top-2 left-[-1rem] z-[10025] bg-blue-500 hover:bg-blue-600 text-white"
                                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                                 >
                                   {isSidebarOpen ? (
@@ -538,41 +459,51 @@ const MapaFrioSeccion = ({
                                   )}
                                 </Button>
                                 {isSidebarOpen && (
-                                  <div className="p-4 overflow-y-auto h-full">
+                                  <div className="p-4 overflow-y-auto h-full" style={{ zIndex: 10021 }}>
                                     <h3 className="font-semibold mb-4 text-center text-blue-800">Filtros Avanzados</h3>
-                                    <div className="space-y-4">
-                                      <Select
-                                        value={selectedFilters.junta.join(",")}
-                                        onValueChange={(value) => {
-                                          setSelectedFilters(prev => ({
-                                            ...prev,
-                                            junta: value ? [value] : []
-                                          }))
-                                        }}
-                                      >
-                                        <SelectTrigger className="border-blue-200">
-                                          <SelectValue placeholder="Seleccionar junta" />
-                                        </SelectTrigger>
-                                        <SelectContent style={{ zIndex: 10030 }}>
-                                          {juntas.map((junta) => (
-                                            <SelectItem key={junta.id || junta} value={junta.nombre || junta}>
-                                              {junta.nombre || junta}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                      <Button
-                                        onClick={applyFilters}
-                                        className="bg-blue-500 hover:bg-blue-600 text-white w-full"
-                                      >
-                                        Aplicar filtros
-                                      </Button>
-                                      <Button
-                                        onClick={limpiarFiltros}
-                                        className="bg-white hover:bg-blue-50 text-blue-700 w-full border-blue-200"
-                                      >
-                                        Limpiar filtros
-                                      </Button>
+                                    <div className="space-y-6" style={{ position: 'relative', zIndex: 10022 }}>
+                                      <div style={{ position: 'relative', zIndex: 10023 }} className="[&>div>h2]:text-blue-700 [&>div>h2]:text-sm">
+                                        <FilterMultiSelect
+                                          label="Juntas Vecinales"
+                                          placeholder="Seleccionar..."
+                                          options={juntaOptions}
+                                          value={selectedFilters.junta}
+                                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, junta: value }))}
+                                          clearValues={clearValues}
+                                        />
+                                      </div>
+                                      <div style={{ position: 'relative', zIndex: 10023 }} className="[&>div>h2]:text-blue-700 [&>div>h2]:text-sm">
+                                        <FilterMultiSelect
+                                          label="Categorías"
+                                          placeholder="Seleccionar..."
+                                          options={categoriaOptions}
+                                          value={selectedFilters.categoria}
+                                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, categoria: value }))}
+                                          clearValues={clearValues}
+                                        />
+                                      </div>
+                                      <div className="[&>div>h2]:text-blue-700 [&>div>h2]:text-sm">
+                                        <FilterDatePicker
+                                          label="Rango de fechas"
+                                          dateRange={dateRange}
+                                          setDateRange={setDateRange}
+                                          setIsValid={setIsValid}
+                                        />
+                                      </div>
+                                      <div className="space-y-3 pt-4">
+                                        <Button
+                                          onClick={applyFilters}
+                                          className="bg-blue-500 hover:bg-blue-600 text-white w-full"
+                                        >
+                                          Aplicar filtros
+                                        </Button>
+                                        <Button
+                                          onClick={limpiarFiltros}
+                                          className="bg-white hover:bg-blue-50 text-blue-700 w-full border-blue-200"
+                                        >
+                                          Limpiar filtros
+                                        </Button>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -592,7 +523,12 @@ const MapaFrioSeccion = ({
                         </div>
                       </div>
                     ) : (
-                      <MapaFrioComponente data={data} isModal={false} categorias={categorias} />
+                      <MapaFrioComponente
+                        data={data}
+                        isModal={false}
+                        categorias={rawCategorias}
+                        juntas={rawJuntas}
+                      />
                     )}
                   </CardContent>
                 </Card>
@@ -773,6 +709,17 @@ const MapaFrioSeccion = ({
             </Card>
           </div>
         </SidebarInset>
+        {/* Estilos globales para tooltips y modales consistentes */}
+        {isModalOpen && (
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            [data-radix-popper-content-wrapper] { z-index: 10030 !important; }
+            [data-radix-select-content] { z-index: 10030 !important; }
+            .radix-select-content { z-index: 10030 !important; }
+            .z-50 { z-index: 10030 !important; }
+          `
+          }} />
+        )}
       </div>
     </MapaFrioErrorBoundary>
   )
