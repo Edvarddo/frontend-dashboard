@@ -24,7 +24,7 @@ export function ResolutionRateTable({ data }) {
               const monthData = data[department][month];
               return (
                 <TableCell key={`${department}-${month}`}>
-                  {monthData ? `${(monthData.tasa_resolucion * 100).toFixed(1)}%` : '-'}
+                  {monthData ? `${monthData.tasa_resolucion}%` : '-'}
                 </TableCell>
               );
             })}

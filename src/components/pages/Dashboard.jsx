@@ -139,6 +139,13 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
 
   const api_url = import.meta.env.VITE_URL_PROD_VERCEL
 
+  const formatPieChartData = (data) => {
+    return data.map((item) => ({
+      name: item.categoria__nombre,
+      value: item.total,
+    }))
+  }
+
   const fetchData = async (urls) => {
     const authToken = localStorage.getItem("authToken")
 
@@ -199,16 +206,18 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
         })
       })
 
+      const formattedPieData = formatPieChartData(data[1])
+
       setCardsData(data[2] || {})
       setBarKeys(distinctValues)
       setBarData(data[0] ? data[0] : [])
-      setPieData(data[1] ? data[1] : [])
+      setPieData(formattedPieData)
       setLineChartData(data[3] ? data[3] : [])
       setTasaResolucionData(data[4] ? data[4] : {})
     } catch (error) {
       console.log(error)
     } finally {
-      console.log("CARDS DATA",cardsData)
+      console.log("CARDS DATA", cardsData)
       setLoading(false)
     }
   }
@@ -321,6 +330,8 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
   const handleDownload = () => {
     console.log("download")
   }
+
+  // TODO: Arreglar la descarga según la nueva respuesta del backend
 
   const handleExportPDFBackend = async (additionalComments, selectedDeptoReporte) => {
     try {
@@ -465,11 +476,13 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   </div>
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold text-emerald-900">
-                      {cardsData?.publicaciones || 0}
+                      {cardsData?.total_publicaciones || 0}
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* TODO: Determinar si mostrar usuarios activos o publicaciones pendientes */}
 
               {/* Usuarios activos */}
               <Card className="overflow-hidden bg-emerald-100 border border-emerald-200">
@@ -503,7 +516,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   </div>
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold text-emerald-900">
-                      {cardsData?.problemas_resueltos || 0}
+                      {cardsData?.resueltos || 0}
                     </div>
                   </div>
                 </CardContent>
@@ -522,7 +535,7 @@ const Dashboard = ({ isOpened, setIsOpened }) => {
                   </div>
                   <div className="flex items-baseline justify-between">
                     <div className="text-3xl font-bold text-emerald-950">
-                      {calculateResolutionRate()}%
+                      {cardsData?.tasa_resolucion || 0}%
                     </div>
                   </div>
                 </CardContent>

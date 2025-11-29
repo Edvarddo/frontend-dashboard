@@ -47,6 +47,7 @@ export const SidebarSectionProvider = ({ children }) => {
           title: "Historial de Modificaciones",
           link: "/historial-modificacion-publicaciones",
           icon: <FileText className="w-4 h-4" />,
+          allowedRoles: ["jefe_departamento", "personal"],
         },
       ],
     },
@@ -58,17 +59,12 @@ export const SidebarSectionProvider = ({ children }) => {
       title: "Gestión Municipal",
       icon: <Building2 className="w-5 h-5" />,
       children: [
-        // {
-        //   title: "Respuestas Municipales",
-        //   link: "/respuestas-municipales",
-        //   icon: <FileText className="w-4 h-4" />,
-        // },
-
-        // 🔥 GESTIÓN DE DATOS (HUB + NIETOS)
+        // GESTIÓN DE DATOS (HUB + NIETOS)
         {
           title: "Gestión de Datos",
           icon: <FileText className="w-4 h-4" />,
           link: "/gestion-datos",        // → HUB
+          allowedRoles: ["administrador", "jefe_departamento"],
           children: [
             {
               title: "Categorías",
@@ -125,7 +121,7 @@ export const SidebarSectionProvider = ({ children }) => {
     {
       title: "Administración",
       icon: <Users className="w-5 h-5" />,
-      isAdminOnly: true,
+      allowedRoles: ["administrador"],
       children: [
         {
           title: "Cuentas de Usuario",
@@ -141,18 +137,42 @@ export const SidebarSectionProvider = ({ children }) => {
     },
   ]
 
-
-
   const sections = useMemo(() => {
-    return allSections.filter(section => {
-      // Si la sección no tiene 'allowedRoles', se muestra a todos
-      if (!section.allowedRoles) {
-        return true;
-      }
-      // Si tiene 'allowedRoles', verifica si el rol del usuario está incluido
-      return rol && section.allowedRoles.includes(rol);
-    });
-  }, [rol]); // Depende del rol del usuario
+    // Función recursiva para filtrar menús
+    const filterNodes = (nodes) => {
+      // Usamos reduce para construir un nuevo array filtrado
+      return nodes.reduce((acc, node) => {
+
+        // 1. Verificación de Rol Directo:
+        // Si no tiene 'allowedRoles', es público. Si tiene, verificamos si el rol del usuario está incluido.
+        const hasPermission = !node.allowedRoles || node.allowedRoles.includes(rol);
+
+        // Si no tiene permiso, lo saltamos (no se agrega al acumulador)
+        if (!hasPermission) return acc;
+
+        // Clonamos el nodo para no mutar el array original 'allSections'
+        const newNode = { ...node };
+
+        // 2. Procesar Hijos (Recursividad):
+        if (newNode.children && newNode.children.length > 0) {
+          newNode.children = filterNodes(newNode.children);
+
+          // 3. Limpieza de Padres Vacíos:
+          // Si después de filtrar los hijos, el array quedó vacío y el padre 
+          // NO tiene un link directo (es solo un contenedor), no lo mostramos.
+          if (newNode.children.length === 0 && !newNode.link) {
+            return acc;
+          }
+        }
+
+        // Si pasó todos los filtros, lo agregamos a la lista final
+        acc.push(newNode);
+        return acc;
+      }, []);
+    };
+
+    return filterNodes(allSections);
+  }, [rol]); // Se recalcula cada vez que cambia el rol
 
   const [selectedSection, setSelectedSection] = useState("");
 

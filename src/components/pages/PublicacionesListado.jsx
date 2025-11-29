@@ -111,36 +111,62 @@ export default function PublicacionesListado({ isOpened, setIsOpened }) {
     return searchParams.toString()
   }
 
-  const handleDownload = async () => {
+  const handleDownload = async (reportType = "excel") => {
     try {
-      const token = localStorage.getItem("authToken")
+      const token = localStorage.getItem("token") // O "authToken" según tu sistema
       let queryParams = getQueryParams()
 
-      // Forzamos el departamento si el usuario tiene uno
+      // Forzamos el departamento si el usuario tiene uno asignado
       queryParams = withDepartamentoParam(queryParams)
 
-      const response = await axios.get(
-        `${API_ROUTES.PUBLICACIONES.EXPORT_TO_EXCEL}?${queryParams}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          responseType: "blob",
-        }
-      )
+      // Determinar la URL según el tipo de reporte solicitado
+      const endpoint =
+        reportType === "pdf"
+          ? API_ROUTES.REPORTS.GENERATE_PDF // Asegúrate de tener esta ruta definida
+          : API_ROUTES.REPORTS.EXPORT_EXCEL
 
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const response = await axios.get(`${endpoint}?${queryParams}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "blob", // Importante: le dice a axios que es un archivo binario
+      })
+
+      // 1. Intentar obtener el nombre del archivo desde el backend
+      // El backend envía: Content-Disposition: inline; filename="reporte_20231129.pdf"
+      let filename = `reporte.${reportType === "pdf" ? "pdf" : "xlsx"}`
+
+      const disposition = response.headers["content-disposition"]
+      if (disposition && disposition.indexOf("filename=") !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        const matches = filenameRegex.exec(disposition)
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, "")
+        }
+      }
+
+      // 2. Crear el objeto Blob con el tipo correcto
+      // El backend ya envía el content-type correcto (application/pdf o application/vnd...)
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"]
+      })
+
+      // 3. Generar link de descarga
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-
-      const filename = `publicaciones_${new Date().toISOString().split("T")[0]}.xlsx`
-      link.setAttribute("download", filename)
+      link.setAttribute("download", filename) // Usamos el nombre que vino del backend
 
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+
+      // 4. Limpieza
+      link.parentNode.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
     } catch (error) {
       console.error("Error al descargar el archivo:", error)
+      // Aquí podrías mostrar un toast o notificación de error
     }
   }
 

@@ -3,26 +3,15 @@
 // ==================================================
 // BASE URL DEL BACKEND
 // ==================================================
-//
-// En tu archivo .env o .env.local define:
-// VITE_URL_PROD_VERCEL="http://localhost:8000/api/v1/"
-//
-// Esa es la ruta EXACTA desde donde responde tu backend
-//
 export const API_BASE_URL =
   import.meta.env.VITE_URL_PROD_VERCEL ?? "http://localhost:8000/api/v1/";
 
-// Helper para construir la URL completa | No es necesaria la configuracion e interceptor lo tienen axios.js
+// Helper para construir la URL completa
 export const apiUrl = (path) => `${API_BASE_URL}${path}`;
 
 // ==================================================
 //   RUTAS DE API (NO INCLUYEN /api/v1/)
 // ==================================================
-//
-// Como API_BASE_URL YA TIENE /api/v1/,
-// las rutas internas empiezan directamente desde "/"
-// para evitar duplicaciones como /api/v1/v1/... !!!
-//
 export const API_ROUTES = {
   // ----- AUTENTICACIÓN -----
   AUTH: {
@@ -44,8 +33,9 @@ export const API_ROUTES = {
     ROOT: "publicaciones/",
     DETAIL: (id) => `publicaciones/${id}/`,
     CON_HISTORIAL: "publicaciones/con-historial/",
-    POR_JUNTA: "publicaciones-por-junta-vecinal/",
-    RESUELTAS_POR_JUNTA: "publicaciones-resueltas-por-junta-vecinal/",
+    // Actualizado: Ahora apuntan al grupo de estadísticas
+    POR_JUNTA: "estadisticas/publicaciones-junta/",
+    RESUELTAS_POR_JUNTA: "estadisticas/resueltas-junta/",
   },
 
   // ----- CATEGORÍAS -----
@@ -55,9 +45,10 @@ export const API_ROUTES = {
   },
 
   // ----- DEPARTAMENTOS -----
+  // Nota: Backend cambió 'departamentos-municipales' a 'departamentos'
   DEPARTAMENTOS: {
-    ROOT: "departamentos-municipales/",
-    DETAIL: (id) => `departamentos-municipales/${id}/`,
+    ROOT: "departamentos/",
+    DETAIL: (id) => `departamentos/${id}/`,
   },
 
   // ----- JUNTAS VECINALES -----
@@ -74,22 +65,26 @@ export const API_ROUTES = {
   },
 
   // ----- RESPUESTAS MUNICIPALES -----
+  // Nota: Backend cambió 'respuestas-municipales' a 'respuestas'
   RESPUESTAS_MUNICIPALES: {
-    ROOT: "respuestas-municipales/",
-    DETAIL: (id) => `respuestas-municipales/por-publicacion/${id}/`,
-    ROOT_ID: (id) => `respuestas-municipales/${id}/`,
+    ROOT: "respuestas/",
+    // Nota: El backend define esta acción como 'por-publicacion' dentro de 'respuestas'
+    DETAIL: (id) => `respuestas/por-publicacion/${id}/`,
+    ROOT_ID: (id) => `respuestas/${id}/`,
   },
 
   // ----- SITUACIONES -----
+  // Nota: Backend cambió 'situaciones-publicaciones' a 'situaciones'
   SITUACIONES_PUBLICACIONES: {
-    ROOT: "situaciones-publicaciones/",
-    DETAIL: (id) => `situaciones-publicaciones/${id}/`,
+    ROOT: "situaciones/",
+    DETAIL: (id) => `situaciones/${id}/`,
   },
 
   // ----- ANUNCIOS -----
+  // Nota: Backend cambió 'anuncios-municipales' a 'anuncios'
   ANUNCIOS: {
-    ROOT: "anuncios-municipales/",
-    DETAIL: (id) => `anuncios-municipales/${id}/`,
+    ROOT: "anuncios/",
+    DETAIL: (id) => `anuncios/${id}/`,
   },
 
   // ----- IMÁGENES ANUNCIOS -----
@@ -99,15 +94,17 @@ export const API_ROUTES = {
   },
 
   // ----- USUARIO-DEPARTAMENTO -----
+  // Nota: Backend usa plural 'usuarios-departamento'
   USUARIO_DEPARTAMENTO: {
-    ROOT: "usuario-departamento/",
-    DETAIL: (id) => `usuario-departamento/${id}/`,
+    ROOT: "usuarios-departamento/",
+    DETAIL: (id) => `usuarios-departamento/${id}/`,
   },
 
   // ----- EVIDENCIAS DE RESPUESTA -----
+  // Nota: Backend usa plural 'evidencias-respuesta'
   EVIDENCIA_RESPUESTA: {
-    ROOT: "evidencia-respuesta/",
-    DETAIL: (id) => `evidencia-respuesta/${id}/`,
+    ROOT: "evidencias-respuesta/",
+    DETAIL: (id) => `evidencias-respuesta/${id}/`,
   },
 
   // ----- HISTORIAL -----
@@ -117,9 +114,10 @@ export const API_ROUTES = {
   },
 
   // ----- AUDITORÍA -----
+  // Nota: Backend usa plural 'auditorias'
   AUDITORIA: {
-    ROOT: "auditoria/",
-    DETAIL: (id) => `auditoria/${id}/`,
+    ROOT: "auditorias/",
+    DETAIL: (id) => `auditorias/${id}/`,
   },
 
   // ----- KANBAN -----
@@ -144,28 +142,36 @@ export const API_ROUTES = {
   },
 
   // ----- REPORTES -----
+  // Actualizado: Rutas movidas a 'v1/reportes/...'
   REPORTS: {
-    EXPORT_EXCEL: "export-to-excel/",
-    GENERATE_PDF: "generate-pdf-report/",
+    EXPORT_EXCEL: "reportes/excel/",
+    GENERATE_PDF: "reportes/pdf/",
+  },
+
+  // ----- NOTIFICACIONES -----
+  // Agregado: Nuevas rutas detectadas en urls.py
+  NOTIFICACIONES: {
+    REGISTRAR: "notificaciones/registrar/",
+    DESACTIVAR: "notificaciones/desactivar/",
+    MIS_DISPOSITIVOS: "notificaciones/mis-dispositivos/",
   },
 
   // ----- ESTADÍSTICAS -----
+  // Actualizado: Todas las rutas movidas a 'v1/estadisticas/...'
   STATS: {
-    PUBLICACIONES_POR_MES_Y_CATEGORIA: "publicaciones-por-mes-y-categoria/",
-    PUBLICACIONES_POR_CATEGORIA: "publicaciones-por-categoria/",
-    RESUMEN_ESTADISTICAS: "resumen-estadisticas/",
-    RESUELTOS_POR_MES: "resueltos-por-mes/",
-    TASA_RESOLUCION_DEPARTAMENTO: "tasa-resolucion-departamento/",
-    PUBLICACIONES_POR_JUNTA_VECINAL: "publicaciones-por-junta-vecinal/",
-    ESTADISTICAS_DEPARTAMENTOS: "estadisticas-departamentos/",
-    ESTADISTICAS_KANBAN: "estadisticas-kanban/",
-    ESTADISTICAS_RESPUESTAS: "estadisticas-respuestas/",
-    ESTADISTICAS_GESTION_DATOS: "estadisticas-gestion-datos/",
-    JUNTA_MAS_CRITICA: "junta-mas-critica/",
-    PUBLICACIONES_RESUELTAS_POR_JUNTA_VECINAL:
-      "publicaciones-resueltas-por-junta-vecinal/",
-    JUNTA_MAS_EFICIENTE: "junta-mas-eficiente/",
-    ESTADISTICAS_HISTORIAL_MODIFICACIONES:
-      "estadisticas-historial-modificaciones/",
+    RESUMEN_ESTADISTICAS: "estadisticas/resumen/",
+    PUBLICACIONES_POR_MES_Y_CATEGORIA: "estadisticas/publicaciones-mes-categoria/",
+    PUBLICACIONES_POR_CATEGORIA: "estadisticas/publicaciones-categoria/",
+    RESUELTOS_POR_MES: "estadisticas/resueltos-mes/",
+    TASA_RESOLUCION_DEPARTAMENTO: "estadisticas/tasa-resolucion/",
+    PUBLICACIONES_POR_JUNTA_VECINAL: "estadisticas/publicaciones-junta/",
+    JUNTA_MAS_CRITICA: "estadisticas/junta-critica/",
+    JUNTA_MAS_EFICIENTE: "estadisticas/junta-eficiente/",
+    PUBLICACIONES_RESUELTAS_POR_JUNTA_VECINAL: "estadisticas/resueltas-junta/",
+    ESTADISTICAS_DEPARTAMENTOS: "estadisticas/departamentos/",
+    ESTADISTICAS_KANBAN: "estadisticas/kanban/",
+    ESTADISTICAS_RESPUESTAS: "estadisticas/respuestas/",
+    ESTADISTICAS_GESTION_DATOS: "estadisticas/gestion-datos/",
+    ESTADISTICAS_HISTORIAL_MODIFICACIONES: "estadisticas/historial-modificaciones/",
   },
 };

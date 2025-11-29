@@ -12,6 +12,8 @@ export const capitalizeFirstLetter = (string) => {
   return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 }
 
+
+// TODO: Determinar colores de forma similar a como ocurre en el backend
 export const categoryColors = {
   "Seguridad": "#FF6B6B",
   "Basura": "#4ECDC4",
