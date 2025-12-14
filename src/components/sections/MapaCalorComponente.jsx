@@ -87,7 +87,7 @@ const MapaCalorComponente = ({ data, isModal = false, categorias }) => {
         bubblingMouseEvents: false,
       }).addTo(mapInstanceRef.current)
 
-       
+
       const pendientes = item.Junta_Vecinal.pendientes || 0
       const urgentes = item.Junta_Vecinal.urgentes || 0
 

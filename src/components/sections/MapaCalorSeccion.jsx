@@ -4,10 +4,10 @@ import { SidebarInset } from "@/components/ui/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import FilterMultiSelect from "../filters/FilterMultiSelect"
+import FilterDatePicker from "../filters/FilterDatePicker"
 import {
   Search,
   Filter,
@@ -21,11 +21,10 @@ import {
   Clock,
   MapPin,
 } from "lucide-react"
-// import dynamic from "next/dynamic"
 import MapaCalorComponente from "./MapaCalorComponente"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
 import { API_ROUTES } from "@/api/apiRoutes"
-import { cn } from "@/lib/utils"
+
 // Error Boundary para manejar errores sin romper el componente
 class MapaCalorErrorBoundary extends Component {
   constructor(props) {
@@ -68,8 +67,6 @@ class MapaCalorErrorBoundary extends Component {
   }
 }
 
-
-
 const MapaCalorSeccion = ({
   data: backendData,
   isLoading,
@@ -85,15 +82,6 @@ const MapaCalorSeccion = ({
   setIsValid,
   isValid
 }) => {
-  console.log(backendData)
-  console.log("categorias", categorias)
-  const [filtros, setFiltros] = useState({
-    fechaInicio: "",
-    fechaFin: "",
-    junta_vecinal: [],
-    categoria: [],
-    busqueda: "",
-  })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [juntaCritica, setJuntaCritica] = useState(null)
@@ -101,12 +89,25 @@ const MapaCalorSeccion = ({
   const [selectedJunta, setSelectedJunta] = useState(null)
   const axiosPrivate = useAxiosPrivate()
 
-  // Función para obtener la junta más crítica del backend
+  // 1. NORMALIZACIÓN DE DATOS (Esto ya estaba bien, pero es vital)
+  const rawJuntas = Array.isArray(juntas) ? juntas : (juntas?.juntas || []);
+  const rawCategorias = Array.isArray(categorias) ? categorias : (categorias?.categorias || []);
+
+  const juntaOptions = rawJuntas.map(j => ({
+    nombre: j.nombre, // <--- ESTO ES LO QUE BUSCA TU MULTISELECT
+    value: j.nombre,
+    id: j.id
+  }));
+
+  const categoriaOptions = rawCategorias.map(c => ({
+    nombre: c.nombre, // <--- ESTO ES LO QUE BUSCA TU MULTISELECT
+    value: c.nombre,
+    id: c.id
+  }));
   const obtenerJuntaCritica = useCallback(async () => {
     try {
       setLoadingJuntaCritica(true)
       const response = await axiosPrivate.get(API_ROUTES.STATS.JUNTA_MAS_CRITICA)
-      console.log('Junta más crítica del backend:', response.data)
       setJuntaCritica(response.data)
     } catch (error) {
       console.error('Error al obtener junta más crítica:', error)
@@ -116,16 +117,13 @@ const MapaCalorSeccion = ({
     }
   }, [axiosPrivate])
 
-  // Efecto para cargar la junta más crítica cuando cambia backendData
   useEffect(() => {
     if (backendData && backendData.length > 0) {
       obtenerJuntaCritica()
     }
   }, [backendData, obtenerJuntaCritica])
 
-  // Verificar que backendData no esté vacío - validación inicial más robusta
   if (!backendData || !Array.isArray(backendData)) {
-    console.log('BackendData no es un array válido:', backendData);
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-red-100">
         <SidebarInset>
@@ -151,7 +149,6 @@ const MapaCalorSeccion = ({
     )
   }
 
-  // Procesar datos del backend para el formato del mapa de calor con manejo de errores
   let processedData = [];
   let estadisticas = {
     totalPendientes: 0,
@@ -162,25 +159,18 @@ const MapaCalorSeccion = ({
 
   try {
     processedData = backendData?.length > 0 ? backendData.map(item => {
-      console.log('Procesando item:', item);
-      console.log('Valores originales - pendientes:', item.Junta_Vecinal?.pendientes, 'urgentes:', item.Junta_Vecinal?.urgentes);
-
       return {
         ...item,
-        // Los datos ahora vienen dinámicamente del backend
         Junta_Vecinal: {
           ...item.Junta_Vecinal,
-          // Usar valores del backend directamente, sin calcular automáticamente cuando son 0
           pendientes: item.Junta_Vecinal?.pendientes ?? Math.floor((item.Junta_Vecinal?.total_publicaciones || 0) * 0.7),
           urgentes: item.Junta_Vecinal?.urgentes ?? Math.floor((item.Junta_Vecinal?.total_publicaciones || 0) * 0.2),
         },
-        // Usar valores del backend o valores por defecto
         tiempo_promedio_pendiente: item.tiempo_promedio_pendiente || "35 días",
         ultima_publicacion: item.ultima_publicacion || "2024-01-26",
       }
     }) : []
 
-    // Estadísticas generales calculadas con datos reales del backend
     estadisticas = {
       totalPendientes: processedData.length > 0
         ? processedData.reduce((total, item) => total + (item.Junta_Vecinal?.pendientes || 0), 0)
@@ -189,26 +179,23 @@ const MapaCalorSeccion = ({
         ? processedData.reduce((total, item) => total + (item.Junta_Vecinal?.urgentes || 0), 0)
         : 0,
       juntaMasProblematica:
-        // Usar la junta crítica del endpoint específico si está disponible
         juntaCritica?.junta_mas_critica ? {
           Junta_Vecinal: {
             nombre: juntaCritica.junta_mas_critica.junta.nombre,
             latitud: juntaCritica.junta_mas_critica.junta.latitud,
             longitud: juntaCritica.junta_mas_critica.junta.longitud,
-            intensidad: juntaCritica.junta_mas_critica.metricas.indice_criticidad / 100, // Normalizar a 0-1
+            intensidad: juntaCritica.junta_mas_critica.metricas.indice_criticidad / 100,
             pendientes: juntaCritica.junta_mas_critica.metricas.publicaciones_pendientes,
             urgentes: juntaCritica.junta_mas_critica.metricas.casos_urgentes,
             total_publicaciones: juntaCritica.junta_mas_critica.metricas.total_publicaciones
           },
           tiempo_promedio_pendiente: `${juntaCritica.junta_mas_critica.metricas.tiempo_promedio_pendiente} días`,
-          // Simular datos de categorías para compatibilidad con la tabla
           "Asistencia Social": Math.floor(juntaCritica.junta_mas_critica.metricas.total_publicaciones * 0.3),
           "Mantención de Calles": Math.floor(juntaCritica.junta_mas_critica.metricas.total_publicaciones * 0.3),
           "Seguridad": Math.floor(juntaCritica.junta_mas_critica.metricas.total_publicaciones * 0.2),
           "Áreas verdes": Math.floor(juntaCritica.junta_mas_critica.metricas.total_publicaciones * 0.2),
           ultima_publicacion: new Date().toISOString().split('T')[0]
         } :
-          // Fallback a cálculo local si no hay datos del endpoint
           processedData.length > 0
             ? processedData.reduce(
               (peor, item) => ((item.Junta_Vecinal?.intensidad || 0) > (peor?.Junta_Vecinal?.intensidad || 0) ? item : peor),
@@ -219,7 +206,6 @@ const MapaCalorSeccion = ({
         juntaCritica.junta_mas_critica.metricas.tiempo_promedio_pendiente :
         processedData.length > 0
           ? Math.round(processedData.reduce((total, item) => {
-            // Extraer número de días del string, manejo más robusto
             const tiempoStr = item.tiempo_promedio_pendiente || "0 días";
             const dias = parseInt(tiempoStr.replace(/[^\d]/g, '')) || 0;
             return total + dias;
@@ -229,35 +215,18 @@ const MapaCalorSeccion = ({
   } catch (error) {
     console.error('Error procesando datos del mapa de calor:', error);
     processedData = [];
-    estadisticas = {
-      totalPendientes: 0,
-      totalUrgentes: 0,
-      juntaMasProblematica: null,
-      tiempoPromedioPendiente: 0
-    };
   }
 
-  // Función para formatear fechas de manera segura
   const formatearFecha = (fecha) => {
     try {
       return new Date(fecha).toLocaleDateString("es-AR")
     } catch (error) {
-      console.error('Error formateando fecha:', fecha, error);
       return "Fecha no disponible";
     }
   }
 
-  // Usar los datos del backend como fuente principal
   const data = processedData
-
-  // Verificar que tengamos datos procesados para mostrar
   const hasData = data && data.length > 0
-
-  // Debug: verificar el estado de los datos
-  console.log('Debug - backendData:', backendData);
-  console.log('Debug - processedData:', processedData);
-  console.log('Debug - data:', data);
-  console.log('Debug - hasData:', hasData);
 
   return (
     <MapaCalorErrorBoundary>
@@ -266,7 +235,6 @@ const MapaCalorSeccion = ({
         <SidebarInset>
           <div className="p-6">
             <Card className="bg-white shadow-xl border-0">
-              {/* HEADER */}
               <CardHeader className="bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -286,7 +254,7 @@ const MapaCalorSeccion = ({
               </CardHeader>
 
               <CardContent className="p-6">
-                {/* Dashboard de estadísticas calientes */}
+                {/* KPIs */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
                     <CardContent className="p-4 text-center">
@@ -295,7 +263,6 @@ const MapaCalorSeccion = ({
                       <div className="text-sm text-red-600">Total pendientes</div>
                     </CardContent>
                   </Card>
-
                   <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                     <CardContent className="p-4 text-center">
                       <Flame className="w-8 h-8 text-orange-600 mx-auto mb-2" />
@@ -303,7 +270,6 @@ const MapaCalorSeccion = ({
                       <div className="text-sm text-orange-600">Casos urgentes</div>
                     </CardContent>
                   </Card>
-
                   <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
                     <CardContent className="p-4 text-center">
                       <TrendingUp className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
@@ -324,7 +290,6 @@ const MapaCalorSeccion = ({
                       </div>
                     </CardContent>
                   </Card>
-
                   <Card className="bg-gradient-to-r from-pink-50 to-pink-100 border-pink-200">
                     <CardContent className="p-4 text-center">
                       <Clock className="w-8 h-8 text-pink-600 mx-auto mb-2" />
@@ -334,7 +299,7 @@ const MapaCalorSeccion = ({
                   </Card>
                 </div>
 
-                {/* Filtros para mapa de calor */}
+                {/* Filtros */}
                 <Card className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2 text-red-800">
@@ -343,91 +308,38 @@ const MapaCalorSeccion = ({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-red-700">Juntas vecinales</label>
-                        <Select
-                          value={selectedFilters.junta.join(",")}
-                          onValueChange={(value) => {
-                            const newValues = value && value !== "all" ? value.split(",") : []
-                            setSelectedFilters(prev => ({ ...prev, junta: newValues }))
-                          }}
-                        >
-                          <SelectTrigger className="h-10 border-red-200">
-                            <SelectValue placeholder="Seleccionar juntas" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todas las juntas</SelectItem>
-                            {juntas.map((junta) => (
-                              <SelectItem key={junta.id} value={junta.nombre}>
-                                {junta.nombre}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-red-700">Categorías</label>
-                        <Select
-                          value={selectedFilters.categoria.join(",")}
-                          onValueChange={(value) => {
-                            const newValues = value && value !== "all" ? value.split(",") : []
-                            setSelectedFilters(prev => ({ ...prev, categoria: newValues }))
-                          }}
-                        >
-                          <SelectTrigger className="h-10 border-red-200">
-                            <SelectValue placeholder="Seleccionar categorías" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todas las categorías</SelectItem>
-                            {categorias.map((categoria) => (
-                              <SelectItem key={categoria.id} value={categoria.nombre}>
-                                {categoria.nombre}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-red-700">Buscar junta</label>
-                        <Input
-                          placeholder="Buscar por nombre..."
-                          value={filtros.busqueda}
-                          onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                          className="h-10 border-red-200"
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="[&>div>h2]:text-red-700 [&>div>h2]:text-sm">
+                        <FilterMultiSelect
+                          label="Juntas Vecinales"
+                          placeholder="Seleccionar juntas..."
+                          options={juntaOptions}
+                          value={selectedFilters.junta}
+                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, junta: value }))}
+                          clearValues={clearValues}
                         />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-red-700">Fecha desde</label>
-                        <Input
-                          type="date"
-                          value={dateRange?.from ? dateRange.from.toISOString().split('T')[0] : ''}
-                          onChange={(e) => {
-                            const newDate = e.target.value ? new Date(e.target.value) : null
-                            setDateRange(prev => ({ ...prev, from: newDate }))
-                          }}
-                          className="h-10 border-red-200"
+                      <div className="[&>div>h2]:text-red-700 [&>div>h2]:text-sm">
+                        <FilterMultiSelect
+                          label="Categorías"
+                          placeholder="Seleccionar categorías..."
+                          options={categoriaOptions}
+                          value={selectedFilters.categoria}
+                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, categoria: value }))}
+                          clearValues={clearValues}
                         />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-red-700">Fecha hasta</label>
-                        <Input
-                          type="date"
-                          value={dateRange?.to ? dateRange.to.toISOString().split('T')[0] : ''}
-                          onChange={(e) => {
-                            const newDate = e.target.value ? new Date(e.target.value) : null
-                            setDateRange(prev => ({ ...prev, to: newDate }))
-                          }}
-                          className="h-10 border-red-200"
+                      <div className="[&>div>h2]:text-red-700 [&>div>h2]:text-sm">
+                        <FilterDatePicker
+                          label="Rango de fechas"
+                          dateRange={dateRange}
+                          setDateRange={setDateRange}
+                          setIsValid={setIsValid}
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 mt-4">
                       <Button onClick={applyFilters} className="bg-red-600 hover:bg-red-700 text-white">
                         <Search className="w-4 h-4 mr-2" />
                         Aplicar filtros
@@ -443,7 +355,7 @@ const MapaCalorSeccion = ({
                   </CardContent>
                 </Card>
 
-                {/* Mapa de calor */}
+                {/* Mapa */}
                 <Card className="mb-6 border-red-200">
                   <CardHeader className="bg-gradient-to-r from-red-100 to-orange-100">
                     <div className="flex justify-between items-center">
@@ -478,8 +390,9 @@ const MapaCalorSeccion = ({
                                   <MapaCalorComponente
                                     data={data}
                                     isModal={true}
-                                    categorias={categorias}
-                                    juntas={juntas}
+                                    // 2. CORRECCIÓN: Pasar los datos normalizados al hijo
+                                    categorias={rawCategorias}
+                                    juntas={rawJuntas}
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
@@ -520,96 +433,53 @@ const MapaCalorSeccion = ({
                                 {isSidebarOpen && (
                                   <div className="p-4 overflow-y-auto h-full" style={{ zIndex: 10021 }}>
                                     <h3 className="font-semibold mb-4 text-center text-red-800">Filtros Avanzados</h3>
-                                    <div className="space-y-4" style={{ position: 'relative', zIndex: 10022 }}>
-                                      {/* Filtro de Juntas Vecinales */}
-                                      <div className="space-y-2" style={{ position: 'relative', zIndex: 10023 }}>
-                                        <label className="text-sm font-medium text-red-700">Juntas Vecinales</label>
-                                        <Select
-                                          value={selectedFilters.junta.join(",")}
-                                          onValueChange={(value) => {
-                                            const newValues = value && value !== "all" ? value.split(",") : []
-                                            setSelectedFilters(prev => ({ ...prev, junta: newValues }))
-                                          }}
-                                        >
-                                          <SelectTrigger className="border-red-200" style={{ position: 'relative', zIndex: 10024 }}>
-                                            <SelectValue placeholder="Seleccionar juntas" />
-                                          </SelectTrigger>
-                                          <SelectContent className="z-[10030]" style={{ zIndex: 10030 }}>
-                                            <SelectItem value="all">Todas las juntas</SelectItem>
-                                            {juntas.map((junta) => (
-                                              <SelectItem key={junta.id} value={junta.nombre}>
-                                                {junta.nombre}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
+                                    <div className="space-y-6" style={{ position: 'relative', zIndex: 10022 }}>
 
-                                      {/* Filtro de Categorías */}
-                                      <div className="space-y-2" style={{ position: 'relative', zIndex: 10023 }}>
-                                        <label className="text-sm font-medium text-red-700">Categorías</label>
-                                        <Select
-                                          value={selectedFilters.categoria.join(",")}
-                                          onValueChange={(value) => {
-                                            const newValues = value && value !== "all" ? value.split(",") : []
-                                            setSelectedFilters(prev => ({ ...prev, categoria: newValues }))
-                                          }}
-                                        >
-                                          <SelectTrigger className="border-red-200" style={{ position: 'relative', zIndex: 10024 }}>
-                                            <SelectValue placeholder="Seleccionar categorías" />
-                                          </SelectTrigger>
-                                          <SelectContent className="z-[10030]" style={{ zIndex: 10030 }}>
-                                            <SelectItem value="all">Todas las categorías</SelectItem>
-                                            {categorias.map((categoria) => (
-                                              <SelectItem key={categoria.id} value={categoria.nombre}>
-                                                {categoria.nombre}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-
-                                      {/* Filtro de fecha desde */}
-                                      <div className="space-y-2">
-                                        <label className="text-sm font-medium text-red-700">Fecha desde</label>
-                                        <Input
-                                          type="date"
-                                          value={dateRange?.from ? dateRange.from.toISOString().split('T')[0] : ''}
-                                          onChange={(e) => {
-                                            const newDate = e.target.value ? new Date(e.target.value) : null
-                                            setDateRange(prev => ({ ...prev, from: newDate }))
-                                          }}
-                                          className="border-red-200"
+                                      <div style={{ position: 'relative', zIndex: 10023 }} className="[&>div>h2]:text-red-700 [&>div>h2]:text-sm">
+                                        <FilterMultiSelect
+                                          label="Juntas Vecinales"
+                                          placeholder="Seleccionar..."
+                                          options={juntaOptions}
+                                          value={selectedFilters.junta}
+                                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, junta: value }))}
+                                          clearValues={clearValues}
                                         />
                                       </div>
 
-                                      {/* Filtro de fecha hasta */}
-                                      <div className="space-y-2">
-                                        <label className="text-sm font-medium text-red-700">Fecha hasta</label>
-                                        <Input
-                                          type="date"
-                                          value={dateRange?.to ? dateRange.to.toISOString().split('T')[0] : ''}
-                                          onChange={(e) => {
-                                            const newDate = e.target.value ? new Date(e.target.value) : null
-                                            setDateRange(prev => ({ ...prev, to: newDate }))
-                                          }}
-                                          className="border-red-200"
+                                      <div style={{ position: 'relative', zIndex: 10023 }} className="[&>div>h2]:text-red-700 [&>div>h2]:text-sm">
+                                        <FilterMultiSelect
+                                          label="Categorías"
+                                          placeholder="Seleccionar..."
+                                          options={categoriaOptions}
+                                          value={selectedFilters.categoria}
+                                          onChange={(value) => setSelectedFilters(prev => ({ ...prev, categoria: value }))}
+                                          clearValues={clearValues}
                                         />
                                       </div>
 
-                                      {/* Botones de acción */}
-                                      <Button
-                                        onClick={applyFilters}
-                                        className="bg-red-500 hover:bg-red-600 text-white w-full"
-                                      >
-                                        Aplicar filtros
-                                      </Button>
-                                      <Button
-                                        onClick={limpiarFiltros}
-                                        className="bg-white hover:bg-red-50 text-red-700 w-full border-red-200"
-                                      >
-                                        Limpiar filtros
-                                      </Button>
+                                      <div className="[&>div>h2]:text-red-700 [&>div>h2]:text-sm">
+                                        <FilterDatePicker
+                                          label="Rango de fechas"
+                                          dateRange={dateRange}
+                                          setDateRange={setDateRange}
+                                          setIsValid={setIsValid}
+                                        />
+                                      </div>
+
+                                      <div className="space-y-3 pt-4">
+                                        <Button
+                                          onClick={applyFilters}
+                                          className="bg-red-500 hover:bg-red-600 text-white w-full"
+                                        >
+                                          Aplicar filtros
+                                        </Button>
+                                        <Button
+                                          onClick={limpiarFiltros}
+                                          className="bg-white hover:bg-red-50 text-red-700 w-full border-red-200"
+                                        >
+                                          Limpiar filtros
+                                        </Button>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -633,8 +503,9 @@ const MapaCalorSeccion = ({
                         <MapaCalorComponente
                           data={data}
                           isModal={false}
-                          categorias={categorias}
-                          juntas={juntas}
+                          // 2. CORRECCIÓN: Pasar los datos normalizados al hijo
+                          categorias={rawCategorias}
+                          juntas={rawJuntas}
                         />
                       ) : (
                         <div className="w-full h-[500px] bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center border-t">
@@ -665,232 +536,205 @@ const MapaCalorSeccion = ({
                   </CardContent>
                 </Card>
 
-                {/* Tabla de estadísticas de problemáticas */}
+                {/* Tabla de estadísticas */}
                 <Card className="border-red-200">
-  <CardHeader className="bg-gradient-to-r from-red-100 to-orange-100">
-    <CardTitle className="text-red-800 flex items-center gap-2">
-      <AlertTriangle className="w-6 h-6" />
-      Estadísticas de Problemáticas por Junta Vecinal
-    </CardTitle>
-  </CardHeader>
+                  <CardHeader className="bg-gradient-to-r from-red-100 to-orange-100">
+                    <CardTitle className="text-red-800 flex items-center gap-2">
+                      <AlertTriangle className="w-6 h-6" />
+                      Estadísticas de Problemáticas por Junta Vecinal
+                    </CardTitle>
+                  </CardHeader>
 
-  <CardContent className="p-4">
-    {hasData ? (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* LISTA DE JUNTAS (MAESTRO) */}
-        <div className="lg:col-span-1">
-          <Card className="h-full border-red-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-red-800">
-                Juntas Vecinales
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 max-h-[380px] overflow-y-auto space-y-2">
-              {data.map((item) => (
-                <button
-                  key={item.Junta_Vecinal.id ?? item.Junta_Vecinal.nombre}
-                  onClick={() => setSelectedJunta(item)}
-                  className={`w-full flex items-center justify-between rounded-lg px-3 py-2 border text-left transition
-                    ${
-                      selectedJunta?.Junta_Vecinal?.nombre ===
-                      item.Junta_Vecinal.nombre
-                        ? "border-red-400 bg-red-50"
-                        : "border-red-100 hover:bg-red-50/70"
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-red-600" />
-                    <span className="text-xs sm:text-sm font-medium text-red-800 line-clamp-2">
-                      {item.Junta_Vecinal.nombre || "Sin nombre"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-[11px] text-red-500 font-semibold">
-                      {item.Junta_Vecinal.pendientes ?? 0} pend.
-                    </span>
-                    <Badge
-                      className={`
+                  <CardContent className="p-4">
+                    {hasData ? (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* LISTA DE JUNTAS */}
+                        <div className="lg:col-span-1">
+                          <Card className="h-full border-red-200">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm font-semibold text-red-800">
+                                Juntas Vecinales
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0 max-h-[380px] overflow-y-auto space-y-2">
+                              {data.map((item) => (
+                                <button
+                                  key={item.Junta_Vecinal.id ?? item.Junta_Vecinal.nombre}
+                                  onClick={() => setSelectedJunta(item)}
+                                  className={`w-full flex items-center justify-between rounded-lg px-3 py-2 border text-left transition
+                    ${selectedJunta?.Junta_Vecinal?.nombre ===
+                                      item.Junta_Vecinal.nombre
+                                      ? "border-red-400 bg-red-50"
+                                      : "border-red-100 hover:bg-red-50/70"
+                                    }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-red-600" />
+                                    <span className="text-xs sm:text-sm font-medium text-red-800 line-clamp-2">
+                                      {item.Junta_Vecinal.nombre || "Sin nombre"}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <span className="text-[11px] text-red-500 font-semibold">
+                                      {item.Junta_Vecinal.pendientes ?? 0} pend.
+                                    </span>
+                                    <Badge
+                                      className={`
                         px-1.5 py-0 h-5 text-[10px]
-                        ${
-                          (item.Junta_Vecinal.urgentes || 0) >= 6
-                            ? "bg-red-100 text-red-800 border-red-300"
-                            : (item.Junta_Vecinal.urgentes || 0) >= 3
-                            ? "bg-orange-100 text-orange-800 border-orange-300"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-300"
-                        }
+                        ${(item.Junta_Vecinal.urgentes || 0) >= 6
+                                          ? "bg-red-100 text-red-800 border-red-300"
+                                          : (item.Junta_Vecinal.urgentes || 0) >= 3
+                                            ? "bg-orange-100 text-orange-800 border-orange-300"
+                                            : "bg-yellow-100 text-yellow-800 border-yellow-300"
+                                        }
                       `}
-                    >
-                      {item.Junta_Vecinal.urgentes ?? 0} urg.
-                    </Badge>
-                  </div>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                                    >
+                                      {item.Junta_Vecinal.urgentes ?? 0} urg.
+                                    </Badge>
+                                  </div>
+                                </button>
+                              ))}
+                            </CardContent>
+                          </Card>
+                        </div>
 
-        {/* DETALLE JUNTA (DETALLE) */}
-        <div className="lg:col-span-2">
-          {selectedJunta ? (
-            <Card className="border-red-200">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-red-600" />
-                    <div>
-                      <CardTitle className="text-base sm:text-lg text-red-800">
-                        {selectedJunta.Junta_Vecinal.nombre}
-                      </CardTitle>
-                      <p className="text-xs text-red-500">
-                        Detalle de problemáticas y categorías
-                      </p>
-                    </div>
-                  </div>
-                  {/* mini resumen total publicaciones */}
-                  <div className="text-right text-xs text-red-500">
-                    <span className="block font-semibold">
-                      {selectedJunta.Junta_Vecinal.total_publicaciones ?? 0} publ.
-                    </span>
-                    <span>
-                      {selectedJunta.Junta_Vecinal.pendientes ?? 0} pendientes
-                    </span>
-                  </div>
-                </div>
-              </CardHeader>
+                        {/* DETALLE JUNTA */}
+                        <div className="lg:col-span-2">
+                          {selectedJunta ? (
+                            <Card className="border-red-200">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-red-600" />
+                                    <div>
+                                      <CardTitle className="text-base sm:text-lg text-red-800">
+                                        {selectedJunta.Junta_Vecinal.nombre}
+                                      </CardTitle>
+                                      <p className="text-xs text-red-500">
+                                        Detalle de problemáticas y categorías
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right text-xs text-red-500">
+                                    <span className="block font-semibold">
+                                      {selectedJunta.Junta_Vecinal.total_publicaciones ?? 0} publ.
+                                    </span>
+                                    <span>
+                                      {selectedJunta.Junta_Vecinal.pendientes ?? 0} pendientes
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardHeader>
 
-              <CardContent className="space-y-4">
-                {/* MÉTRICAS PRINCIPALES */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-                    <CardContent className="p-3 text-center">
-                      <div className="text-[11px] text-red-600">
-                        Total Pendientes
-                      </div>
-                      <div className="text-xl font-bold text-red-700">
-                        {selectedJunta.Junta_Vecinal.pendientes ?? 0}
-                      </div>
-                    </CardContent>
-                  </Card>
+                              <CardContent className="space-y-4">
+                                {/* MÉTRICAS */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+                                    <CardContent className="p-3 text-center">
+                                      <div className="text-[11px] text-red-600">
+                                        Total Pendientes
+                                      </div>
+                                      <div className="text-xl font-bold text-red-700">
+                                        {selectedJunta.Junta_Vecinal.pendientes ?? 0}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
 
-                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-                    <CardContent className="p-3 text-center">
-                      <div className="text-[11px] text-orange-600">
-                        Casos Urgentes
-                      </div>
-                      <div className="text-xl font-bold text-orange-700">
-                        {selectedJunta.Junta_Vecinal.urgentes ?? 0}
-                      </div>
-                    </CardContent>
-                  </Card>
+                                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                                    <CardContent className="p-3 text-center">
+                                      <div className="text-[11px] text-orange-600">
+                                        Casos Urgentes
+                                      </div>
+                                      <div className="text-xl font-bold text-orange-700">
+                                        {selectedJunta.Junta_Vecinal.urgentes ?? 0}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
 
-                  <Card className="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200">
-                    <CardContent className="p-3 text-center">
-                      <div className="text-[11px] text-pink-600">
-                        Tiempo Promedio
-                      </div>
-                      <div className="text-sm font-semibold text-pink-700">
-                        {selectedJunta.tiempo_promedio_pendiente || "N/A"}
-                      </div>
-                    </CardContent>
-                  </Card>
+                                  <Card className="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200">
+                                    <CardContent className="p-3 text-center">
+                                      <div className="text-[11px] text-pink-600">
+                                        Tiempo Promedio
+                                      </div>
+                                      <div className="text-sm font-semibold text-pink-700">
+                                        {selectedJunta.tiempo_promedio_pendiente || "N/A"}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
 
-                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
-                    <CardContent className="p-3 text-center">
-                      <div className="text-[11px] text-yellow-700">
-                        Última Publicación
-                      </div>
-                      <div className="text-sm font-semibold text-yellow-800">
-                        {selectedJunta.ultima_publicacion
-                          ? formatearFecha(selectedJunta.ultima_publicacion)
-                          : "N/A"}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+                                    <CardContent className="p-3 text-center">
+                                      <div className="text-[11px] text-yellow-700">
+                                        Última Publicación
+                                      </div>
+                                      <div className="text-sm font-semibold text-yellow-800">
+                                        {selectedJunta.ultima_publicacion
+                                          ? formatearFecha(selectedJunta.ultima_publicacion)
+                                          : "N/A"}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </div>
 
-                {/* TABLA DE CATEGORÍAS DE ESTA JUNTA */}
-                <div className="border border-red-100 rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-red-50">
-                        <TableHead className="text-red-800">
-                          Categoría
-                        </TableHead>
-                        <TableHead className="text-right text-red-800">
-                          Cantidad
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {categorias.map((cat) => (
-                        <TableRow key={cat.id}>
-                          <TableCell className="text-sm">
-                            {cat.nombre}
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-semibold text-red-700">
-                            {selectedJunta[cat.nombre] ?? 0}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-dashed border-red-200 h-full flex items-center justify-center">
-              <p className="text-sm text-red-500">
-                Selecciona una junta vecinal para ver el detalle.
-              </p>
-            </Card>
-          )}
-        </div>
-      </div>
-    ) : (
-      <div className="h-32 flex items-center justify-center text-red-500">
-        No hay datos para mostrar.
-      </div>
-    )}
-  </CardContent>
-</Card>
+                                {/* TABLA DE CATEGORÍAS */}
+                                <div className="border border-red-100 rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="bg-red-50">
+                                        <TableHead className="text-red-800">
+                                          Categoría
+                                        </TableHead>
+                                        <TableHead className="text-right text-red-800">
+                                          Cantidad
+                                        </TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {/* 3. CORRECCIÓN: Usar rawCategorias en lugar de categorias */}
+                                      {rawCategorias.map((cat) => (
+                                        <TableRow key={cat.id}>
+                                          <TableCell className="text-sm">
+                                            {cat.nombre}
+                                          </TableCell>
+                                          <TableCell className="text-right text-sm font-semibold text-red-700">
+                                            {selectedJunta[cat.nombre] ?? 0}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ) : (
+                            <Card className="border-dashed border-red-200 h-full flex items-center justify-center">
+                              <p className="text-sm text-red-500">
+                                Selecciona una junta vecinal para ver el detalle.
+                              </p>
+                            </Card>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-32 flex items-center justify-center text-red-500">
+                        No hay datos para mostrar.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
           </div>
         </SidebarInset>
 
-        {/* Estilos globales para dropdowns en modal */}
+        {/* Estilos globales */}
         {isModalOpen && (
           <style dangerouslySetInnerHTML={{
             __html: `
-            /* Radix UI Select Content - muy específico */
-            [data-radix-popper-content-wrapper] {
-              z-index: 10030 !important;
-            }
-            [data-radix-select-content] {
-              z-index: 10030 !important;
-              position: relative !important;
-            }
-            .radix-select-content {
-              z-index: 10030 !important;
-            }
-            .radix-dropdown-content {
-              z-index: 10030 !important;
-            }
-            /* Select específicos para el modal */
-            [data-state="open"] {
-              z-index: 10030 !important;
-            }
-            [data-side] {
-              z-index: 10030 !important;
-            }
-            /* Portales de Radix */
-            [data-radix-portal] {
-              z-index: 10030 !important;
-            }
-            /* Clases de shadcn/ui */
-            .z-50 {
-              z-index: 10030 !important;
-            }
+            [data-radix-popper-content-wrapper] { z-index: 10030 !important; }
+            [data-radix-select-content] { z-index: 10030 !important; }
+            .radix-select-content { z-index: 10030 !important; }
+            .z-50 { z-index: 10030 !important; }
           `
           }} />
         )}

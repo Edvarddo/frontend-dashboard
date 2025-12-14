@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, MapPin, ArrowLeft, Map, Trash2, Filter } from "lucide-react"
+import { Plus, Edit, MapPin, ArrowLeft, Map as MapIcon, Trash2, Filter, Search, RefreshCw } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import TopBar from "../TopBar"
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
@@ -22,10 +22,10 @@ import { API_ROUTES } from "@/api/apiRoutes"
 import FilterContainer from "../filters/FilterContainer"
 import FilterMultiSelect from "../filters/FilterMultiSelect"
 import FilterDatePicker from "../filters/FilterDatePicker"
-import FilterInput from "../filters/FilterInput" // <--- Nuevo Componente
+import FilterInput from "../filters/FilterInput"
 import Paginador from "../Paginador"
 import useFilters from "../../hooks/useFilters"
-import { usePaginatedFetch } from "@/hooks/usePaginatedFetch" // <--- Hook de Paginación
+
 
 function MapClickHandler({ onMapClick }) {
   useMapEvents({
@@ -40,47 +40,113 @@ const GestionJuntaVecinal = ({ onVolver }) => {
   const axiosPrivate = useAxiosPrivate()
   const { toast } = useToast()
 
-  // 1. Gestión de Filtros
-  const { filters, setFilter, resetFilters, getQueryParams } = useFilters({
+  // --- 1. Estados de Datos ---
+  const [allData, setAllData] = useState([]) // Todos los datos del backend
+  const [loading, setLoading] = useState(false)
+
+  // --- 2. Gestión de Filtros (Estado Local) ---
+  const { filters, setFilter, resetFilters } = useFilters({
     estado: [],
     fecha_inicio: null,
     fecha_fin: null,
-    nombre: "",
+    nombre: "", // Búsqueda por texto
   })
 
-  // Estado para la URL dinámica de paginación
-  const [filterUrl, setFilterUrl] = useState(null)
+  // --- 3. Paginación Local ---
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  // 2. Implementación del Hook usePaginatedFetch
-  const {
-    data: juntasVecinales, // Los datos de la tabla vienen de aquí
-    totalItems,
-    loading,
-    currentPage,
-    itemsPerPage,
-    setPage,
-    setPageSize,
-    refresh // Usaremos esto para recargar tras CRUD
-  } = usePaginatedFetch({
-    baseUrl: API_ROUTES.JUNTAS_VECINALES.PAGINATED || API_ROUTES.JUNTAS_VECINALES.ROOT, // Asegúrate que tu API route sea la correcta
-    externalUrl: filterUrl,
-    initialPageSize: 10
-  })
+  // --- 4. Carga de Datos (Solo al montar o actualizar) ---
+  const fetchJuntas = useCallback(async () => {
+    setLoading(true)
+    try {
+      // Traemos TODO el listado (sin paginación de backend)
+      const response = await axiosPrivate.get(API_ROUTES.JUNTAS_VECINALES.ROOT)
+      // Aseguramos que sea un array
+      const data = Array.isArray(response.data) ? response.data : (response.data.results || [])
+      setAllData(data)
+    } catch (error) {
+      console.error("Error al cargar juntas:", error)
+      toast({
+        title: "Error de carga",
+        description: "No se pudieron cargar las juntas vecinales.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [axiosPrivate, toast])
 
+  useEffect(() => {
+    fetchJuntas()
+  }, [fetchJuntas])
+
+  // --- 5. Lógica de Filtrado Local (useMemo) ---
+  const filteredData = useMemo(() => {
+    let data = allData
+
+    // 1. Búsqueda por texto (Nombre o Calle)
+    if (filters.nombre) {
+      const search = filters.nombre.toLowerCase()
+      data = data.filter(item =>
+        item.nombre_junta?.toLowerCase().includes(search) ||
+        item.nombre_calle?.toLowerCase().includes(search)
+      )
+    }
+
+    // 2. Filtro por Estado
+    if (filters.estado && filters.estado.length > 0) {
+      // filters.estado es un array de nombres ['Habilitado', 'Deshabilitado']
+      // Aseguramos comparación case-insensitive si es necesario
+      const estadosFilter = filters.estado.map(e => e.toLowerCase())
+      data = data.filter(item => estadosFilter.includes(item.estado?.toLowerCase()))
+    }
+
+    // 3. Filtro por Rango de Fechas
+    if (filters.fecha_inicio) {
+      const start = new Date(filters.fecha_inicio)
+      start.setHours(0, 0, 0, 0)
+      data = data.filter(item => new Date(item.fecha_creacion) >= start)
+    }
+    if (filters.fecha_fin) {
+      const end = new Date(filters.fecha_fin)
+      end.setHours(23, 59, 59, 999)
+      data = data.filter(item => new Date(item.fecha_creacion) <= end)
+    }
+
+    return data
+  }, [allData, filters])
+
+  // --- 6. Lógica de Paginación Local (useMemo) ---
+  const paginatedData = useMemo(() => {
+    const firstIndex = (currentPage - 1) * itemsPerPage
+    const lastIndex = firstIndex + itemsPerPage
+    return filteredData.slice(firstIndex, lastIndex)
+  }, [filteredData, currentPage, itemsPerPage])
+
+  const totalItems = filteredData.length
   const totalPages = Math.ceil(totalItems / itemsPerPage)
 
-  // Icono del Mapa
-  const customIcon = L.icon({
-    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-  })
+  // Resetear a página 1 si cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters])
 
-  // Estados para Modales y Formularios
-  const [nuevasUbicaciones, setNuevasUbicaciones] = useState([])
+
+  // --- Icono del Mapa ---
+  const customIcon = useMemo(() => {
+    return L.icon({
+      iconUrl: "https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-green.png",
+      // Usamos la misma fuente de sombra que tu configuración global para consistencia
+      shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    })
+  }, [])
+
+  // --- Estados para Modales y Formularios ---
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingJunta, setEditingJunta] = useState(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -106,28 +172,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     longitud: "",
   })
 
-  // --- Lógica de Aplicación de Filtros ---
-  const handleApplyFilters = () => {
-    const query = getQueryParams()
-    // Si hay query, construimos la URL con filtros, si no, null para usar la base
-    if (query) {
-      setFilterUrl(`${API_ROUTES.JUNTAS_VECINALES.PAGINATED || API_ROUTES.JUNTAS_VECINALES.ROOT}?${query}`)
-    } else {
-      setFilterUrl(null)
-    }
-    setPage(1) // Volver a primera página al filtrar
-  }
-
+  // --- Manejadores de Filtros ---
   const handleCleanFilters = () => {
     resetFilters()
-    setFilterUrl(null)
-    setPage(1)
   }
 
-  // --- Lógica de Formularios (Agregar) ---
+  // --- Lógica de Agregar ---
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-
     if (field === "latitud" || field === "longitud") {
       const lat = field === "latitud" ? parseFloat(value) : parseFloat(formData.latitud)
       const lng = field === "longitud" ? parseFloat(value) : parseFloat(formData.longitud)
@@ -156,14 +208,9 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           estado: formData.estado,
           latitud: parseFloat(formData.ubicacion.lat.toFixed(6)),
           longitud: parseFloat(formData.ubicacion.lng.toFixed(6)),
-          // categoria y fecha se manejan usualmente en backend, pero se pueden enviar si es necesario
         }
 
-        const response = await axiosPrivate.post(API_ROUTES.JUNTAS_VECINALES.ROOT, nuevaJuntaPayload)
-
-        // Agregar temporalmente al mapa (opcional, ya que el refresh recargará la tabla)
-        const nuevaJuntaLocal = { ...nuevaJuntaPayload, id: response.data.id, tipo: "nueva" }
-        setNuevasUbicaciones((prev) => [...prev, nuevaJuntaLocal])
+        await axiosPrivate.post(API_ROUTES.JUNTAS_VECINALES.ROOT, nuevaJuntaPayload)
 
         setFormData({
           nombre: "",
@@ -181,15 +228,14 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           className: operations.SUCCESS,
         })
 
-        refresh() // <--- Recargar tabla
+        fetchJuntas() // RECARGA LA LISTA COMPLETA
       }
     } catch (error) {
       toast({
-        title: "Error al agregar junta vecinal",
-        description: "Ha ocurrido un error al agregar la nueva junta vecinal.",
-        className: operations.ERROR,
+        title: "Error al agregar",
+        description: "No se pudo crear la junta vecinal.",
+        variant: "destructive",
       })
-      console.error("Error:", error)
     }
   }
 
@@ -211,7 +257,6 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   const handleEditInputChange = (field, value) => {
     setEditFormData((prev) => ({ ...prev, [field]: value }))
-
     if (field === "latitud" || field === "longitud") {
       const lat = field === "latitud" ? parseFloat(value) : parseFloat(editFormData.latitud)
       const lng = field === "longitud" ? parseFloat(value) : parseFloat(editFormData.longitud)
@@ -248,18 +293,17 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
       toast({
         title: "Junta vecinal actualizada",
-        description: "La junta vecinal ha sido actualizada exitosamente.",
+        description: "Los cambios se guardaron correctamente.",
         className: operations.SUCCESS,
       })
 
-      refresh() // <--- Recargar tabla
+      fetchJuntas() // RECARGA LA LISTA COMPLETA
     } catch (error) {
       toast({
         title: "Error al actualizar",
-        description: "Ha ocurrido un error al intentar actualizar la junta vecinal.",
-        className: operations.ERROR,
+        description: "No se pudieron guardar los cambios.",
+        variant: "destructive",
       })
-      console.error("Error:", error)
     }
   }
 
@@ -274,23 +318,19 @@ const GestionJuntaVecinal = ({ onVolver }) => {
     try {
       await axiosPrivate.delete(`${API_ROUTES.JUNTAS_VECINALES.ROOT}${juntaToDelete.id}/`)
 
-      // Limpiar marcadores temporales si es necesario
-      setNuevasUbicaciones((prev) => prev.filter((item) => item.id !== juntaToDelete.id))
-
       toast({
         title: "Junta vecinal eliminada",
-        description: "La junta vecinal ha sido eliminada exitosamente.",
+        description: "El registro ha sido eliminado correctamente.",
         className: operations.SUCCESS,
       })
 
-      refresh() // <--- Recargar tabla (maneja lógica de página vacía internamente si el hook está optimizado, o vuelve a cargar la actual)
+      fetchJuntas() // RECARGA LA LISTA COMPLETA
     } catch (error) {
       toast({
         title: "Error al eliminar",
-        description: "Ha ocurrido un error al intentar eliminar la junta vecinal.",
-        className: operations.ERROR,
+        description: "No se pudo eliminar el registro.",
+        variant: "destructive",
       })
-      console.error("Error:", error)
     } finally {
       setDeleteModalOpen(false)
       setJuntaToDelete(null)
@@ -305,7 +345,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopBar title={"Gestión de Juntas Vecinales"} icon={<Map className="h-6 w-6 text-blue-600" />} />
+      <TopBar title={"Gestión de Juntas Vecinales"} icon={<MapIcon className="h-6 w-6 text-blue-600" />} />
       <div className="p-6 space-y-6">
         {onVolver && (
           <Button variant="outline" onClick={onVolver} className="mb-4 bg-white">
@@ -324,6 +364,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Inputs Formulario */}
               <div>
                 <Label htmlFor="nombre">Nombre</Label>
                 <Input
@@ -407,19 +448,12 @@ const GestionJuntaVecinal = ({ onVolver }) => {
             </CardContent>
           </Card>
 
-          {/* Mapa General */}
+          {/* Mapa General (Muestra filteredData para contexto de búsqueda) */}
           <Card>
             <CardHeader>
               <CardTitle>Mapa de Ubicaciones</CardTitle>
-              <div className="flex gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                  <span>Existentes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                  <span>Nueva (Selección)</span>
-                </div>
+              <div className="flex gap-4 text-sm text-gray-500">
+                {filteredData.length} ubicaciones visibles según filtros
               </div>
             </CardHeader>
             <CardContent>
@@ -433,8 +467,8 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <MapClickHandler onMapClick={handleMapClick} />
 
-                    {/* Juntas cargadas desde API */}
-                    {juntasVecinales.map((junta) => (
+                    {/* Renderiza filteredData para ver lo que se busca en la tabla */}
+                    {filteredData.map((junta) => (
                       <Marker key={junta.id} position={[junta.latitud, junta.longitud]}>
                         <Popup>
                           <div>
@@ -448,14 +482,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                       </Marker>
                     ))}
 
-                    {/* Nuevas ubicaciones agregadas localmente antes de refresh */}
-                    {nuevasUbicaciones.map((junta) => (
-                      <Marker key={`new-${junta.id}`} position={[junta.latitud, junta.longitud]} icon={customIcon}>
-                        <Popup>Agregada recientemente</Popup>
-                      </Marker>
-                    ))}
-
-                    {/* Marcador de selección actual */}
+                    {/* Marcador de selección actual para nueva junta */}
                     {formData.ubicacion && (
                       <Marker position={[formData.ubicacion.lat, formData.ubicacion.lng]} icon={customIcon}>
                         <Popup>Nueva Ubicación Seleccionada</Popup>
@@ -472,7 +499,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           </Card>
         </div>
 
-        {/* Sección de Listado con Filtros y Paginación */}
+        {/* Listado con Filtros Locales */}
         <Card>
           <CardHeader>
             <CardTitle>Listado de Juntas Vecinales</CardTitle>
@@ -494,21 +521,17 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   setFilter("fecha_fin", range?.to)
                 }}
               />
-              {/* Componente de Búsqueda Refactorizado */}
+              {/* Filtro Texto Local */}
               <FilterInput
                 label="Búsqueda"
                 value={filters.nombre}
                 onChange={(e) => setFilter("nombre", e.target.value)}
-                placeholder="Buscar por título..."
+                placeholder="Buscar por nombre o calle..."
               />
 
               <div className="flex gap-2 items-end">
                 <Button variant="outline" onClick={handleCleanFilters}>
                   Limpiar
-                </Button>
-                <Button className="bg-green-600 hover:bg-green-700" onClick={handleApplyFilters}>
-                  <Filter className="h-4 w-4 mr-2" />
-                  Aplicar
                 </Button>
               </div>
             </FilterContainer>
@@ -529,10 +552,10 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                 <TableBody className="text-center">
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">Cargando...</TableCell>
+                      <TableCell colSpan={5} className="text-center py-8">Cargando listado completo...</TableCell>
                     </TableRow>
-                  ) : juntasVecinales.length > 0 ? (
-                    juntasVecinales.map((junta) => (
+                  ) : paginatedData.length > 0 ? (
+                    paginatedData.map((junta) => (
                       <TableRow key={junta.id}>
                         <TableCell>{junta.nombre_junta}</TableCell>
                         <TableCell>{junta.nombre_calle} {junta.numero_calle}</TableCell>
@@ -562,7 +585,7 @@ const GestionJuntaVecinal = ({ onVolver }) => {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                        0 Resultados encontrados
+                        No se encontraron resultados con los filtros actuales.
                       </TableCell>
                     </TableRow>
                   )}
@@ -570,15 +593,18 @@ const GestionJuntaVecinal = ({ onVolver }) => {
               </Table>
             </div>
 
-            {/* Paginador Reutilizable */}
+            {/* Paginador Local */}
             <Paginador
               currentPage={currentPage}
               totalPages={totalPages}
-              onPageChange={setPage}
+              onPageChange={setCurrentPage}
               totalItems={totalItems}
               itemsPerPage={itemsPerPage}
-              onItemsPerPageChange={setPageSize}
-              loading={loading}
+              onItemsPerPageChange={(val) => {
+                setItemsPerPage(Number(val))
+                setCurrentPage(1)
+              }}
+              loading={false}
             />
           </CardContent>
         </Card>
@@ -590,10 +616,8 @@ const GestionJuntaVecinal = ({ onVolver }) => {
           <DialogHeader>
             <DialogTitle>Editar Junta Vecinal</DialogTitle>
           </DialogHeader>
-          {/* ... Contenido del formulario de edición (Mantenido igual que original, usando editFormData) ... */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
-              {/* Inputs de edición */}
               <div>
                 <Label htmlFor="edit-nombre">Nombre</Label>
                 <Input id="edit-nombre" value={editFormData.nombre} onChange={(e) => handleEditInputChange("nombre", e.target.value)} />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, Plus, Edit, ArrowLeft, Tag, Eye, RefreshCw } from "lucide-react"
+import { Search, Plus, Edit, ArrowLeft, Tag, Eye, RefreshCw, Trash2 } from "lucide-react"
 import TopBar from "../TopBar"
 
 import useAxiosPrivate from "@/hooks/useAxiosPrivate"
@@ -19,103 +19,127 @@ import { ModalEliminarCategoria } from "../ModalEliminarCategoria"
 import { Spinner } from "@radix-ui/themes"
 import { operations } from "@/lib/constants"
 import { API_ROUTES } from "@/api/apiRoutes"
-// Datos de ejemplo para departamentos
-const departamentosData = [
-  { id: 1, nombre: "Secretaría General" },
-  { id: 2, nombre: "Obras Públicas" },
-  { id: 3, nombre: "Desarrollo Social" },
-  { id: 4, nombre: "Medio Ambiente" },
-  { id: 5, nombre: "Cultura y Turismo" },
-  { id: 6, nombre: "Deportes" },
-  { id: 7, nombre: "Educación" },
-  { id: 8, nombre: "Salud" },
-]
 
-// Datos de ejemplo para categorías
-const categoriasData = [
-  {
-    id: 1,
-    nombre: "Ordenanzas Municipales",
-    descripcion: "Normativas y reglamentos del municipio",
-    departamento_id: 1,
-    estado: "Activa",
-    fechaCreacion: "2024-01-15",
-    publicaciones: 25,
-  },
-  {
-    id: 2,
-    nombre: "Obras de Infraestructura",
-    descripcion: "Proyectos de construcción y mejoramiento urbano",
-    departamento_id: 2,
-    estado: "Activa",
-    fechaCreacion: "2024-01-20",
-    publicaciones: 18,
-  },
-  {
-    id: 3,
-    nombre: "Programas Sociales",
-    descripcion: "Iniciativas de desarrollo comunitario y asistencia social",
-    departamento_id: 3,
-    estado: "Activa",
-    fechaCreacion: "2024-02-01",
-    publicaciones: 32,
-  },
-  {
-    id: 4,
-    nombre: "Medio Ambiente",
-    descripcion: "Políticas y acciones ambientales",
-    departamento_id: 4,
-    estado: "Inactiva",
-    fechaCreacion: "2024-02-10",
-    publicaciones: 12,
-  },
-  {
-    id: 5,
-    nombre: "Eventos Culturales",
-    descripcion: "Actividades culturales y festivales municipales",
-    departamento_id: 5,
-    estado: "Activa",
-    fechaCreacion: "2024-02-15",
-    publicaciones: 45,
-  },
-]
+import Paginador from "../Paginador"
 
 const GestionCategoria = ({ onVolver }) => {
-  // usamos useAxiosPrivate
   const axiosPrivate = useAxiosPrivate()
   const { toast } = useToast()
-  const [categorias, setCategorias] = useState([])
+
+  // --- Estados de Datos ---
+  const [allData, setAllData] = useState([]) // Todos los datos de categorías
   const [departamentos, setDepartamentos] = useState([])
   const [loading, setLoading] = useState(false)
+
+  // --- Estados de Filtros ---
+  const [filtros, setFiltros] = useState({
+    departamento: "all",
+    estado: "all",
+    busqueda: "",
+  })
+
+  // --- Estados de Paginación ---
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  // --- Estados de UI ---
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [modoEdicion, setModoEdicion] = useState(false)
   const [formData, setFormData] = useState({
     id: null,
     nombre: "",
     descripcion: "",
     departamento_id: "",
-    estado: "",
+    estado: "habilitado",
   })
-  const [selectedState, setSelectedState] = useState("")
-  const [filtros, setFiltros] = useState({
-    departamento: "",
-    estado: "",
-    busqueda: "",
-  })
-  const [modalAbierto, setModalAbierto] = useState(false)
-  const [modoEdicion, setModoEdicion] = useState(false)
 
-  // Manejar cambios en el formulario
+  // --- Carga de Datos ---
+  const fetchCategorias = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await axiosPrivate.get(API_ROUTES.CATEGORIAS.ROOT)
+      // Asegurar que sea un array
+      const data = Array.isArray(response.data) ? response.data : (response.data.results || [])
+      setAllData(data)
+    } catch (error) {
+      console.error("Error al cargar categorías:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las categorías.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [axiosPrivate, toast])
+
+  const fetchDepartamentos = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get(API_ROUTES.DEPARTAMENTOS.ROOT)
+      setDepartamentos(response.data || [])
+    } catch (error) {
+      console.error("Error al cargar departamentos:", error)
+    }
+  }, [axiosPrivate])
+
+  useEffect(() => {
+    fetchCategorias()
+    fetchDepartamentos()
+  }, [fetchCategorias, fetchDepartamentos])
+
+  // --- Lógica de Filtrado (useMemo) ---
+  const categoriasFiltradas = useMemo(() => {
+    return allData.filter((categoria) => {
+      // 1. Búsqueda Texto
+      const cumpleBusqueda =
+        !filtros.busqueda ||
+        categoria.nombre?.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+        categoria.descripcion?.toLowerCase().includes(filtros.busqueda.toLowerCase())
+
+      // 2. Filtro Departamento
+      const cumpleDepartamento =
+        filtros.departamento === "all" ||
+        categoria.departamento?.id?.toString() === filtros.departamento ||
+        categoria.departamento_id?.toString() === filtros.departamento
+
+      // 3. Filtro Estado
+      const cumpleEstado =
+        filtros.estado === "all" ||
+        categoria.estado?.toLowerCase() === filtros.estado.toLowerCase()
+
+      return cumpleBusqueda && cumpleDepartamento && cumpleEstado
+    })
+  }, [allData, filtros])
+
+  // --- Lógica de Paginación (useMemo) ---
+  const paginatedData = useMemo(() => {
+    const firstIndex = (currentPage - 1) * itemsPerPage
+    const lastIndex = firstIndex + itemsPerPage
+    return categoriasFiltradas.slice(firstIndex, lastIndex)
+  }, [categoriasFiltradas, currentPage, itemsPerPage])
+
+  const totalItems = categoriasFiltradas.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+
+  // Resetear página al filtrar
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filtros])
+
+  // --- Estadísticas (Calculadas sobre allData) ---
+  const estadisticas = useMemo(() => ({
+    total: allData.length,
+    activas: allData.filter((cat) => cat.estado === "habilitado").length,
+    inactivas: allData.filter((cat) => cat.estado === "deshabilitado").length,
+    totalPublicaciones: allData.reduce((sum, cat) => sum + (cat.cantidad_publicaciones || 0), 0),
+  }), [allData])
+
+  // --- Manejadores ---
   const handleInputChange = (field, value) => {
-    console.log(`Campo cambiado: ${field}, Nuevo valor: ${value}`)
-    console.log(formData)
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Abrir modal para agregar nueva categoría
   const handleAgregarCategoria = () => {
-    setSelectedState("")
     setFormData({
       id: null,
       nombre: "",
@@ -127,201 +151,72 @@ const GestionCategoria = ({ onVolver }) => {
     setModalAbierto(true)
   }
 
-  // Abrir modal para editar categoría
   const handleEditarCategoria = (categoria) => {
-    console.log("Editar categoría:", categoria)
-    setSelectedState(categoria.estado)
     setFormData({
       id: categoria.id,
       nombre: categoria.nombre,
       descripcion: categoria.descripcion,
-      departamento_id: categoria.departamento.id,
+      // Manejar si departamento viene como objeto o ID
+      departamento_id: categoria.departamento?.id?.toString() || categoria.departamento_id?.toString() || "",
       estado: categoria.estado,
     })
     setModoEdicion(true)
     setModalAbierto(true)
   }
 
-  // Guardar categoría (crear o actualizar)
   const handleGuardarCategoria = async () => {
     if (formData.nombre && formData.descripcion && formData.departamento_id && formData.estado) {
-      if (modoEdicion) {
-        // añadimos un loading para controlar otros aspectos
-        setLoading(true)
-        try {
-          // backend
-          await axiosPrivate.patch(`${API_ROUTES.CATEGORIAS.ROOT}${formData.id}/`, formData)
-          // frontend
-          setCategorias((prev) => prev.map((cat) => (cat.id === formData.id ? { ...cat, ...formData } : cat)))
-          toast({
-            title: "Categoría actualizada",
-            description: "La categoría se ha actualizado con éxito.",
-            className: operations.SUCCESS,
-          })
-          setModalAbierto(false)
-        } catch (error) {
-          console.error("Error al actualizar la categoría:", error)
-          toast({
-            title: "Error al actualizar la categoría",
-            description: "Ha ocurrido un error al intentar actualizar la categoría.",
-            className: operations.ERROR,
-          })
-        } finally {
-          setLoading(false)
-        }
-      } else {
-        // Crear nueva categoría
-        // console.log(formData.departamento_id)
-        // try-catch
-        const nuevaCategoria = {
+      setLoading(true)
+      try {
+        const payload = {
           nombre: formData.nombre,
           descripcion: formData.descripcion,
-          departamento: formData.departamento_id,
           estado: formData.estado,
-          fecha_creacion: new Date().toISOString().split("T")[0],
+          departamento: formData.departamento_id // Enviamos 'departamento' en lugar de 'departamento_id'
         }
-        try {
-          const response = await axiosPrivate.post(API_ROUTES.CATEGORIAS.ROOT, nuevaCategoria)
-          setCategorias((prev) => [...prev, response.data])
-          toast({
-            title: "Categoría creada",
-            description: "La categoría se ha creado con éxito.",
-            className: operations.SUCCESS,
-          })
-          setModalAbierto(false)
-        } catch (error) {
-          console.error("Error al crear la categoría:", error)
-          toast({
-            title: "Error al crear la categoría",
-            description: "Ha ocurrido un error al intentar crear la categoría.",
-            className: operations.ERROR,
-          })
+        if (modoEdicion) {
+          await axiosPrivate.patch(`${API_ROUTES.CATEGORIAS.ROOT}${formData.id}/`, payload)
+          toast({ title: "Categoría actualizada", description: "Actualización exitosa.", className: operations.SUCCESS })
+        } else {
+          await axiosPrivate.post(API_ROUTES.CATEGORIAS.ROOT, payload)
+          toast({ title: "Categoría creada", description: "Creación exitosa.", className: operations.SUCCESS })
         }
-
-        console.log(nuevaCategoria)
-        // setCategorias((prev) => [...prev, nuevaCategoria])
+        fetchCategorias() // Recarga lista completa
+        setModalAbierto(false)
+      } catch (error) {
+        console.error("Error al guardar:", error)
+        toast({ title: "Error", description: "No se pudo guardar la categoría.", className: operations.ERROR })
+      } finally {
+        setLoading(false)
       }
-
-      // setModalAbierto(false)
-      setFormData({
-        id: null,
-        nombre: "",
-        descripcion: "",
-        departamento_id: "",
-        estado: "habilitado",
-      })
     }
   }
 
-  // Eliminar categoría
-  const handleEliminarCategoria = (id) => {
-    // conectar con api la eliminacion y proporcionar el id
-    axiosPrivate
-      .delete(`${API_ROUTES.CATEGORIAS.ROOT}${id}/`)
-      .then(() => {
-        setCategorias((prev) => prev.filter((cat) => cat.id !== id))
-        toast({
-          title: "Categoría eliminada",
-          description: "La categoría se ha eliminado con éxito.",
-          className: operations.SUCCESS,
-        })
-      })
-      .catch((error) => {
-        console.error("Error al eliminar la categoría:", error)
-        toast({
-          title: "Error al eliminar la categoría",
-          description: "Ha ocurrido un error al intentar eliminar la categoría.",
-          className: operations.ERROR,
-        })
-      })
+  const handleEliminarCategoria = async (id) => {
+    try {
+      await axiosPrivate.delete(`${API_ROUTES.CATEGORIAS.ROOT}${id}/`)
+      toast({ title: "Categoría eliminada", description: "Eliminación exitosa.", className: operations.SUCCESS })
+      fetchCategorias() // Recarga lista completa
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudo eliminar.", className: operations.ERROR })
+    }
   }
 
-  // Obtener nombre del departamento
-  const getNombreDepartamento = (departamento_id) => {
-    const departamento = departamentosData.find((dep) => dep.id === departamento_id)
-    return departamento ? departamento.nombre : "Sin asignar"
-  }
-
-  // Filtrar categorías
-  const categoriasFiltradas = categorias.filter((categoria) => {
-    const cumpleBusqueda =
-      !filtros.busqueda ||
-      categoria.nombre.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
-      categoria.descripcion.toLowerCase().includes(filtros.busqueda.toLowerCase())
-
-    const cumpleDepartamento = !filtros.departamento || categoria.departamento_id.toString() === filtros.departamento
-    const cumpleEstado = !filtros.estado || categoria.estado === filtros.estado
-
-    return cumpleBusqueda && cumpleDepartamento && cumpleEstado
-  })
-
-  // Limpiar filtros
   const limpiarFiltros = () => {
-    setFiltros({
-      departamento: "",
-      estado: "",
-      busqueda: "",
-    })
+    setFiltros({ departamento: "all", estado: "all", busqueda: "" })
   }
 
-  // Estadísticas
-  const estadisticas = {
-    total: categorias.length,
-    activas: categorias.filter((cat) => cat.estado === "habilitado").length,
-    inactivas: categorias.filter((cat) => cat.estado === "deshabilitado").length,
-    totalPublicaciones: categorias.reduce((sum, cat) => sum + cat.cantidad_publicaciones, 0),
-  }
-  // formatear fechas
   const formatDate = (dateString) => {
-    // incluye la hora para el formato y mas abreviado
+    if (!dateString) return "N/A"
     const options = { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric" }
     return new Date(dateString).toLocaleDateString("es-CL", options)
   }
-  // Vamos a obtener las categorias de la api
-  const fetchCategorias = async () => {
-    const response = await axiosPrivate.get(API_ROUTES.CATEGORIAS.ROOT)
-    console.log(response.data)
-    setCategorias(response.data)
-  }
-  const fetchDepartamentos = async () => {
-    const response = await axiosPrivate.get(API_ROUTES.DEPARTAMENTOS.ROOT)
-    console.log(response.data)
-    setDepartamentos(response.data)
-  }
-
-  const handleRecargarTabla = async () => {
-    setLoading(true)
-    try {
-      await fetchCategorias()
-      toast({
-        title: "Tabla recargada",
-        description: "Los datos se han actualizado correctamente.",
-        className: operations.SUCCESS,
-      })
-    } catch (error) {
-      console.error("Error al recargar la tabla:", error)
-      toast({
-        title: "Error al recargar",
-        description: "Ha ocurrido un error al intentar recargar los datos.",
-        className: operations.ERROR,
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchCategorias()
-    fetchDepartamentos()
-  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <TopBar title={"Gestión de Categorías"} icon={<Tag className="h-6 w-6 text-blue-600" />} />
 
       <div className="p-6 space-y-6">
-        {/* Botón para volver */}
         {onVolver && (
           <Button variant="outline" onClick={onVolver} className="mb-4 bg-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -329,7 +224,7 @@ const GestionCategoria = ({ onVolver }) => {
           </Button>
         )}
 
-        {/* Estadísticas */}
+        {/* Tarjetas de Estadísticas (Tu Diseño Original) */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
             <CardContent className="p-4">
@@ -380,7 +275,7 @@ const GestionCategoria = ({ onVolver }) => {
           </Card>
         </div>
 
-        {/* Sección principal */}
+        {/* Sección Principal con Filtros y Tabla */}
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -400,6 +295,7 @@ const GestionCategoria = ({ onVolver }) => {
                     <DialogTitle>{modoEdicion ? "Editar Categoría" : "Agregar Nueva Categoría"}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
+                    {/* Formulario del Modal (Mantenido) */}
                     <div>
                       <Label htmlFor="nombre">Nombre de la Categoría</Label>
                       <Input
@@ -422,38 +318,31 @@ const GestionCategoria = ({ onVolver }) => {
                     <div>
                       <Label htmlFor="departamento">Departamento</Label>
                       <Select
-                        value={formData.departamento_id.toString()}
+                        value={formData.departamento_id}
                         onValueChange={(value) => handleInputChange("departamento_id", value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar departamento" />
                         </SelectTrigger>
                         <SelectContent>
-                          {departamentos.map((departamento) => (
-                            <SelectItem key={departamento.id} value={departamento.id.toString()}>
-                              {departamento.nombre}
+                          {departamentos.map((dep) => (
+                            <SelectItem key={dep.id} value={dep.id.toString()}>
+                              {dep.nombre}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    {/* Campo de Estado agregado al modal */}
                     <div>
                       <Label htmlFor="estado">Estado</Label>
                       <Select
-                        value={selectedState}
-                        onValueChange={(value) => {
-                          handleInputChange("estado", value), setSelectedState(value)
-                        }}
+                        value={formData.estado}
+                        onValueChange={(value) => handleInputChange("estado", value)}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar estado" />
-                        </SelectTrigger>
-                        {/* estado: habilitado, inhabilitado y pendiente */}
+                        <SelectTrigger><SelectValue placeholder="Seleccionar estado" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="habilitado">Habilitado</SelectItem>
                           <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
-                          <SelectItem value="pendiente">Pendiente</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -461,23 +350,18 @@ const GestionCategoria = ({ onVolver }) => {
                       <Button
                         onClick={handleGuardarCategoria}
                         className="flex-1 bg-green-600 hover:bg-green-700"
-                        disabled={
-                          !formData.nombre || !formData.descripcion || !formData.departamento_id || !formData.estado
-                        }
+                        disabled={!formData.nombre || !formData.descripcion || !formData.departamento_id || loading}
                       >
-                        {/* añadimos un spinner */}
-                        {loading ? <Spinner bg /> : (modoEdicion ? "Actualizar" : "Crear") + " Categoría"}
+                        {loading ? <Spinner /> : (modoEdicion ? "Actualizar" : "Crear") + " Categoría"}
                       </Button>
-                      <Button variant="outline" onClick={() => setModalAbierto(false)}>
-                        Cancelar
-                      </Button>
+                      <Button variant="outline" onClick={() => setModalAbierto(false)}>Cancelar</Button>
                     </div>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
 
-            {/* Filtros */}
+            {/* Filtros (Estilo Original) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
               <div>
                 <Label>Departamento</Label>
@@ -489,9 +373,10 @@ const GestionCategoria = ({ onVolver }) => {
                     <SelectValue placeholder="Todos los departamentos" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departamentosData.map((departamento) => (
-                      <SelectItem key={departamento.id} value={departamento.id.toString()}>
-                        {departamento.nombre}
+                    <SelectItem value="all">Todos los departamentos</SelectItem>
+                    {departamentos.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id.toString()}>
+                        {dep.nombre}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -507,8 +392,9 @@ const GestionCategoria = ({ onVolver }) => {
                     <SelectValue placeholder="Todos los estados" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Activa">Activa</SelectItem>
-                    <SelectItem value="Inactiva">Inactiva</SelectItem>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="habilitado">Habilitado</SelectItem>
+                    <SelectItem value="deshabilitado">Deshabilitado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -528,10 +414,10 @@ const GestionCategoria = ({ onVolver }) => {
                 <Button variant="outline" onClick={limpiarFiltros}>
                   Limpiar filtros
                 </Button>
-                {/* <Button variant="outline" onClick={handleRecargarTabla} disabled={loading}>
+                <Button variant="outline" onClick={fetchCategorias} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                   Recargar
-                </Button> */}
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -540,7 +426,7 @@ const GestionCategoria = ({ onVolver }) => {
             {/* Tabla */}
             <div className="rounded-md border">
               <Table>
-                <TableHeader className>
+                <TableHeader>
                   <TableRow className="bg-green-50">
                     <TableHead className="text-center text-green-700 font-bold">ID</TableHead>
                     <TableHead className="text-center text-green-700 font-bold">Nombre</TableHead>
@@ -553,37 +439,44 @@ const GestionCategoria = ({ onVolver }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="text-center">
-                  {categoriasFiltradas.length > 0 ? (
-                    categoriasFiltradas.map((categoria) => (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8">Cargando datos...</TableCell>
+                    </TableRow>
+                  ) : paginatedData.length > 0 ? (
+                    paginatedData.map((categoria) => (
                       <TableRow key={categoria.id}>
                         <TableCell className="font-medium">{categoria.id}</TableCell>
                         <TableCell className="font-medium">{categoria.nombre}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {categoria.descripcion !== null ? categoria.descripcion : "Sin descripción"}
+                        <TableCell className="max-w-xs truncate" title={categoria.descripcion}>
+                          {categoria.descripcion || "Sin descripción"}
                         </TableCell>
-                        <TableCell>{categoria.departamento.nombre}</TableCell>
+                        <TableCell>{categoria.departamento?.nombre || "Sin asignar"}</TableCell>
                         <TableCell>
                           <Badge
                             variant={categoria.estado === "habilitado" ? "default" : "secondary"}
-
                           >
                             {categoria.estado}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{categoria.cantidad_publicaciones}</Badge>
+                          <Badge variant="outline">{categoria.cantidad_publicaciones || 0}</Badge>
                         </TableCell>
                         <TableCell>{formatDate(categoria.fecha_creacion)}</TableCell>
-                        <TableCell className="flex justify-center"  >
+                        <TableCell className="flex justify-center">
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditarCategoria(categoria)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            {/* botton que abra un modal para preguntar si realmente se quiere eliminar */}
                             <ModalEliminarCategoria
                               categoria={categoria}
                               onEliminar={handleEliminarCategoria}
-                              onCancel={() => {}}
+                              onCancel={() => { }}
+                              trigger={
+                                <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 border-red-200">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              }
                             />
                           </div>
                         </TableCell>
@@ -600,13 +493,18 @@ const GestionCategoria = ({ onVolver }) => {
               </Table>
             </div>
 
-            {/* Paginación */}
-            <div className="flex justify-between items-center mt-4">
-              <div className="text-sm text-gray-500">
-                Mostrando {categoriasFiltradas.length} de {categorias.length} categorías
-              </div>
-              <div className="text-sm text-gray-500">Página 1 de 1</div>
-            </div>
+            <Paginador
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={(val) => {
+                setItemsPerPage(Number(val))
+                setCurrentPage(1)
+              }}
+              loading={loading}
+            />
           </CardContent>
         </Card>
       </div>
