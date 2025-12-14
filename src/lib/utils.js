@@ -34,3 +34,41 @@ export const getColorForCategory = (category) => {
 export const chartColors = Object.values(categoryColors);
 
 
+// ========================= RUT Validation and Cleaning =======================
+
+export function limpiarRut(rut) {
+  return rut.replace(/\./g, '').replace(/-/g, '').trim().toUpperCase();
+}
+
+export function calcularDigitoVerificador(rutNumerico) {
+  let suma = 0;
+  let multiplicador = 2;
+
+  // Recorremos de derecha a izquierda
+  for (let i = rutNumerico.length - 1; i >= 0; i--) {
+    suma += parseInt(rutNumerico[i], 10) * multiplicador;
+    multiplicador++;
+    if (multiplicador > 7) multiplicador = 2;
+  }
+
+  const resto = suma % 11;
+  const dvCalculado = 11 - resto;
+
+  if (dvCalculado === 11) return '0';
+  if (dvCalculado === 10) return 'K';
+  return String(dvCalculado);
+}
+
+
+export function verificarRut(rutCompleto) {
+  const rutLimpio = limpiarRut(rutCompleto);
+
+  if (!/^\d+[-]?[0-9K]$/i.test(rutLimpio)) return false;
+
+  // separar número y DV
+  const cuerpo = rutLimpio.slice(0, -1);
+  const dv = rutLimpio.slice(-1).toUpperCase();
+
+  const dvOk = calcularDigitoVerificador(cuerpo);
+  return dv === dvOk;
+}

@@ -1,5 +1,5 @@
 import TopBar from '../TopBar'
-
+import { calcularDigitoVerificador, limpiarRut, verificarRut } from "../../lib/utils.js";
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import useAxiosPrivate from '@/hooks/useAxiosPrivate'
@@ -54,7 +54,7 @@ import { API_ROUTES } from '../../api/apiRoutes'
 
 const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const [activeSection, setActiveSection] = useState("gestiondeusuarios")
-  const [searchTerm, setSearchTerm] = useState("")  
+  const [searchTerm, setSearchTerm] = useState("")
   const [filterRol, setFilterRol] = useState("todos")
   const [filterEstado, setFilterEstado] = useState("todos")
   const [selectedUser, setSelectedUser] = useState(null)
@@ -64,7 +64,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
   const [userToDelete, setUserToDelete] = useState(null)
   const { isAdmin } = useAuth()
   const { toast } = useToast()
-
+  // true
   // Determinar el rol del usuario actual basado en el token
   const CURRENT_USER_ROLE = isAdmin ? "Administrador Municipal" : "Jefe de departamento"
   const CURRENT_USER_DEPARTMENT = "Obras Públicas" // Departamento del jefe actual
@@ -474,6 +474,14 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     const cleanRut = getRutForBackend(rut);
     return !rutPattern.test(cleanRut) ? "❌ Formato de RUT inválido" : null;
   };
+  // Funcion para validar el RUT segun digito verificador
+  const validateRutCheckDigit = (rut) => {
+    if (!rut) return null
+    if (!verificarRut(rut)) {
+      return "❌ RUT invalido (digito verificador no coincide)"
+    }
+    return null
+  }
 
   // Función para obtener el motivo por el cual el botón está desactivado
   const getDisabledButtonReason = () => {
@@ -486,6 +494,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     if (validateFieldLength('email', newUser.email, 200)) return "Email demasiado largo";
     if (!newUser.rut) return "Falta completar el RUT";
     if (validateRutFormat(newUser.rut)) return "Formato de RUT inválido";
+    if (validateRutCheckDigit(newUser.rut)) return "RUT invalido (digito verificador no coincide)"
     if (!newUser.tipo_usuario) return "Falta seleccionar el tipo de usuario";
     if (!newUser.departamento_id) return "Falta seleccionar un departamento";
     if (!newUser.password) return "Falta completar la contraseña";
@@ -508,6 +517,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
     if (validateEmail(editUser.email)) return "Formato de email inválido";
     if (validateFieldLength('email', editUser.email, 200)) return "Email demasiado largo";
     if (editUser.rut && validateRutFormat(editUser.rut)) return "Formato de RUT inválido";
+     if (editUser.rut && validateRutCheckDigit(editUser.rut)) return "RUT invalido (digito verificador no coincide)"
     if (validateFieldLength('telefono', editUser.numero_telefonico_movil, 9)) return "Teléfono demasiado largo";
     if (editUser.departamento_id && !validateDepartmentChiefForEdit(editUser.departamento_id, editUser.tipo_usuario, editUser.id).isValid) {
       return validateDepartmentChiefForEdit(editUser.departamento_id, editUser.tipo_usuario, editUser.id).message;
@@ -1487,6 +1497,11 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                                 {validateRutFormat(newUser.rut)}
                               </p>
                             )}
+                            {validateRutCheckDigit(newUser.rut) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateRutCheckDigit(newUser.rut)}
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500 mt-1">
                               Formato: 12.345.678-9 o 12.345.678-k
                             </p>
@@ -1694,6 +1709,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               validateEmail(newUser.email) ||
                               validateFieldLength('email', newUser.email, 200) ||
                               validateRutFormat(newUser.rut) ||
+                              validateRutCheckDigit(newUser.rut) ||
                               validateFieldLength('telefono', newUser.numero_telefonico_movil, 9) ||
                               rutVerificationMessage ||
                               emailVerificationMessage ||
@@ -1785,6 +1801,11 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                             {validateRutFormat(editUser.rut) && (
                               <p className="text-xs text-red-500 mt-1">
                                 {validateRutFormat(editUser.rut)}
+                              </p>
+                            )}
+                            {validateRutCheckDigit(newUser.rut) && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validateRutCheckDigit(newUser.rut)}
                               </p>
                             )}
                             <p className="text-xs text-gray-500 mt-1">
@@ -1985,6 +2006,7 @@ const CuentaUsuario = ({ setIsOpened, isOpened }) => {
                               validateEmail(editUser.email) ||
                               validateFieldLength('email', editUser.email, 200) ||
                               (editUser.rut && validateRutFormat(editUser.rut)) ||
+                              (editUser.rut && validateRutCheckDigit(editUser.rut)) ||
                               validateFieldLength('telefono', editUser.numero_telefonico_movil, 9) ||
                               (editUser.departamento_id && !validateDepartmentChiefForEdit(
                                 editUser.departamento_id,
